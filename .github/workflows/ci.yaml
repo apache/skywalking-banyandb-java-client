@@ -18,6 +18,9 @@ name: CI AND IT
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 18 * * *'  # TimeZone: UTC 0
 
