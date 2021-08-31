@@ -48,5 +48,4 @@ jobs:
         with:
           submodules: true
       - name: Build and Test
-        if: env.SKIP_CI != 'true' && matrix.os != 'ubuntu'
         run: ./mvnw -q clean verify install
