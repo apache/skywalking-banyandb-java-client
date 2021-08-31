@@ -23,7 +23,6 @@ on:
 
 jobs:
   check-license-header:
-    if: (github.event_name == 'schedule' && github.repository == 'apache/skywalking') || (github.event_name != 'schedule')
     name: Check License Header
     runs-on: ubuntu-latest
     timeout-minutes: 10
