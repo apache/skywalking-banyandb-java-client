@@ -18,12 +18,29 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import java.util.ArrayList;
+import java.util.List;
+
+import lombok.Getter;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
- * An interface that represents an object which can be converted to the protobuf representation
- * of BanyanDB.Field. BanyanDB.Field is used for writing entities to the database.
+ * TraceQueryResponse represents the trace query result.
  */
-public interface SerializableField {
-    Banyandb.Field toField();
+public class StreamQueryResponse {
+    @Getter
+    private final List<RowEntity> elements;
+
+    StreamQueryResponse(BanyandbStream.QueryResponse response) {
+        final List<BanyandbStream.Element> elementsList = response.getElementsList();
+        elements = new ArrayList<>(elementsList.size());
+        elementsList.forEach(element -> elements.add(new RowEntity(element)));
+    }
+
+    /**
+     * @return size of the response set.
+     */
+    public int size() {
+        return elements.size();
+    }
 }

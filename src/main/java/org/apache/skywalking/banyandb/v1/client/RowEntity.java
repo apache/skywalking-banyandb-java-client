@@ -20,8 +20,10 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
+import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
  * RowEntity represents an entity of BanyanDB entity.
@@ -42,18 +44,25 @@ public class RowEntity {
     /**
      * binary part of the entity
      */
-    private final byte[] binary;
+    private byte[] binary;
 
     /**
      * fields are indexed-fields that are searchable in BanyanBD
      */
-    private final List<FieldAndValue<?>> fields;
+    private List<FieldAndValue<?>> tags;
 
-    RowEntity(BanyandbTrace.Entity entity) {
-        id = entity.getEntityId();
-        timestamp = entity.getTimestamp().getSeconds() * 1000 + entity.getTimestamp().getNanos() / 1_000_000;
-        binary = entity.getDataBinary().toByteArray();
-        fields = new ArrayList<>(entity.getFieldsCount());
-        entity.getFieldsList().forEach(field -> fields.add(FieldAndValue.build(field)));
+    RowEntity(BanyandbStream.Element element) {
+        id = element.getElementId();
+        timestamp = element.getTimestamp().getSeconds() * 1000 + element.getTimestamp().getNanos() / 1_000_000;
+        final int tagFamilyCount = element.getTagFamiliesCount();
+        for (int i = 0; i < tagFamilyCount; i++) {
+            Banyandb.TagFamily tagFamily = element.getTagFamilies(i);
+            if ("data_binary".equals(tagFamily.getName())) {
+                binary = tagFamily.getTags(0).toByteArray();
+            } else if ("searchable".equals(tagFamily.getName())) {
+                tags = new ArrayList<>(tagFamily.getTagsCount());
+                tagFamily.getTagsList().forEach(tag -> tags.add(FieldAndValue.build(tag)));
+            }
+        }
     }
 }

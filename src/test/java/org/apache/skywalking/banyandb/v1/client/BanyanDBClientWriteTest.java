@@ -118,27 +118,27 @@ public class BanyanDBClientWriteTest {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        TraceWrite traceWrite = TraceWrite.builder()
+        StreamWrite streamWrite = StreamWrite.builder()
                 .entityId(segmentId)
                 .binary(byteData)
                 .timestamp(now.toEpochMilli())
                 .name("sw")
-                .field(Field.stringField(traceId)) // 0
-                .field(Field.stringField(serviceId))
-                .field(Field.stringField(serviceInstanceId))
-                .field(Field.stringField(endpointId))
-                .field(Field.longField(latency)) // 4
-                .field(Field.longField(state))
-                .field(Field.stringField(httpStatusCode))
-                .field(Field.nullField()) // 7
-                .field(Field.stringField(dbType))
-                .field(Field.stringField(dbInstance))
-                .field(Field.stringField(broker))
-                .field(Field.stringField(topic))
-                .field(Field.stringField(queue)) // 12
+                .field(Tag.stringField(traceId)) // 0
+                .field(Tag.stringField(serviceId))
+                .field(Tag.stringField(serviceInstanceId))
+                .field(Tag.stringField(endpointId))
+                .field(Tag.longField(latency)) // 4
+                .field(Tag.longField(state))
+                .field(Tag.stringField(httpStatusCode))
+                .field(Tag.nullField()) // 7
+                .field(Tag.stringField(dbType))
+                .field(Tag.stringField(dbInstance))
+                .field(Tag.stringField(broker))
+                .field(Tag.stringField(topic))
+                .field(Tag.stringField(queue)) // 12
                 .build();
 
-        traceBulkWriteProcessor.add(traceWrite);
+        traceBulkWriteProcessor.add(streamWrite);
 
         if (allRequestsDelivered.await(5, TimeUnit.SECONDS)) {
             Assert.assertEquals(1, writeRequestDelivered.size());

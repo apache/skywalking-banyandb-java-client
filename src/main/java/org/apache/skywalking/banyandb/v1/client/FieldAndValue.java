@@ -27,7 +27,7 @@ import org.apache.skywalking.banyandb.v1.Banyandb;
  * FieldAndValue represents a value of column in the response
  */
 @EqualsAndHashCode(callSuper = true)
-public abstract class FieldAndValue<T> extends Field<T> {
+public abstract class FieldAndValue<T> extends Tag<T> {
     protected final String fieldName;
 
     protected FieldAndValue(String fieldName, T value) {
@@ -49,30 +49,19 @@ public abstract class FieldAndValue<T> extends Field<T> {
         return this.value == null;
     }
 
-    static FieldAndValue<?> build(Banyandb.TypedPair typedPair) {
-        if (typedPair.hasNullPair()) {
-            switch (typedPair.getNullPair().getType()) {
-                case FIELD_TYPE_INT:
-                    return new LongFieldPair(typedPair.getKey(), null);
-                case FIELD_TYPE_INT_ARRAY:
-                    return new LongArrayFieldPair(typedPair.getKey(), null);
-                case FIELD_TYPE_STRING:
-                    return new StringFieldPair(typedPair.getKey(), null);
-                case FIELD_TYPE_STRING_ARRAY:
-                    return new StringArrayFieldPair(typedPair.getKey(), null);
-                default:
-                    throw new IllegalArgumentException("Unrecognized NullType, " + typedPair.getNullPair().getType());
-            }
-        } else if (typedPair.hasIntPair()) {
-            return new LongFieldPair(typedPair.getKey(), typedPair.getIntPair().getValue());
-        } else if (typedPair.hasStrPair()) {
-            return new StringFieldPair(typedPair.getKey(), typedPair.getStrPair().getValue());
-        } else if (typedPair.hasIntArrayPair()) {
-            return new LongArrayFieldPair(typedPair.getKey(), typedPair.getIntArrayPair().getValueList());
-        } else if (typedPair.hasStrArrayPair()) {
-            return new StringArrayFieldPair(typedPair.getKey(), typedPair.getStrArrayPair().getValueList());
+    static FieldAndValue<?> build(Banyandb.Tag tag) {
+        switch (tag.getValue().getValueCase()) {
+            case INT:
+                return new LongFieldPair(tag.getKey(), tag.getValue().getInt().getValue());
+            case STR:
+                return new StringFieldPair(tag.getKey(), tag.getValue().getStr().getValue());
+            case INT_ARRAY:
+                return new LongArrayFieldPair(tag.getKey(), tag.getValue().getIntArray().getValueList());
+            case STR_ARRAY:
+                return new StringArrayFieldPair(tag.getKey(), tag.getValue().getStrArray().getValueList());
+            default:
+                throw new IllegalArgumentException("Unrecognized NullType");
         }
-        throw new IllegalArgumentException("Unrecognized TypedPair, " + typedPair);
     }
 
     public static class StringFieldPair extends FieldAndValue<String> {

@@ -22,8 +22,8 @@ import io.grpc.stub.StreamObserver;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
-import org.apache.skywalking.banyandb.v1.trace.TraceServiceGrpc;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 
 /**
  * TraceWriteProcessor works for trace flush.
@@ -34,25 +34,25 @@ public class TraceBulkWriteProcessor extends BulkWriteProcessor {
      * The BanyanDB instance name.
      */
     private final String group;
-    private TraceServiceGrpc.TraceServiceStub traceServiceStub;
+    private StreamServiceGrpc.StreamServiceStub streamServiceStub;
 
     /**
      * Create the processor.
      *
-     * @param traceServiceStub stub for gRPC call.
+     * @param streamServiceStub stub for gRPC call.
      * @param maxBulkSize      the max bulk size for the flush operation
      * @param flushInterval    if given maxBulkSize is not reached in this period, the flush would be trigger
      *                         automatically. Unit is second.
      * @param concurrency      the number of concurrency would run for the flush max.
      */
     protected TraceBulkWriteProcessor(final String group,
-                                      final TraceServiceGrpc.TraceServiceStub traceServiceStub,
+                                      final StreamServiceGrpc.StreamServiceStub streamServiceStub,
                                       final int maxBulkSize,
                                       final int flushInterval,
                                       final int concurrency) {
         super("TraceBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
         this.group = group;
-        this.traceServiceStub = traceServiceStub;
+        this.streamServiceStub = this.streamServiceStub;
     }
 
     /**
@@ -60,20 +60,20 @@ public class TraceBulkWriteProcessor extends BulkWriteProcessor {
      *
      * @param traceWrite to add.
      */
-    public void add(TraceWrite traceWrite) {
+    public void add(StreamWrite traceWrite) {
         this.buffer.produce(traceWrite);
     }
 
     @Override
     protected void flush(final List data) {
-        final StreamObserver<BanyandbTrace.WriteRequest> writeRequestStreamObserver
-            = traceServiceStub.withDeadlineAfter(
+        final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
+            = streamServiceStub.withDeadlineAfter(
                                   flushInterval, TimeUnit.SECONDS)
                               .write(
-                                  new StreamObserver<BanyandbTrace.WriteResponse>() {
+                                  new StreamObserver<BanyandbStream.WriteResponse>() {
                                       @Override
                                       public void onNext(
-                                          BanyandbTrace.WriteResponse writeResponse) {
+                                          BanyandbStream.WriteResponse writeResponse) {
                                       }
 
                                       @Override
@@ -91,8 +91,8 @@ public class TraceBulkWriteProcessor extends BulkWriteProcessor {
                                   });
         try {
             data.forEach(write -> {
-                final TraceWrite traceWrite = (TraceWrite) write;
-                BanyandbTrace.WriteRequest request = traceWrite.build(group);
+                final StreamWrite streamWrite = (StreamWrite) write;
+                BanyandbStream.WriteRequest request = streamWrite.build(group);
                 writeRequestStreamObserver.onNext(request);
             });
         } finally {

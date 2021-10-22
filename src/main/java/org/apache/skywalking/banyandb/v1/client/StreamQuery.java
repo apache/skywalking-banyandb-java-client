@@ -24,13 +24,13 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
  * TraceQuery is the high-level query API for the trace model.
  */
 @Setter
-public class TraceQuery {
+public class StreamQuery {
     /**
      * Owner name current entity
      */
@@ -64,7 +64,7 @@ public class TraceQuery {
      */
     private boolean dataBinary;
 
-    public TraceQuery(final String name, final TimestampRange timestampRange, final List<String> projections) {
+    public StreamQuery(final String name, final TimestampRange timestampRange, final List<String> projections) {
         this.name = name;
         this.timestampRange = timestampRange;
         this.projections = projections;
@@ -74,7 +74,7 @@ public class TraceQuery {
         this.dataBinary = false;
     }
 
-    public TraceQuery(final String name, final List<String> projections) {
+    public StreamQuery(final String name, final List<String> projections) {
         this(name, null, projections);
     }
 
@@ -83,7 +83,7 @@ public class TraceQuery {
      *
      * @param condition the query condition to be appended
      */
-    public TraceQuery appendCondition(PairQueryCondition<?> condition) {
+    public StreamQuery appendCondition(PairQueryCondition<?> condition) {
         this.conditions.add(condition);
         return this;
     }
@@ -92,8 +92,8 @@ public class TraceQuery {
      * @param group The instance name.
      * @return QueryRequest for gRPC level query.
      */
-    BanyandbTrace.QueryRequest build(String group) {
-        final BanyandbTrace.QueryRequest.Builder builder = BanyandbTrace.QueryRequest.newBuilder();
+    BanyandbStream.QueryRequest build(String group) {
+        final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder();
         builder.setMetadata(Banyandb.Metadata.newBuilder()
                 .setGroup(group)
                 .setName(name)

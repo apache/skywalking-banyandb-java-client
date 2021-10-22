@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
 import java.util.List;
 import lombok.AccessLevel;
@@ -26,7 +25,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
 import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
  * TraceWrite represents a write operation, including necessary fields, for {@link
@@ -34,7 +33,7 @@ import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
  */
 @Builder
 @Getter(AccessLevel.PROTECTED)
-public class TraceWrite {
+public class StreamWrite {
     /**
      * Owner name current entity
      */
@@ -42,7 +41,7 @@ public class TraceWrite {
     /**
      * ID of current entity
      */
-    private final String entityId;
+    private final String elementId;
     /**
      * Timestamp represents the time of current trace or trace segment
      * in the timeunit of milliseconds.
@@ -59,23 +58,22 @@ public class TraceWrite {
      * field names anymore.
      */
     @Singular
-    private final List<SerializableField> fields;
+    private final List<SerializableTag<Banyandb.TagValue>> tags;
 
     /**
      * @param group of the BanyanDB client connected.
-     * @return {@link BanyandbTrace.WriteRequest} for the bulk process.
+     * @return {@link BanyandbStream.WriteRequest} for the bulk process.
      */
-    BanyandbTrace.WriteRequest build(String group) {
-        final BanyandbTrace.WriteRequest.Builder builder = BanyandbTrace.WriteRequest.newBuilder();
+    BanyandbStream.WriteRequest build(String group) {
+        final BanyandbStream.WriteRequest.Builder builder = BanyandbStream.WriteRequest.newBuilder();
         builder.setMetadata(Banyandb.Metadata.newBuilder().setGroup(group).setName(name).build());
-        final BanyandbTrace.EntityValue.Builder entityBuilder = BanyandbTrace.EntityValue.newBuilder();
-        entityBuilder.setEntityId(entityId);
-        entityBuilder.setTimestamp(Timestamp.newBuilder()
+        final BanyandbStream.ElementValue.Builder elemValBuilder = BanyandbStream.ElementValue.newBuilder();
+        elemValBuilder.setElementId(elementId);
+        elemValBuilder.setTimestamp(Timestamp.newBuilder()
                                             .setSeconds(timestamp / 1000)
                                             .setNanos((int) (timestamp % 1000 * 1_000_000)));
-        entityBuilder.setDataBinary(ByteString.copyFrom(binary));
-        fields.forEach(writeField -> entityBuilder.addFields(writeField.toField()));
-        builder.setEntity(entityBuilder.build());
+        tags.forEach(writeTag -> elemValBuilder.addTagFamilies(writeTag.toTag()));
+        builder.setElement(elemValBuilder);
         return builder.build();
     }
 }

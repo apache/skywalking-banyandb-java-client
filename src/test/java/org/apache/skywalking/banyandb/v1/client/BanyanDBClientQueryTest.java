@@ -99,12 +99,12 @@ public class BanyanDBClientQueryTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        TraceQuery query = new TraceQuery("sw",
+        StreamQuery query = new StreamQuery("sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 Arrays.asList("state", "start_time", "duration", "trace_id"));
         // search for all states
         query.appendCondition(PairQueryCondition.LongQueryCondition.eq("state", 0L));
-        query.setOrderBy(new TraceQuery.OrderBy("duration", TraceQuery.OrderBy.Type.DESC));
+        query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
         client.queryTraces(query);
 
         verify(serviceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
@@ -141,7 +141,7 @@ public class BanyanDBClientQueryTest {
         long minDuration = 10;
         long maxDuration = 100;
 
-        TraceQuery query = new TraceQuery("sw",
+        StreamQuery query = new StreamQuery("sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 Arrays.asList("state", "start_time", "duration", "trace_id"));
         // search for the successful states
@@ -151,7 +151,7 @@ public class BanyanDBClientQueryTest {
                 .appendCondition(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
                 .appendCondition(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
                 .appendCondition(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
-                .setOrderBy(new TraceQuery.OrderBy("start_time", TraceQuery.OrderBy.Type.ASC));
+                .setOrderBy(new StreamQuery.OrderBy("start_time", StreamQuery.OrderBy.Type.ASC));
 
         client.queryTraces(query);
 
@@ -186,7 +186,7 @@ public class BanyanDBClientQueryTest {
         ArgumentCaptor<BanyandbTrace.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbTrace.QueryRequest.class);
         String traceId = "1111.222.333";
 
-        TraceQuery query = new TraceQuery("sw", Arrays.asList("state", "start_time", "duration", "trace_id"));
+        StreamQuery query = new StreamQuery("sw", Arrays.asList("state", "start_time", "duration", "trace_id"));
         query.appendCondition(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         client.queryTraces(query);
@@ -229,7 +229,7 @@ public class BanyanDBClientQueryTest {
                                 .setNullPair(Banyandb.TypedPair.NullWithType.newBuilder().setType(Banyandb.FieldType.FIELD_TYPE_STRING).build()).build())
                         .build())
                 .build();
-        TraceQueryResponse resp = new TraceQueryResponse(responseObj);
+        StreamQueryResponse resp = new StreamQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getEntities().size());
         Assert.assertEquals(3, resp.getEntities().get(0).getFields().size());
