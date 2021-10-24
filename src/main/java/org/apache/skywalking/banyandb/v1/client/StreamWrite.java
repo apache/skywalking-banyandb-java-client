@@ -18,8 +18,11 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
+
 import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -70,9 +73,20 @@ public class StreamWrite {
         final BanyandbStream.ElementValue.Builder elemValBuilder = BanyandbStream.ElementValue.newBuilder();
         elemValBuilder.setElementId(elementId);
         elemValBuilder.setTimestamp(Timestamp.newBuilder()
-                                            .setSeconds(timestamp / 1000)
-                                            .setNanos((int) (timestamp % 1000 * 1_000_000)));
-        tags.forEach(writeTag -> elemValBuilder.addTagFamilies(writeTag.toTag()));
+                .setSeconds(timestamp / 1000)
+                .setNanos((int) (timestamp % 1000 * 1_000_000)));
+        // 1 - add "data" tags
+        elemValBuilder.addTagFamilies(Banyandb.TagFamilyForWrite.newBuilder().addTags(
+                Banyandb.TagValue.newBuilder()
+                        .setBinaryData(ByteString.copyFrom(this.binary))
+                        .build()
+        ).build());
+        // 2 - add "searchable" tags
+        Banyandb.TagFamilyForWrite.Builder b = Banyandb.TagFamilyForWrite.newBuilder();
+        for (final SerializableTag<Banyandb.TagValue> tag : tags) {
+            b.addTags(tag.toTag());
+        }
+        elemValBuilder.addTagFamilies(b);
         builder.setElement(elemValBuilder);
         return builder.build();
     }

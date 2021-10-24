@@ -20,6 +20,8 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import org.apache.skywalking.banyandb.v1.Banyandb;
@@ -42,27 +44,21 @@ public class RowEntity {
     private final long timestamp;
 
     /**
-     * binary part of the entity
-     */
-    private byte[] binary;
-
-    /**
      * fields are indexed-fields that are searchable in BanyanBD
      */
-    private List<FieldAndValue<?>> tags;
+    private final List<List<TagAndValue<?>>> tags;
 
     RowEntity(BanyandbStream.Element element) {
         id = element.getElementId();
         timestamp = element.getTimestamp().getSeconds() * 1000 + element.getTimestamp().getNanos() / 1_000_000;
         final int tagFamilyCount = element.getTagFamiliesCount();
+        this.tags = new ArrayList<>(tagFamilyCount);
         for (int i = 0; i < tagFamilyCount; i++) {
             Banyandb.TagFamily tagFamily = element.getTagFamilies(i);
-            if ("data_binary".equals(tagFamily.getName())) {
-                binary = tagFamily.getTags(0).toByteArray();
-            } else if ("searchable".equals(tagFamily.getName())) {
-                tags = new ArrayList<>(tagFamily.getTagsCount());
-                tagFamily.getTagsList().forEach(tag -> tags.add(FieldAndValue.build(tag)));
-            }
+            List<TagAndValue<?>> tagAndValuesInTagFamily = tagFamily.getTagsList().stream()
+                    .map((Function<Banyandb.Tag, TagAndValue<?>>) tag -> TagAndValue.build(tagFamily.getName(), tag))
+                    .collect(Collectors.toList());
+            this.tags.set(i, tagAndValuesInTagFamily);
         }
     }
 }

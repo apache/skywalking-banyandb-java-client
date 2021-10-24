@@ -29,7 +29,7 @@ import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
  * TraceWriteProcessor works for trace flush.
  */
 @Slf4j
-public class TraceBulkWriteProcessor extends BulkWriteProcessor {
+public class StreamBulkWriteProcessor extends BulkWriteProcessor {
     /**
      * The BanyanDB instance name.
      */
@@ -45,12 +45,12 @@ public class TraceBulkWriteProcessor extends BulkWriteProcessor {
      *                         automatically. Unit is second.
      * @param concurrency      the number of concurrency would run for the flush max.
      */
-    protected TraceBulkWriteProcessor(final String group,
-                                      final StreamServiceGrpc.StreamServiceStub streamServiceStub,
-                                      final int maxBulkSize,
-                                      final int flushInterval,
-                                      final int concurrency) {
-        super("TraceBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
+    protected StreamBulkWriteProcessor(final String group,
+                                       final StreamServiceGrpc.StreamServiceStub streamServiceStub,
+                                       final int maxBulkSize,
+                                       final int flushInterval,
+                                       final int concurrency) {
+        super("StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
         this.group = group;
         this.streamServiceStub = this.streamServiceStub;
     }

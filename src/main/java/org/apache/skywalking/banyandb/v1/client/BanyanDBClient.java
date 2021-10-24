@@ -161,8 +161,8 @@ public class BanyanDBClient implements Closeable {
      * @param concurrency   the number of concurrency would run for the flush max
      * @return trace bulk write processor
      */
-    public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
-        return new TraceBulkWriteProcessor(group, streamServiceStub, maxBulkSize, flushInterval, concurrency);
+    public StreamBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
+        return new StreamBulkWriteProcessor(group, streamServiceStub, maxBulkSize, flushInterval, concurrency);
     }
 
     /**
@@ -171,7 +171,7 @@ public class BanyanDBClient implements Closeable {
      * @param streamQuery condition for query
      * @return hint traces.
      */
-    public StreamQueryResponse queryTraces(StreamQuery streamQuery) {
+    public StreamQueryResponse queryStreams(StreamQuery streamQuery) {
         final BanyandbStream.QueryResponse response = streamServiceBlockingStub
                 .withDeadlineAfter(options.getDeadline(), TimeUnit.SECONDS)
                 .query(streamQuery.build(group));

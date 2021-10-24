@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.protobuf.NullValue;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -25,9 +26,8 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import io.grpc.util.MutableHandlerRegistry;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
-import org.apache.skywalking.banyandb.v1.trace.TraceServiceGrpc;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,7 +48,7 @@ public class BanyanDBClientWriteTest {
     private final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
 
     private BanyanDBClient client;
-    private TraceBulkWriteProcessor traceBulkWriteProcessor;
+    private StreamBulkWriteProcessor traceBulkWriteProcessor;
 
     @Before
     public void setUp() throws IOException {
@@ -74,18 +74,18 @@ public class BanyanDBClientWriteTest {
     @Test
     public void testWrite() throws Exception {
         final CountDownLatch allRequestsDelivered = new CountDownLatch(1);
-        final List<BanyandbTrace.WriteRequest> writeRequestDelivered = new ArrayList<>();
+        final List<BanyandbStream.WriteRequest> writeRequestDelivered = new ArrayList<>();
 
         // implement the fake service
-        final TraceServiceGrpc.TraceServiceImplBase serviceImpl =
-                new TraceServiceGrpc.TraceServiceImplBase() {
+        final StreamServiceGrpc.StreamServiceImplBase serviceImpl =
+                new StreamServiceGrpc.StreamServiceImplBase() {
                     @Override
-                    public StreamObserver<BanyandbTrace.WriteRequest> write(StreamObserver<BanyandbTrace.WriteResponse> responseObserver) {
-                        return new StreamObserver<BanyandbTrace.WriteRequest>() {
+                    public StreamObserver<BanyandbStream.WriteRequest> write(StreamObserver<BanyandbStream.WriteResponse> responseObserver) {
+                        return new StreamObserver<BanyandbStream.WriteRequest>() {
                             @Override
-                            public void onNext(BanyandbTrace.WriteRequest value) {
+                            public void onNext(BanyandbStream.WriteRequest value) {
                                 writeRequestDelivered.add(value);
-                                responseObserver.onNext(BanyandbTrace.WriteResponse.newBuilder().build());
+                                responseObserver.onNext(BanyandbStream.WriteResponse.newBuilder().build());
                             }
 
                             @Override
@@ -119,35 +119,36 @@ public class BanyanDBClientWriteTest {
         String dbInstance = "127.0.0.1:3306";
 
         StreamWrite streamWrite = StreamWrite.builder()
-                .entityId(segmentId)
+                .elementId(segmentId)
                 .binary(byteData)
                 .timestamp(now.toEpochMilli())
                 .name("sw")
-                .field(Tag.stringField(traceId)) // 0
-                .field(Tag.stringField(serviceId))
-                .field(Tag.stringField(serviceInstanceId))
-                .field(Tag.stringField(endpointId))
-                .field(Tag.longField(latency)) // 4
-                .field(Tag.longField(state))
-                .field(Tag.stringField(httpStatusCode))
-                .field(Tag.nullField()) // 7
-                .field(Tag.stringField(dbType))
-                .field(Tag.stringField(dbInstance))
-                .field(Tag.stringField(broker))
-                .field(Tag.stringField(topic))
-                .field(Tag.stringField(queue)) // 12
+                .tag(Tag.stringField(traceId)) // 0
+                .tag(Tag.stringField(serviceId))
+                .tag(Tag.stringField(serviceInstanceId))
+                .tag(Tag.stringField(endpointId))
+                .tag(Tag.longField(latency)) // 4
+                .tag(Tag.longField(state))
+                .tag(Tag.stringField(httpStatusCode))
+                .tag(Tag.nullField()) // 7
+                .tag(Tag.stringField(dbType))
+                .tag(Tag.stringField(dbInstance))
+                .tag(Tag.stringField(broker))
+                .tag(Tag.stringField(topic))
+                .tag(Tag.stringField(queue)) // 12
                 .build();
 
         traceBulkWriteProcessor.add(streamWrite);
 
         if (allRequestsDelivered.await(5, TimeUnit.SECONDS)) {
             Assert.assertEquals(1, writeRequestDelivered.size());
-            final BanyandbTrace.WriteRequest request = writeRequestDelivered.get(0);
-            Assert.assertEquals(13, request.getEntity().getFieldsCount());
-            Assert.assertEquals(traceId, request.getEntity().getFields(0).getStr().getValue());
-            Assert.assertEquals(latency, request.getEntity().getFields(4).getInt().getValue());
-            Assert.assertEquals(request.getEntity().getFields(7).getValueTypeCase(), Banyandb.Field.ValueTypeCase.NULL);
-            Assert.assertEquals(queue, request.getEntity().getFields(12).getStr().getValue());
+            final BanyandbStream.WriteRequest request = writeRequestDelivered.get(0);
+            Assert.assertEquals(byteData, request.getElement().getTagFamilies(0).getTags(0).getBinaryData().toByteArray());
+            Assert.assertEquals(13, request.getElement().getTagFamilies(1).getTagsCount());
+            Assert.assertEquals(traceId, request.getElement().getTagFamilies(1).getTags(0).getStr().getValue());
+            Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(4).getInt().getValue());
+            Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
+            Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
         } else {
             Assert.fail();
         }
