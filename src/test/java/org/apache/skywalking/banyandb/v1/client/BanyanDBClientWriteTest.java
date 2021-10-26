@@ -48,7 +48,7 @@ public class BanyanDBClientWriteTest {
     private final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
 
     private BanyanDBClient client;
-    private StreamBulkWriteProcessor traceBulkWriteProcessor;
+    private StreamBulkWriteProcessor streamBulkWriteProcessor;
 
     @Before
     public void setUp() throws IOException {
@@ -63,12 +63,12 @@ public class BanyanDBClientWriteTest {
 
         client = new BanyanDBClient("127.0.0.1", server.getPort(), "default");
         client.connect(channel);
-        traceBulkWriteProcessor = client.buildTraceWriteProcessor(1000, 1, 1);
+        streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
     }
 
     @After
     public void shutdown() throws IOException {
-        traceBulkWriteProcessor.close();
+        streamBulkWriteProcessor.close();
     }
 
     @Test
@@ -138,12 +138,12 @@ public class BanyanDBClientWriteTest {
                 .tag(Tag.stringField(queue)) // 12
                 .build();
 
-        traceBulkWriteProcessor.add(streamWrite);
+        streamBulkWriteProcessor.add(streamWrite);
 
         if (allRequestsDelivered.await(5, TimeUnit.SECONDS)) {
             Assert.assertEquals(1, writeRequestDelivered.size());
             final BanyandbStream.WriteRequest request = writeRequestDelivered.get(0);
-            Assert.assertEquals(byteData, request.getElement().getTagFamilies(0).getTags(0).getBinaryData().toByteArray());
+            Assert.assertArrayEquals(byteData, request.getElement().getTagFamilies(0).getTags(0).getBinaryData().toByteArray());
             Assert.assertEquals(13, request.getElement().getTagFamilies(1).getTagsCount());
             Assert.assertEquals(traceId, request.getElement().getTagFamilies(1).getTags(0).getStr().getValue());
             Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(4).getInt().getValue());

@@ -172,7 +172,7 @@ public class BanyanDBClientQueryTest {
         Assert.assertEquals(Banyandb.QueryOrder.Sort.SORT_ASC, request.getOrderBy().getSort());
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());
         // assert projections
-        assertCollectionEqual(Lists.newArrayList("duration", "state", "start_time", "trace_id"), parseProjectionList(request.getProjection()));
+        assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"), parseProjectionList(request.getProjection()));
         // assert fields
         assertCollectionEqual(request.getCriteria(0).getConditionsList(), ImmutableList.of(
                 PairQueryCondition.LongQueryCondition.ge("searchable", "duration", minDuration).build(), // 1 -> duration >= minDuration
@@ -242,14 +242,14 @@ public class BanyanDBClientQueryTest {
         StreamQueryResponse resp = new StreamQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getElements().size());
-        Assert.assertEquals(3, resp.getElements().get(0).getTags().size());
-        Assert.assertEquals(3, resp.getElements().get(0).getTags().size());
+        Assert.assertEquals(1, resp.getElements().get(0).getTagFamilies().size());
+        Assert.assertEquals(3, resp.getElements().get(0).getTagFamilies().get(0).size());
         Assert.assertEquals(new TagAndValue.StringTagPair("searchable", "trace_id", traceId),
-                resp.getElements().get(0).getTags().get(0).get(0));
+                resp.getElements().get(0).getTagFamilies().get(0).get(0));
         Assert.assertEquals(new TagAndValue.LongTagPair("searchable", "duration", duration),
-                resp.getElements().get(0).getTags().get(0).get(1));
+                resp.getElements().get(0).getTagFamilies().get(0).get(1));
         Assert.assertEquals(new TagAndValue.StringTagPair("searchable", "mq.broker", null),
-                resp.getElements().get(0).getTags().get(0).get(2));
+                resp.getElements().get(0).getTagFamilies().get(0).get(2));
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {
@@ -261,7 +261,7 @@ public class BanyanDBClientQueryTest {
         for (int i = 0; i < projection.getTagFamiliesCount(); i++) {
             final Banyandb.Projection.TagFamily tagFamily = projection.getTagFamilies(i);
             for (int j = 0; j < tagFamily.getTagsCount(); j++) {
-                projectionList.add(tagFamily.getName() + ":" + tagFamily.getTags(j).getBytes().toString());
+                projectionList.add(tagFamily.getName() + ":" + tagFamily.getTags(j));
             }
         }
         return projectionList;

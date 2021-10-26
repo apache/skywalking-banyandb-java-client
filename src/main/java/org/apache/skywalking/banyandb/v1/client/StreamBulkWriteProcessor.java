@@ -26,7 +26,7 @@ import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 
 /**
- * TraceWriteProcessor works for trace flush.
+ * StreamBulkWriteProcessor works for stream flush.
  */
 @Slf4j
 public class StreamBulkWriteProcessor extends BulkWriteProcessor {
@@ -52,16 +52,16 @@ public class StreamBulkWriteProcessor extends BulkWriteProcessor {
                                        final int concurrency) {
         super("StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
         this.group = group;
-        this.streamServiceStub = this.streamServiceStub;
+        this.streamServiceStub = streamServiceStub;
     }
 
     /**
-     * Add the trace to the bulk processor.
+     * Add the stream to the bulk processor.
      *
-     * @param traceWrite to add.
+     * @param streamWrite to add.
      */
-    public void add(StreamWrite traceWrite) {
-        this.buffer.produce(traceWrite);
+    public void add(StreamWrite streamWrite) {
+        this.buffer.produce(streamWrite);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class StreamBulkWriteProcessor extends BulkWriteProcessor {
                                       public void onError(
                                           Throwable throwable) {
                                           log.error(
-                                              "Error occurs in flushing traces.",
+                                              "Error occurs in flushing streams.",
                                               throwable
                                           );
                                       }

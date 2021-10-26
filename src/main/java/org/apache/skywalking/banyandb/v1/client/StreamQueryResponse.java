@@ -25,7 +25,7 @@ import lombok.Getter;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
- * TraceQueryResponse represents the trace query result.
+ * StreamQueryResponse represents the stream query result.
  */
 public class StreamQueryResponse {
     @Getter

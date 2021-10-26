@@ -68,6 +68,8 @@ public abstract class TagAndValue<T> extends Tag<T> {
                 return new LongArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getIntArray().getValueList());
             case STR_ARRAY:
                 return new StringArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getStrArray().getValueList());
+            case NULL:
+                return new NullTagPair(tagFamilyName, tag.getKey());
             default:
                 throw new IllegalArgumentException("Unrecognized NullType");
         }
@@ -94,6 +96,17 @@ public abstract class TagAndValue<T> extends Tag<T> {
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
         LongArrayTagPair(final String tagFamilyName, final String tagName, final List<Long> value) {
             super(tagFamilyName, tagName, value);
+        }
+    }
+
+    public static class NullTagPair extends TagAndValue<Void> {
+        NullTagPair(final String tagFamilyName, final String tagName) {
+            super(tagFamilyName, tagName, null);
+        }
+
+        @Override
+        public boolean isNull() {
+            return true;
         }
     }
 }

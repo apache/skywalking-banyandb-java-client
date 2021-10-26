@@ -31,8 +31,8 @@ import org.apache.skywalking.banyandb.v1.Banyandb;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
- * TraceWrite represents a write operation, including necessary fields, for {@link
- * BanyanDBClient#buildTraceWriteProcessor}.
+ * StreamWrite represents a write operation, including necessary fields, for {@link
+ * BanyanDBClient#buildStreamWriteProcessor}.
  */
 @Builder
 @Getter(AccessLevel.PROTECTED)
@@ -46,12 +46,12 @@ public class StreamWrite {
      */
     private final String elementId;
     /**
-     * Timestamp represents the time of current trace or trace segment
+     * Timestamp represents the time of current stream
      * in the timeunit of milliseconds.
      */
     private final long timestamp;
     /**
-     * The binary raw data represents the whole object of current trace or trace segment. It could be organized by
+     * The binary raw data represents the whole object of current stream. It could be organized by
      * different serialization formats. Natively, SkyWalking uses protobuf, but it is not required. The BanyanDB server
      * wouldn't deserialize this. So, no format requirement.
      */

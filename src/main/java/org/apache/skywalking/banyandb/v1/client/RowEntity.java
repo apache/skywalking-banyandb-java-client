@@ -46,19 +46,19 @@ public class RowEntity {
     /**
      * fields are indexed-fields that are searchable in BanyanBD
      */
-    private final List<List<TagAndValue<?>>> tags;
+    private final List<List<TagAndValue<?>>> tagFamilies;
 
     RowEntity(BanyandbStream.Element element) {
         id = element.getElementId();
         timestamp = element.getTimestamp().getSeconds() * 1000 + element.getTimestamp().getNanos() / 1_000_000;
         final int tagFamilyCount = element.getTagFamiliesCount();
-        this.tags = new ArrayList<>(tagFamilyCount);
+        this.tagFamilies = new ArrayList<>(tagFamilyCount);
         for (int i = 0; i < tagFamilyCount; i++) {
             Banyandb.TagFamily tagFamily = element.getTagFamilies(i);
             List<TagAndValue<?>> tagAndValuesInTagFamily = tagFamily.getTagsList().stream()
                     .map((Function<Banyandb.Tag, TagAndValue<?>>) tag -> TagAndValue.build(tagFamily.getName(), tag))
                     .collect(Collectors.toList());
-            this.tags.set(i, tagAndValuesInTagFamily);
+            this.tagFamilies.add(tagAndValuesInTagFamily);
         }
     }
 }
