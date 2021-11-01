@@ -30,11 +30,11 @@ import static com.google.protobuf.NullValue.NULL_VALUE;
  * Field represents a value of column/field in the write-op or response.
  */
 @EqualsAndHashCode
-public abstract class Field<T> {
+public abstract class Tag<T> {
     @Getter
     protected final T value;
 
-    protected Field(T value) {
+    protected Tag(T value) {
         this.value = value;
     }
 
@@ -42,7 +42,7 @@ public abstract class Field<T> {
      * NullField is a value which can be converted to {@link com.google.protobuf.NullValue}.
      * Users should use the singleton instead of create a new instance everytime.
      */
-    public static class NullField extends Field<Object> implements SerializableField {
+    public static class NullField extends Tag<Object> implements SerializableTag<Banyandb.TagValue> {
         private static final NullField INSTANCE = new NullField();
 
         private NullField() {
@@ -50,64 +50,64 @@ public abstract class Field<T> {
         }
 
         @Override
-        public Banyandb.Field toField() {
-            return Banyandb.Field.newBuilder().setNull(NULL_VALUE).build();
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setNull(NULL_VALUE).build();
         }
     }
 
     /**
      * The value of a String type field.
      */
-    public static class StringField extends Field<String> implements SerializableField {
+    public static class StringField extends Tag<String> implements SerializableTag<Banyandb.TagValue> {
         private StringField(String value) {
             super(value);
         }
 
         @Override
-        public Banyandb.Field toField() {
-            return Banyandb.Field.newBuilder().setStr(Banyandb.Str.newBuilder().setValue(value)).build();
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setStr(Banyandb.Str.newBuilder().setValue(value)).build();
         }
     }
 
     /**
      * The value of a String array type field.
      */
-    public static class StringArrayField extends Field<List<String>> implements SerializableField {
+    public static class StringArrayField extends Tag<List<String>> implements SerializableTag<Banyandb.TagValue> {
         private StringArrayField(List<String> value) {
             super(value);
         }
 
         @Override
-        public Banyandb.Field toField() {
-            return Banyandb.Field.newBuilder().setStrArray(Banyandb.StrArray.newBuilder().addAllValue(value)).build();
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setStrArray(Banyandb.StrArray.newBuilder().addAllValue(value)).build();
         }
     }
 
     /**
      * The value of an int64(Long) type field.
      */
-    public static class LongField extends Field<Long> implements SerializableField {
+    public static class LongField extends Tag<Long> implements SerializableTag<Banyandb.TagValue> {
         private LongField(Long value) {
             super(value);
         }
 
         @Override
-        public Banyandb.Field toField() {
-            return Banyandb.Field.newBuilder().setInt(Banyandb.Int.newBuilder().setValue(value)).build();
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setInt(Banyandb.Int.newBuilder().setValue(value)).build();
         }
     }
 
     /**
      * The value of an int64(Long) array type field.
      */
-    public static class LongArrayField extends Field<List<Long>> implements SerializableField {
+    public static class LongArrayField extends Tag<List<Long>> implements SerializableTag<Banyandb.TagValue> {
         private LongArrayField(List<Long> value) {
             super(value);
         }
 
         @Override
-        public Banyandb.Field toField() {
-            return Banyandb.Field.newBuilder().setIntArray(Banyandb.IntArray.newBuilder().addAllValue(value)).build();
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setIntArray(Banyandb.IntArray.newBuilder().addAllValue(value)).build();
         }
     }
 
@@ -117,7 +117,7 @@ public abstract class Field<T> {
      * @param val payload
      * @return Anonymous field with String payload
      */
-    public static SerializableField stringField(String val) {
+    public static SerializableTag<Banyandb.TagValue> stringField(String val) {
         return new StringField(val);
     }
 
@@ -127,7 +127,7 @@ public abstract class Field<T> {
      * @param val payload
      * @return Anonymous field with numeric payload
      */
-    public static SerializableField longField(long val) {
+    public static SerializableTag<Banyandb.TagValue> longField(long val) {
         return new LongField(val);
     }
 
@@ -137,7 +137,7 @@ public abstract class Field<T> {
      * @param val payload
      * @return Anonymous field with string array payload
      */
-    public static SerializableField stringArrayField(List<String> val) {
+    public static SerializableTag<Banyandb.TagValue> stringArrayField(List<String> val) {
         return new StringArrayField(val);
     }
 
@@ -147,11 +147,11 @@ public abstract class Field<T> {
      * @param val payload
      * @return Anonymous field with numeric array payload
      */
-    public static SerializableField longArrayField(List<Long> val) {
+    public static SerializableTag<Banyandb.TagValue> longArrayField(List<Long> val) {
         return new LongArrayField(val);
     }
 
-    public static SerializableField nullField() {
+    public static SerializableTag<Banyandb.TagValue> nullField() {
         return NullField.INSTANCE;
     }
 }

@@ -20,21 +20,23 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
+
 import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
 import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 
 /**
- * TraceWrite represents a write operation, including necessary fields, for {@link
- * BanyanDBClient#buildTraceWriteProcessor}.
+ * StreamWrite represents a write operation, including necessary fields, for {@link
+ * BanyanDBClient#buildStreamWriteProcessor}.
  */
 @Builder
 @Getter(AccessLevel.PROTECTED)
-public class TraceWrite {
+public class StreamWrite {
     /**
      * Owner name current entity
      */
@@ -42,14 +44,14 @@ public class TraceWrite {
     /**
      * ID of current entity
      */
-    private final String entityId;
+    private final String elementId;
     /**
-     * Timestamp represents the time of current trace or trace segment
+     * Timestamp represents the time of current stream
      * in the timeunit of milliseconds.
      */
     private final long timestamp;
     /**
-     * The binary raw data represents the whole object of current trace or trace segment. It could be organized by
+     * The binary raw data represents the whole object of current stream. It could be organized by
      * different serialization formats. Natively, SkyWalking uses protobuf, but it is not required. The BanyanDB server
      * wouldn't deserialize this. So, no format requirement.
      */
@@ -59,23 +61,33 @@ public class TraceWrite {
      * field names anymore.
      */
     @Singular
-    private final List<SerializableField> fields;
+    private final List<SerializableTag<Banyandb.TagValue>> tags;
 
     /**
      * @param group of the BanyanDB client connected.
-     * @return {@link BanyandbTrace.WriteRequest} for the bulk process.
+     * @return {@link BanyandbStream.WriteRequest} for the bulk process.
      */
-    BanyandbTrace.WriteRequest build(String group) {
-        final BanyandbTrace.WriteRequest.Builder builder = BanyandbTrace.WriteRequest.newBuilder();
+    BanyandbStream.WriteRequest build(String group) {
+        final BanyandbStream.WriteRequest.Builder builder = BanyandbStream.WriteRequest.newBuilder();
         builder.setMetadata(Banyandb.Metadata.newBuilder().setGroup(group).setName(name).build());
-        final BanyandbTrace.EntityValue.Builder entityBuilder = BanyandbTrace.EntityValue.newBuilder();
-        entityBuilder.setEntityId(entityId);
-        entityBuilder.setTimestamp(Timestamp.newBuilder()
-                                            .setSeconds(timestamp / 1000)
-                                            .setNanos((int) (timestamp % 1000 * 1_000_000)));
-        entityBuilder.setDataBinary(ByteString.copyFrom(binary));
-        fields.forEach(writeField -> entityBuilder.addFields(writeField.toField()));
-        builder.setEntity(entityBuilder.build());
+        final BanyandbStream.ElementValue.Builder elemValBuilder = BanyandbStream.ElementValue.newBuilder();
+        elemValBuilder.setElementId(elementId);
+        elemValBuilder.setTimestamp(Timestamp.newBuilder()
+                .setSeconds(timestamp / 1000)
+                .setNanos((int) (timestamp % 1000 * 1_000_000)));
+        // 1 - add "data" tags
+        elemValBuilder.addTagFamilies(Banyandb.TagFamilyForWrite.newBuilder().addTags(
+                Banyandb.TagValue.newBuilder()
+                        .setBinaryData(ByteString.copyFrom(this.binary))
+                        .build()
+        ).build());
+        // 2 - add "searchable" tags
+        Banyandb.TagFamilyForWrite.Builder b = Banyandb.TagFamilyForWrite.newBuilder();
+        for (final SerializableTag<Banyandb.TagValue> tag : tags) {
+            b.addTags(tag.toTag());
+        }
+        elemValBuilder.addTagFamilies(b);
+        builder.setElement(elemValBuilder);
         return builder.build();
     }
 }

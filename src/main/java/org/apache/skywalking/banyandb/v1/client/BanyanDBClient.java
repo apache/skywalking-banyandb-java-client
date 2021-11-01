@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.skywalking.banyandb.v1.trace.BanyandbTrace;
-import org.apache.skywalking.banyandb.v1.trace.TraceServiceGrpc;
+import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 
 /**
  * BanyanDBClient represents a client instance interacting with BanyanDB server. This is built on the top of BanyanDB v1
@@ -62,11 +62,11 @@ public class BanyanDBClient implements Closeable {
     /**
      * gRPC client stub
      */
-    private volatile TraceServiceGrpc.TraceServiceStub traceServiceStub;
+    private volatile StreamServiceGrpc.StreamServiceStub streamServiceStub;
     /**
      * gRPC blocking stub.
      */
-    private volatile TraceServiceGrpc.TraceServiceBlockingStub traceServiceBlockingStub;
+    private volatile StreamServiceGrpc.StreamServiceBlockingStub streamServiceBlockingStub;
     /**
      * The connection status.
      */
@@ -121,8 +121,8 @@ public class BanyanDBClient implements Closeable {
                 nettyChannelBuilder.maxInboundMessageSize(options.getMaxInboundMessageSize());
 
                 managedChannel = nettyChannelBuilder.build();
-                traceServiceStub = TraceServiceGrpc.newStub(managedChannel);
-                traceServiceBlockingStub = TraceServiceGrpc.newBlockingStub(
+                streamServiceStub = StreamServiceGrpc.newStub(managedChannel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
                         managedChannel);
                 isConnected = true;
             }
@@ -142,8 +142,8 @@ public class BanyanDBClient implements Closeable {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
-                traceServiceStub = TraceServiceGrpc.newStub(channel);
-                traceServiceBlockingStub = TraceServiceGrpc.newBlockingStub(
+                streamServiceStub = StreamServiceGrpc.newStub(channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
                         channel);
                 isConnected = true;
             }
@@ -153,29 +153,29 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Create a build process for trace write.
+     * Create a build process for stream write.
      *
      * @param maxBulkSize   the max bulk size for the flush operation
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second
      * @param concurrency   the number of concurrency would run for the flush max
-     * @return trace bulk write processor
+     * @return stream bulk write processor
      */
-    public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
-        return new TraceBulkWriteProcessor(group, traceServiceStub, maxBulkSize, flushInterval, concurrency);
+    public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
+        return new StreamBulkWriteProcessor(group, streamServiceStub, maxBulkSize, flushInterval, concurrency);
     }
 
     /**
-     * Query trace according to given conditions
+     * Query streams according to given conditions
      *
-     * @param traceQuery condition for query
-     * @return hint traces.
+     * @param streamQuery condition for query
+     * @return hint streams.
      */
-    public TraceQueryResponse queryTraces(TraceQuery traceQuery) {
-        final BanyandbTrace.QueryResponse response = traceServiceBlockingStub
+    public StreamQueryResponse queryStreams(StreamQuery streamQuery) {
+        final BanyandbStream.QueryResponse response = streamServiceBlockingStub
                 .withDeadlineAfter(options.getDeadline(), TimeUnit.SECONDS)
-                .query(traceQuery.build(group));
-        return new TraceQueryResponse(response);
+                .query(streamQuery.build(group));
+        return new StreamQueryResponse(response);
     }
 
     @Override
