@@ -55,7 +55,7 @@ StreamQueryResponse resp = client.queryStreams(query);
 List<RowEntity> entities = resp.getElements();
 ```
 
-where `RowEntity` is similar to the `java.sql.ResultSet` but not iterable.
+where `RowEntity` contains `elementId`, `timestamp` and tag families requested.
 
 The `StreamQueryResponse`, `RowEntity`, `TagFamily` and `Tag` (i.e. `TagAndValue`) forms a hierarchical structure, where
 the order of the tag families and containing tags, i.e. indexes of these objects in the List, follow the order specified 
@@ -70,6 +70,9 @@ Adjust `maxBulkSize`, `flushInterval` and `concurrency` of the consumer in diffe
 // build a StreamBulkWriteProcessor from client
 StreamBulkWriteProcessor streamBulkWriteProcessor = client.buildStreamWriteProcessor(maxBulkSize, flushInterval, concurrency);
 ```
+
+The `StreamBulkWriteProcessor` is thread-safe and thus can be used across threads.
+We highly recommend you to reuse it.
 
 The procedure of constructing `StreamWrite` entity must comply with the schema of the stream, e.g.
 the order of tags must exactly be the same with that defined in the schema.
