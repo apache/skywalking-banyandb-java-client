@@ -58,7 +58,7 @@ List<RowEntity> entities = resp.getElements();
 where `RowEntity` is similar to the `java.sql.ResultSet` but not iterable.
 
 The `StreamQueryResponse`, `RowEntity`, `TagFamily` and `Tag` (i.e. `TagAndValue`) forms a hierarchical structure, where
-the order of the tag families and containing tags, i.e. index of these objects in the List, follows the order specified 
+the order of the tag families and containing tags, i.e. indexes of these objects in the List, follow the order specified 
 in the projection condition we've used in the request.
 
 ## Write
