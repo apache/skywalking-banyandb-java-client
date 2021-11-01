@@ -95,12 +95,6 @@ message WriteRequest {
 
 message WriteResponse {}
 
-message InternalWriteRequest {
-  uint32 shard_id = 1;
-  bytes series_hash = 2;
-  WriteRequest request = 3;
-}
-
 service StreamService {
   rpc Query(banyandb.stream.v1.QueryRequest) returns (banyandb.stream.v1.QueryResponse);
   rpc Write(stream banyandb.stream.v1.WriteRequest) returns (stream banyandb.stream.v1.WriteResponse);
