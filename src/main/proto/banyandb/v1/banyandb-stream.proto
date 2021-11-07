@@ -22,7 +22,6 @@ option java_package = "org.apache.skywalking.banyandb.v1.stream";
 package banyandb.stream.v1;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/struct.proto";
 import "banyandb/v1/banyandb.proto";
 
 // Element represents

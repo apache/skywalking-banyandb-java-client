@@ -18,6 +18,8 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.NameResolverRegistry;
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 
@@ -138,7 +141,8 @@ public class BanyanDBClient implements Closeable {
      * @param channel the channel used for communication.
      *                For tests, it is normally an in-process channel.
      */
-    void connect(ManagedChannel channel) {
+    @VisibleForTesting
+    public void connect(ManagedChannel channel) {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
@@ -176,6 +180,20 @@ public class BanyanDBClient implements Closeable {
                 .withDeadlineAfter(options.getDeadline(), TimeUnit.SECONDS)
                 .query(streamQuery.build(group));
         return new StreamQueryResponse(response);
+    }
+
+    /**
+     * Create a metadata client for stream schema operation.
+     *
+     * @return stream metadata client
+     */
+    public StreamMetadataRegistry streamRegistry() {
+        return new StreamMetadataRegistry(this.group, this.managedChannel);
+    }
+
+    @VisibleForTesting
+    public StreamMetadataRegistry streamRegistry(Channel channel) {
+        return new StreamMetadataRegistry(this.group, channel);
     }
 
     @Override
