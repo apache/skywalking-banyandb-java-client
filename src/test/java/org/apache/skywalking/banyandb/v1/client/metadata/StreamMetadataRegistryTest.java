@@ -128,7 +128,7 @@ public class StreamMetadataRegistryTest {
 
         client.connect(channel);
 
-        this.client = client.streamRegistry(channel);
+        this.client = client.streamRegistry();
     }
 
     @Test

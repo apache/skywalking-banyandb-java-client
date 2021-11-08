@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
@@ -59,9 +61,9 @@ public class BanyanDBClient implements Closeable {
      */
     private Options options;
     /**
-     * Managed gRPC connection.
+     * gRPC connection.
      */
-    private volatile ManagedChannel managedChannel;
+    private volatile Channel channel;
     /**
      * gRPC client stub
      */
@@ -123,10 +125,9 @@ public class BanyanDBClient implements Closeable {
                 final ManagedChannelBuilder<?> nettyChannelBuilder = NettyChannelBuilder.forAddress(host, port).usePlaintext();
                 nettyChannelBuilder.maxInboundMessageSize(options.getMaxInboundMessageSize());
 
-                managedChannel = nettyChannelBuilder.build();
-                streamServiceStub = StreamServiceGrpc.newStub(managedChannel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
-                        managedChannel);
+                channel = nettyChannelBuilder.build();
+                streamServiceStub = StreamServiceGrpc.newStub(channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -142,13 +143,13 @@ public class BanyanDBClient implements Closeable {
      *                For tests, it is normally an in-process channel.
      */
     @VisibleForTesting
-    public void connect(ManagedChannel channel) {
+    public void connect(Channel channel) {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
+                this.channel = channel;
                 streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
-                        channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -188,25 +189,36 @@ public class BanyanDBClient implements Closeable {
      * @return stream metadata client
      */
     public StreamMetadataRegistry streamRegistry() {
-        return new StreamMetadataRegistry(this.group, this.managedChannel);
+        Preconditions.checkState(this.channel != null, "channel is null");
+        return new StreamMetadataRegistry(this.group, this.channel);
     }
 
-    @VisibleForTesting
-    public StreamMetadataRegistry streamRegistry(Channel channel) {
-        return new StreamMetadataRegistry(this.group, channel);
+    /**
+     * Create a metadata client for indexRuleBinding schema operation.
+     *
+     * @return indexRuleBinding metadata client
+     */
+    public IndexRuleBindingMetadataRegistry indexRuleBindingRegistry() {
+        Preconditions.checkState(this.channel != null, "channel is null");
+        return new IndexRuleBindingMetadataRegistry(this.group, this.channel);
     }
 
     @Override
     public void close() throws IOException {
         connectionEstablishLock.lock();
+        if (!(this.channel instanceof ManagedChannel)) {
+            return;
+        }
+        final ManagedChannel managedChannel = (ManagedChannel) this.channel;
         try {
             if (isConnected) {
-                this.managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+                managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
                 isConnected = false;
             }
         } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
             log.warn("fail to wait for channel termination, shutdown now!", interruptedException);
-            this.managedChannel.shutdownNow();
+            managedChannel.shutdownNow();
             isConnected = false;
         } finally {
             connectionEstablishLock.unlock();

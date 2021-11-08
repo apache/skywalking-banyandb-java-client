@@ -57,7 +57,7 @@ public class Stream implements Schema<BanyandbMetadata.Stream> {
     /**
      * duration determines how long a Stream keeps its data
      */
-    private final Duration duration;
+    private Duration duration;
 
     /**
      * last updatedAt timestamp
