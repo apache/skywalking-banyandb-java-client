@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -28,6 +27,7 @@ import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
 import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +37,7 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,38 +54,32 @@ public class IndexRuleMetadataRegistryTest {
     private IndexRuleMetadataRegistry client;
 
     // play as an in-memory registry
-    private Map<String, BanyandbMetadata.IndexRule> IndexRuleRegistry;
+    private Map<String, BanyandbMetadata.IndexRule> indexRuleRegistry;
 
     private final IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase serviceImpl =
             mock(IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase.class, delegatesTo(
                     new IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase() {
                         @Override
                         public void create(BanyandbMetadata.IndexRuleRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceCreateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
-                            IndexRuleRegistry.put(s.getMetadata().getName(), s);
+                            indexRuleRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceCreateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
                         public void update(BanyandbMetadata.IndexRuleRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceUpdateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
-                            IndexRuleRegistry.put(s.getMetadata().getName(), s);
+                            indexRuleRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceUpdateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
                         public void delete(BanyandbMetadata.IndexRuleRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.IndexRule oldIndexRule = IndexRuleRegistry.remove(request.getMetadata().getName());
+                            BanyandbMetadata.IndexRule oldIndexRule = indexRuleRegistry.remove(request.getMetadata().getName());
                             responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceDeleteResponse.newBuilder()
                                     .setDeleted(oldIndexRule != null)
                                     .build());
@@ -95,7 +89,7 @@ public class IndexRuleMetadataRegistryTest {
                         @Override
                         public void get(BanyandbMetadata.IndexRuleRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceGetResponse> responseObserver) {
                             responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceGetResponse.newBuilder()
-                                    .setIndexRule(IndexRuleRegistry.get(request.getMetadata().getName()))
+                                    .setIndexRule(indexRuleRegistry.get(request.getMetadata().getName()))
                                     .build());
                             responseObserver.onCompleted();
                         }
@@ -103,7 +97,7 @@ public class IndexRuleMetadataRegistryTest {
                         @Override
                         public void list(BanyandbMetadata.IndexRuleRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceListResponse> responseObserver) {
                             responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceListResponse.newBuilder()
-                                    .addAllIndexRule(IndexRuleRegistry.values())
+                                    .addAllIndexRule(indexRuleRegistry.values())
                                     .build());
                             responseObserver.onCompleted();
                         }
@@ -111,7 +105,7 @@ public class IndexRuleMetadataRegistryTest {
 
     @Before
     public void setUp() throws IOException {
-        IndexRuleRegistry = new HashMap<>();
+        indexRuleRegistry = new HashMap<>();
 
         // Generate a unique in-process server name.
         String serverName = InProcessServerBuilder.generateName();
@@ -136,7 +130,7 @@ public class IndexRuleMetadataRegistryTest {
         IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         indexRule.addTag("db.instance");
         this.client.create(indexRule);
-        Assert.assertEquals(IndexRuleRegistry.size(), 1);
+        Assert.assertEquals(indexRuleRegistry.size(), 1);
     }
 
     @Test
@@ -168,6 +162,6 @@ public class IndexRuleMetadataRegistryTest {
         this.client.create(indexRule);
         boolean deleted = this.client.delete("db.instance");
         Assert.assertTrue(deleted);
-        Assert.assertEquals(0, IndexRuleRegistry.size());
+        Assert.assertEquals(0, indexRuleRegistry.size());
     }
 }

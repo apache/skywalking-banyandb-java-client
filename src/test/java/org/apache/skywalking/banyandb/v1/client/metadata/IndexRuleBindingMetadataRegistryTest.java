@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -28,6 +27,7 @@ import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
 import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleBindingRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +37,6 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -62,10 +61,8 @@ public class IndexRuleBindingMetadataRegistryTest {
                     new IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceImplBase() {
                         @Override
                         public void create(BanyandbMetadata.IndexRuleBindingRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceCreateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleBindingRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceCreateResponse.newBuilder().build());
@@ -74,10 +71,8 @@ public class IndexRuleBindingMetadataRegistryTest {
 
                         @Override
                         public void update(BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleBindingRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateResponse.newBuilder().build());

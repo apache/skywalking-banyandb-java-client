@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -28,6 +27,7 @@ import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
 import org.apache.skywalking.banyandb.database.v1.metadata.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +37,7 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,10 +61,8 @@ public class StreamMetadataRegistryTest {
                     new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
                         @Override
                         public void create(BanyandbMetadata.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceCreateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceCreateResponse.newBuilder().build());
@@ -73,10 +71,8 @@ public class StreamMetadataRegistryTest {
 
                         @Override
                         public void update(BanyandbMetadata.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            long now = Instant.now().toEpochMilli();
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder().setUpdatedAt(Timestamp.newBuilder()
-                                            .setSeconds(now / 1000)
-                                            .setNanos((int) (now % 1000 * 1_000_000)))
+                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceUpdateResponse.newBuilder().build());
