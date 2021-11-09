@@ -19,12 +19,40 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.protobuf.GeneratedMessageV3;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import org.apache.skywalking.banyandb.v1.Banyandb;
+
+import java.time.ZonedDateTime;
 
 /**
  * Schema is a kind of metadata registered in the BanyanDB.
  *
  * @param <P> In BanyanDB, we have Stream, IndexRule, IndexRuleBinding and Measure
  */
-public interface Schema<P extends GeneratedMessageV3> {
-    P serialize(String group);
+@Getter
+@EqualsAndHashCode
+public abstract class Schema<P extends GeneratedMessageV3> {
+    /**
+     * name of the Schema
+     */
+    protected final String name;
+
+    /**
+     * last updated timestamp
+     * This field can only be set by the server.
+     */
+    @EqualsAndHashCode.Exclude
+    protected final ZonedDateTime updatedAt;
+
+    protected Schema(String name, ZonedDateTime updatedAt) {
+        this.name = name;
+        this.updatedAt = updatedAt;
+    }
+
+    public abstract P serialize(String group);
+
+    protected Banyandb.Metadata buildMetadata(String group) {
+        return Banyandb.Metadata.newBuilder().setName(this.name).setGroup(group).build();
+    }
 }

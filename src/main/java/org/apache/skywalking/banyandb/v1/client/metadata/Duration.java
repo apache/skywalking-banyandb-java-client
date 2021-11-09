@@ -34,20 +34,44 @@ public class Duration implements Serializable<BanyandbMetadata.Duration> {
         this.unit = unit;
     }
 
-    public static Duration ofHours(int val) {
-        return new Duration(val, Unit.HOUR);
+    /**
+     * Create duration with hours
+     *
+     * @param hours the number of hours
+     * @return Duration in the unit of hour
+     */
+    public static Duration ofHours(int hours) {
+        return new Duration(hours, Unit.HOUR);
     }
 
-    public static Duration ofDays(int val) {
-        return new Duration(val, Unit.DAY);
+    /**
+     * Create duration with days
+     *
+     * @param days the number of days
+     * @return Duration in the unit of day
+     */
+    public static Duration ofDays(int days) {
+        return new Duration(days, Unit.DAY);
     }
 
-    public static Duration ofWeeks(int val) {
-        return new Duration(val, Unit.WEEK);
+    /**
+     * Create duration with weeks
+     *
+     * @param weeks the number of weeks
+     * @return Duration in the unit of week
+     */
+    public static Duration ofWeeks(int weeks) {
+        return new Duration(weeks, Unit.WEEK);
     }
 
-    public static Duration ofMonths(int val) {
-        return new Duration(val, Unit.MONTH);
+    /**
+     * Create duration with months
+     *
+     * @param months the number of months
+     * @return Duration in the unit of month
+     */
+    public static Duration ofMonths(int months) {
+        return new Duration(months, Unit.MONTH);
     }
 
     @Override

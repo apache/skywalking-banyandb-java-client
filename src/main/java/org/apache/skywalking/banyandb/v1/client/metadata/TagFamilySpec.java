@@ -32,8 +32,14 @@ import java.util.List;
 @Getter
 @EqualsAndHashCode
 public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpec> {
+    /**
+     * name of the tag family
+     */
     private final String tagFamilyName;
 
+    /**
+     * TagSpec(s) contained in this family
+     */
     private final List<TagSpec> tagSpecs;
 
     public TagFamilySpec(String tagFamilyName) {
@@ -46,6 +52,11 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
         this.tagSpecs = specs;
     }
 
+    /**
+     * Add a tag spec to this family
+     *
+     * @param tagSpec the tag spec to be appended
+     */
     public TagFamilySpec addTagSpec(TagSpec tagSpec) {
         this.tagSpecs.add(tagSpec);
         return this;
@@ -65,7 +76,13 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
     @Getter
     @EqualsAndHashCode
     public static class TagSpec implements Serializable<BanyandbMetadata.TagSpec> {
+        /**
+         * name of the tag
+         */
         private final String tagName;
+        /**
+         * type of the tag
+         */
         private final TagType tagType;
 
         private TagSpec(String tagName, TagType tagType) {
@@ -74,22 +91,52 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
             this.tagType = tagType;
         }
 
+        /**
+         * create an int tag spec
+         *
+         * @param name the name of the tag
+         * @return an int tag spec
+         */
         public static TagSpec newIntTag(final String name) {
             return new TagSpec(name, TagType.INT);
         }
 
+        /**
+         * create a string tag spec
+         *
+         * @param name the name of the tag
+         * @return a string tag spec
+         */
         public static TagSpec newStringTag(final String name) {
             return new TagSpec(name, TagType.STRING);
         }
 
+        /**
+         * create an int array tag spec
+         *
+         * @param name the name of the tag
+         * @return an int array tag spec
+         */
         public static TagSpec newIntArrayTag(final String name) {
             return new TagSpec(name, TagType.INT_ARRAY);
         }
 
+        /**
+         * create a string array tag spec
+         *
+         * @param name the name of the tag
+         * @return a string array tag spec
+         */
         public static TagSpec newStringArrayTag(final String name) {
             return new TagSpec(name, TagType.STRING_ARRAY);
         }
 
+        /**
+         * create a binary tag spec
+         *
+         * @param name the name of the tag
+         * @return a binary array tag spec
+         */
         public static TagSpec newBinaryTag(final String name) {
             return new TagSpec(name, TagType.BINARY);
         }

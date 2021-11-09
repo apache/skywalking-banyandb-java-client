@@ -16,17 +16,26 @@
  *
  */
 
-package org.apache.skywalking.banyandb.v1.client.metadata;
+package org.apache.skywalking.banyandb.v1.client.util;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import com.google.protobuf.Timestamp;
 
-@RequiredArgsConstructor
-public enum Catalog {
-    STREAM(Banyandb.Catalog.CATALOG_STREAM), MEASURE(Banyandb.Catalog.CATALOG_MEASURE);
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
-    @Getter(AccessLevel.PACKAGE)
-    private final Banyandb.Catalog catalog;
+public class TimeUtils {
+    public static ZonedDateTime parseTimestamp(Timestamp ts) {
+        return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos()).atZone(ZoneId.systemDefault());
+    }
+
+    public static Timestamp buildTimestamp(ZonedDateTime zdt) {
+        if (zdt == null) {
+            return null;
+        }
+        return Timestamp.newBuilder()
+                .setSeconds(zdt.toInstant().getEpochSecond())
+                .setNanos(zdt.toInstant().getNano())
+                .build();
+    }
 }

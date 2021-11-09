@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
@@ -201,6 +202,16 @@ public class BanyanDBClient implements Closeable {
     public IndexRuleBindingMetadataRegistry indexRuleBindingRegistry() {
         Preconditions.checkState(this.channel != null, "channel is null");
         return new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+    }
+
+    /**
+     * Create a metadata client for indexRule schema operation.
+     *
+     * @return indexRule metadata client
+     */
+    public IndexRuleMetadataRegistry indexRuleRegistry() {
+        Preconditions.checkState(this.channel != null, "channel is null");
+        return new IndexRuleMetadataRegistry(this.group, this.channel);
     }
 
     @Override

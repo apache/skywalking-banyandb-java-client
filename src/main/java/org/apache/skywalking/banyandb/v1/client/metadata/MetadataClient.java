@@ -38,13 +38,40 @@ public abstract class MetadataClient<P extends GeneratedMessageV3, S extends Sch
         this.group = group;
     }
 
+    /**
+     * Create a schema
+     *
+     * @param payload the schema to be created
+     */
     abstract void create(S payload);
 
+    /**
+     * Update the schema
+     *
+     * @param payload the schema which will be updated with the given name and group
+     */
     abstract void update(S payload);
 
+    /**
+     * Delete a schema
+     *
+     * @param name the name of the schema to be removed
+     * @return whether this schema is deleted
+     */
     abstract boolean delete(String name);
 
+    /**
+     * Get a schema with name
+     *
+     * @param name the name of the schema to be found
+     * @return the schema, null if not found
+     */
     abstract S get(String name);
 
+    /**
+     * List all schemas with the same group name
+     *
+     * @return a list of schemas found
+     */
     abstract List<S> list();
 }
