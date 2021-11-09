@@ -19,9 +19,80 @@ Create a `BanyanDBClient` with host, port and a user-specified group and then es
 ```java
 // use `default` group
 client = new BanyanDBClient("127.0.0.1", 17912, "default");
-// establish a connection
+// to send any request, a connection to the server must be estabilished
 client.connect(channel);
 ```
+
+## Schema Management
+
+### Group
+
+To save and fetch data, group and schema must be defined first,
+
+```java
+GroupRegistry groupRegistry = client.groupRegistry();
+// create a group called "default"
+groupRegistry.create("default");
+// list group
+List<String> groups = groupRegistry.list();
+// check existence
+boolean existence = groupRegistry.exist("default");
+```
+
+### Stream
+
+Then we may define a stream with customized configurations,
+
+```java
+StreamMetadataRegistry streamRegistry = client.streamRegistry();
+// build a stream "sw" with 2 shards and ttl equals to 30 days
+Stream s = new Stream("sw", 2, Duration.ofDays(30));
+s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
+// TagFamily - data
+TagFamilySpec dataFamily = new TagFamilySpec("data");
+dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
+s.addTagFamilySpec(dataFamily);
+// TagFamily - searchable
+TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
+searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
+s.addTagFamilySpec(searchableFamily);
+// create with the stream schema
+streamRegistry.create(s);
+```
+
+with `StreamMetadataRegistry`, CRUD operations are supported for `Stream`, `IndexRuleBinding` and `IndexRule`.
+
+### IndexRuleBinding/IndexRule
+
+For better search performance, index rules are necessary for `Stream` while `IndexRuleBinding` helps 
+bind the `IndexRule` to the `Stream`,
+
+```java
+IndexRuleMetadataRegistry indexRuleRegistry = client.indexRuleRegistry();
+// create IndexRule with inverted index type and save it to series store
+IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+// tag name specifies the indexed tag
+indexRule.addTag("db.instance");
+// create the index rule "db.instance"
+this.client.create(indexRule);
+```
+
+and then create an `IndexRuleBinding` to bind it/them to the Stream,
+
+```java
+IndexRuleBindingMetadataRegistry indexRuleBindingRegistry = client.indexRuleBindingRegistry();
+// define the rule binding "sw-index-rule-binding" and bind it with Stream "sw"
+IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
+indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
+indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
+indexRuleBinding.addRule("db.instance");
+// create the index rule binding
+this.client.create(indexRuleBinding);
+```
+
+For more APIs usage, refer to test cases and API docs.
 
 ## Query
 
