@@ -25,20 +25,6 @@ client.connect(channel);
 
 ## Schema Management
 
-### Group
-
-To save and fetch data, group and schema must be defined first,
-
-```java
-GroupRegistry groupRegistry = client.groupRegistry();
-// create a group called "default"
-groupRegistry.create("default");
-// list group
-List<String> groups = groupRegistry.list();
-// check existence
-boolean existence = groupRegistry.exist("default");
-```
-
 ### Stream
 
 Then we may define a stream with customized configurations,
