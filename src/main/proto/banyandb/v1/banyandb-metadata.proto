@@ -24,6 +24,13 @@ package banyandb.metadata.v1;
 import "google/protobuf/timestamp.proto";
 import "banyandb/v1/banyandb.proto";
 
+message ResourceOpts {
+  // shard_num is the number of shards
+  uint32 shard_num = 1;
+  // ttl indicates time to live, how long the data will be cached
+  Duration ttl = 2;
+}
+
 // Duration represents the elapsed time between two instants
 message Duration {
   uint32 val = 1;
@@ -38,7 +45,7 @@ message Duration {
 }
 
 enum TagType {
-  TAG_TYPE_UNSPECIFIED=0;
+  TAG_TYPE_UNSPECIFIED = 0;
   TAG_TYPE_STRING = 1;
   TAG_TYPE_INT = 2;
   TAG_TYPE_STRING_ARRAY = 3;
@@ -65,11 +72,9 @@ message Stream {
   repeated TagFamilySpec tag_families = 2;
   // entity indicates how to generate a series and shard a stream
   Entity entity = 3;
-  uint32 shard_num = 4;
-  // duration determines how long a TraceSeries keeps its data
-  Duration duration = 5;
+  ResourceOpts opts = 4;
   // updated_at_nanoseconds indicates when the TraceSeries is updated
-  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp updated_at_nanoseconds = 5;
 }
 
 message Entity {
@@ -105,6 +110,19 @@ message FieldSpec {
   CompressionMethod compression_method = 4;
 }
 
+// IntervalRule indicates how to get the interval of a measure series.
+message IntervalRule {
+  // tag_name is for matching a tag
+  string tag_name = 1;
+  // tag_value is used by a equality matcher to match a tag
+  oneof tag_value {
+    string str = 2;
+    int64 int = 3;
+  }
+  // interval indicates how frequently to send a data point
+  string interval = 4;
+}
+
 // Measure intends to store data point
 message Measure {
   // metadata is the identity of a measure
@@ -115,10 +133,10 @@ message Measure {
   repeated FieldSpec fields = 3;
   // entity indicates which tags will be to generate a series and shard a measure
   Entity entity = 4;
-  // shard_num is the number of shards
-  uint32 shard_num = 5;
-  // ttl indicates time to live, how long the data will be cached
-  Duration ttl = 6;
+  // interval_rules define data points writing interval
+  repeated IntervalRule interval_rules = 5;
+  // opts is basic resource management options
+  ResourceOpts opts = 6;
   // updated_at_nanoseconds indicates when the measure is updated
   google.protobuf.Timestamp updated_at_nanoseconds = 7;
 }

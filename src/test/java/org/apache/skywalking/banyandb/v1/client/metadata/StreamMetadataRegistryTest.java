@@ -62,7 +62,7 @@ public class StreamMetadataRegistryTest {
                         @Override
                         public void create(BanyandbMetadata.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceCreateResponse> responseObserver) {
                             BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceCreateResponse.newBuilder().build());
@@ -72,7 +72,7 @@ public class StreamMetadataRegistryTest {
                         @Override
                         public void update(BanyandbMetadata.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceUpdateResponse> responseObserver) {
                             BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
                             responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceUpdateResponse.newBuilder().build());

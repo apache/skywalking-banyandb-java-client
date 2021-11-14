@@ -95,18 +95,17 @@ public class Stream extends Schema<BanyandbMetadata.Stream> {
                 .setMetadata(buildMetadata(group))
                 .addAllTagFamilies(metadataTagFamilySpecs)
                 .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
-                .setShardNum(this.shardNum)
-                .setDuration(this.duration.serialize());
+                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.duration.serialize()));
 
         if (this.updatedAt != null) {
-            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
+            b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));
         }
         return b.build();
     }
 
     public static Stream fromProtobuf(final BanyandbMetadata.Stream stream) {
-        Stream s = new Stream(stream.getMetadata().getName(), stream.getShardNum(),
-                Duration.fromProtobuf(stream.getDuration()), TimeUtils.parseTimestamp(stream.getUpdatedAt()));
+        Stream s = new Stream(stream.getMetadata().getName(), stream.getOpts().getShardNum(),
+                Duration.fromProtobuf(stream.getOpts().getTtl()), TimeUtils.parseTimestamp(stream.getUpdatedAtNanoseconds()));
         // prepare entity
         for (int i = 0; i < stream.getEntity().getTagNamesCount(); i++) {
             s.addTagNameAsEntity(stream.getEntity().getTagNames(i));
