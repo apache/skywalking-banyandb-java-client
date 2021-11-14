@@ -31,7 +31,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class Stream extends Schema<BanyandbMetadata.Stream> {
+public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
     /**
      * specs of tag families
      */
@@ -50,18 +50,18 @@ public class Stream extends Schema<BanyandbMetadata.Stream> {
     /**
      * duration determines how long a Stream keeps its data
      */
-    private Duration duration;
+    private Duration ttl;
 
-    public Stream(String name, int shardNum, Duration duration) {
-        this(name, shardNum, duration, null);
+    public Stream(String name, int shardNum, Duration ttl) {
+        this(name, shardNum, ttl, null);
     }
 
-    private Stream(String name, int shardNum, Duration duration, ZonedDateTime updatedAt) {
+    private Stream(String name, int shardNum, Duration ttl, ZonedDateTime updatedAt) {
         super(name, updatedAt);
         this.tagFamilySpecs = new ArrayList<>(2);
         this.entityTagNames = new ArrayList<>();
         this.shardNum = shardNum;
-        this.duration = duration;
+        this.ttl = ttl;
     }
 
     /**
@@ -95,7 +95,7 @@ public class Stream extends Schema<BanyandbMetadata.Stream> {
                 .setMetadata(buildMetadata(group))
                 .addAllTagFamilies(metadataTagFamilySpecs)
                 .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
-                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.duration.serialize()));
+                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
 
         if (this.updatedAt != null) {
             b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));

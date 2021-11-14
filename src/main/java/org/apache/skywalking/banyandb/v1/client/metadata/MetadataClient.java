@@ -28,9 +28,9 @@ import java.util.List;
  * abstract metadata client which defines CRUD operations for a specific kind of schema.
  *
  * @param <P> ProtoBuf: schema defined in ProtoBuf format
- * @param <S> Schema: Java implementation (POJO) which can be serialized to P
+ * @param <S> NamedSchema: Java implementation (POJO) which can be serialized to P
  */
-public abstract class MetadataClient<P extends GeneratedMessageV3, S extends Schema<P>> {
+public abstract class MetadataClient<P extends GeneratedMessageV3, S extends NamedSchema<P>> {
     protected final String group;
 
     protected MetadataClient(String group) {

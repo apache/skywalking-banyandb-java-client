@@ -32,7 +32,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class IndexRule extends Schema<BanyandbMetadata.IndexRule> {
+public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
     /**
      * tags are the combination that refers to an indexed object
      * If the elements in tags are more than 1, the object will generate a multi-tag index

@@ -26,15 +26,15 @@ import org.apache.skywalking.banyandb.v1.Banyandb;
 import java.time.ZonedDateTime;
 
 /**
- * Schema is a kind of metadata registered in the BanyanDB.
+ * NamedSchema is a kind of metadata registered in the BanyanDB.
  *
  * @param <P> In BanyanDB, we have Stream, IndexRule, IndexRuleBinding and Measure
  */
 @Getter
 @EqualsAndHashCode
-public abstract class Schema<P extends GeneratedMessageV3> {
+public abstract class NamedSchema<P extends GeneratedMessageV3> {
     /**
-     * name of the Schema
+     * name of the NamedSchema
      */
     protected final String name;
 
@@ -45,7 +45,7 @@ public abstract class Schema<P extends GeneratedMessageV3> {
     @EqualsAndHashCode.Exclude
     protected final ZonedDateTime updatedAt;
 
-    protected Schema(String name, ZonedDateTime updatedAt) {
+    protected NamedSchema(String name, ZonedDateTime updatedAt) {
         this.name = name;
         this.updatedAt = updatedAt;
     }

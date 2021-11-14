@@ -32,7 +32,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class IndexRuleBinding extends Schema<BanyandbMetadata.IndexRuleBinding> {
+public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBinding> {
     /**
      * rule names refer to the IndexRule
      */
