@@ -78,6 +78,33 @@ indexRuleBinding.addRule("db.instance");
 this.client.create(indexRuleBinding);
 ```
 
+### Measure
+
+`Measure` can also be created with `MeasureMetadataRegistry`,
+
+```java
+// create a measure registry
+MeasureMetadataRegistry measureRegistry = client.measureRegistry();
+// create a new measure schema with 2 shards and ttl 30 days.
+Measure m = new Measure("measure-example", 2, Duration.ofDays(30));
+// set entity
+m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
+// add tag family: "searchable"
+TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
+searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+    .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+    .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
+m.addTagFamilySpec(searchableFamily);
+// set interval rules
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("interval", "day", "1d"));
+m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"));
+// add field spec
+// compressMethod and encodingMethod can be specified
+m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
+// send create request
+measureRegistry.create(m);
+```
+
 For more APIs usage, refer to test cases and API docs.
 
 ## Query
