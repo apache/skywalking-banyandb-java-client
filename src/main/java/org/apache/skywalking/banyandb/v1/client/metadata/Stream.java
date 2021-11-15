@@ -103,16 +103,16 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
         return b.build();
     }
 
-    public static Stream fromProtobuf(final BanyandbMetadata.Stream stream) {
-        Stream s = new Stream(stream.getMetadata().getName(), stream.getOpts().getShardNum(),
-                Duration.fromProtobuf(stream.getOpts().getTtl()), TimeUtils.parseTimestamp(stream.getUpdatedAtNanoseconds()));
+    public static Stream fromProtobuf(final BanyandbMetadata.Stream pb) {
+        Stream s = new Stream(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
+                Duration.fromProtobuf(pb.getOpts().getTtl()), TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
         // prepare entity
-        for (int i = 0; i < stream.getEntity().getTagNamesCount(); i++) {
-            s.addTagNameAsEntity(stream.getEntity().getTagNames(i));
+        for (int i = 0; i < pb.getEntity().getTagNamesCount(); i++) {
+            s.addTagNameAsEntity(pb.getEntity().getTagNames(i));
         }
         // build tag family spec
-        for (int i = 0; i < stream.getTagFamiliesCount(); i++) {
-            final BanyandbMetadata.TagFamilySpec tfs = stream.getTagFamilies(i);
+        for (int i = 0; i < pb.getTagFamiliesCount(); i++) {
+            final BanyandbMetadata.TagFamilySpec tfs = pb.getTagFamilies(i);
             final TagFamilySpec tagFamilySpec = new TagFamilySpec(tfs.getName());
             for (int j = 0; j < tfs.getTagsCount(); j++) {
                 final BanyandbMetadata.TagSpec ts = tfs.getTags(j);

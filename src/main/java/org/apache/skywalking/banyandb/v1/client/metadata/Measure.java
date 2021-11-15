@@ -1,8 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.v1.Banyandb;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -43,6 +63,10 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
      */
     private Duration ttl;
 
+    public Measure(String name, int shardNum, Duration ttl) {
+        this(name, shardNum, ttl, null);
+    }
+
     private Measure(String name, int shardNum, Duration ttl, ZonedDateTime updatedAt) {
         super(name, updatedAt);
         this.tagFamilySpecs = new ArrayList<>();
@@ -76,10 +100,10 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
     /**
      * Add an interval rule to the schema
      *
-     * @param tagFamilySpec an interval rule to match tag name and value
+     * @param intervalRule an interval rule to match tag name and value
      */
-    public Measure addIntervalRule(TagFamilySpec tagFamilySpec) {
-        this.tagFamilySpecs.add(tagFamilySpec);
+    public Measure addIntervalRule(IntervalRule<?> intervalRule) {
+        this.intervalRules.add(intervalRule);
         return this;
     }
 
@@ -91,6 +115,59 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
     public Measure addFieldSpec(FieldSpec fieldSpec) {
         this.fieldSpecs.add(fieldSpec);
         return this;
+    }
+
+    public static Measure fromProtobuf(BanyandbMetadata.Measure pb) {
+        Measure m = new Measure(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
+                Duration.fromProtobuf(pb.getOpts().getTtl()),
+                TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
+
+        // prepare entity
+        for (int i = 0; i < pb.getEntity().getTagNamesCount(); i++) {
+            m.addTagNameAsEntity(pb.getEntity().getTagNames(i));
+        }
+
+        // build tag family spec
+        for (int i = 0; i < pb.getTagFamiliesCount(); i++) {
+            final BanyandbMetadata.TagFamilySpec tfs = pb.getTagFamilies(i);
+            final TagFamilySpec tagFamilySpec = new TagFamilySpec(tfs.getName());
+            for (int j = 0; j < tfs.getTagsCount(); j++) {
+                final BanyandbMetadata.TagSpec ts = tfs.getTags(j);
+                final String tagName = ts.getName();
+                switch (ts.getType()) {
+                    case TAG_TYPE_INT:
+                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntTag(tagName));
+                        break;
+                    case TAG_TYPE_STRING:
+                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringTag(tagName));
+                        break;
+                    case TAG_TYPE_INT_ARRAY:
+                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntArrayTag(tagName));
+                        break;
+                    case TAG_TYPE_STRING_ARRAY:
+                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringArrayTag(tagName));
+                        break;
+                    case TAG_TYPE_DATA_BINARY:
+                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
+                        break;
+                    default:
+                        throw new IllegalStateException("unrecognized tag type");
+                }
+            }
+            m.addTagFamilySpec(tagFamilySpec);
+        }
+
+        // build interval rules
+        for (int i = 0; i < pb.getIntervalRulesCount(); i++) {
+            m.addIntervalRule(IntervalRule.fromProtobuf(pb.getIntervalRules(i)));
+        }
+
+        // build field spec
+        for (int i = 0; i < pb.getFieldsCount(); i++) {
+            m.addFieldSpec(FieldSpec.fromProtobuf(pb.getFields(i)));
+        }
+
+        return m;
     }
 
     @Override
@@ -115,7 +192,8 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
                 .addAllTagFamilies(tfs)
                 .addAllFields(fs)
                 .addAllIntervalRules(irs)
-                .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build());
+                .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
+                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
 
         if (this.updatedAt != null) {
             b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));
@@ -124,7 +202,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         return b.build();
     }
 
-    @Builder
+    @EqualsAndHashCode
     public static class FieldSpec implements Serializable<BanyandbMetadata.FieldSpec> {
         /**
          * name is the identity of a field
@@ -142,6 +220,13 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
          * compressionMethod indicates how to compress data during writing
          */
         private final CompressionMethod compressionMethod;
+
+        private FieldSpec(Builder builder) {
+            this.name = builder.name;
+            this.fieldType = builder.fieldType;
+            this.encodingMethod = builder.encodingMethod;
+            this.compressionMethod = builder.compressionMethod;
+        }
 
         @RequiredArgsConstructor
         public enum FieldType {
@@ -178,6 +263,99 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
                     .setCompressionMethod(this.compressionMethod.compressionMethod)
                     .build();
         }
+
+        private static FieldSpec fromProtobuf(BanyandbMetadata.FieldSpec pb) {
+            Builder b = null;
+            switch (pb.getFieldType()) {
+                case FIELD_TYPE_STRING:
+                    b = newStringField(pb.getName());
+                    break;
+                case FIELD_TYPE_INT:
+                    b = newIntField(pb.getName());
+                    break;
+                case FIELD_TYPE_DATA_BINARY:
+                    b = newBinaryField(pb.getName());
+                    break;
+                default:
+                    throw new IllegalArgumentException("unrecognized field type");
+            }
+
+            switch (pb.getEncodingMethod()) {
+                case ENCODING_METHOD_GORILLA:
+                    b.encodeWithGorilla();
+                    break;
+            }
+
+            switch (pb.getCompressionMethod()) {
+                case COMPRESSION_METHOD_ZSTD:
+                    b.compressWithZSTD();
+                    break;
+            }
+
+            return b.build();
+        }
+
+        /**
+         * Create a builder with string type
+         *
+         * @param name name of the field
+         */
+        public static Builder newStringField(final String name) {
+            return new Builder(name, FieldType.STRING);
+        }
+
+        /**
+         * Create a builder with int type
+         *
+         * @param name name of the field
+         */
+        public static Builder newIntField(final String name) {
+            return new Builder(name, FieldType.INT);
+        }
+
+        /**
+         * Create a builder with binary type
+         *
+         * @param name name of the field
+         */
+        public static Builder newBinaryField(final String name) {
+            return new Builder(name, FieldType.BINARY);
+        }
+
+        public static final class Builder {
+            private final String name;
+            private final FieldType fieldType;
+            private EncodingMethod encodingMethod;
+            private CompressionMethod compressionMethod;
+
+            private Builder(final String name, final FieldType fieldType) {
+                this.name = name;
+                this.fieldType = fieldType;
+                this.encodingMethod = EncodingMethod.UNSPECIFIED;
+                this.compressionMethod = CompressionMethod.UNSPECIFIED;
+            }
+
+            /**
+             * Use Gorilla as encoding algorithm
+             */
+            public Builder encodeWithGorilla() {
+                this.encodingMethod = EncodingMethod.GORILLA;
+                return this;
+            }
+
+            /**
+             * Use ZSTD as compression algorithm
+             */
+            public Builder compressWithZSTD() {
+                this.compressionMethod = CompressionMethod.ZSTD;
+                return this;
+            }
+
+            public FieldSpec build() {
+                // TODO: check validity of type, encoding and compression methods?
+                return new FieldSpec(this);
+            }
+        }
     }
 
     @Getter
@@ -207,9 +385,9 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         /**
          * Create an interval rule to match a tag with string value
          *
-         * @param tagName
+         * @param tagName  name of the tag
          * @param tagValue value of the tag, which must be string
-         * @param interval
+         * @param interval interval of the data point
          * @return an interval rule to match a tag with given string
          */
         public static IntervalRule<String> matchStringLabel(final String tagName, final String tagValue, final String interval) {
@@ -224,9 +402,9 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         /**
          * Create an interval rule to match a tag with string value
          *
-         * @param tagName
+         * @param tagName  name of the tag
          * @param tagValue value of the tag, which must be string
-         * @param interval
+         * @param interval interval of the data point
          * @return an interval rule to match a tag with given string
          */
         public static IntervalRule<Long> matchNumericLabel(final String tagName, final Long tagValue, final String interval) {
@@ -244,6 +422,17 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
                     .setTagName(this.tagName)
                     .setInterval(this.interval))
                     .build();
+        }
+
+        private static IntervalRule<?> fromProtobuf(BanyandbMetadata.IntervalRule pb) {
+            switch (pb.getTagValueCase()) {
+                case STR:
+                    return matchStringLabel(pb.getTagName(), pb.getStr(), pb.getInterval());
+                case INT:
+                    return matchNumericLabel(pb.getTagName(), pb.getInt(), pb.getInterval());
+                default:
+                    throw new IllegalArgumentException("unrecognized tag value type");
+            }
         }
     }
 }
