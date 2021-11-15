@@ -177,7 +177,7 @@ message Subject {
   string name = 2;
 }
 
-// IndexRuleBinding is a bridge to connect severalIndexRules to a subject
+// IndexRuleBinding is a bridge to connect several IndexRules to a subject
 // This binding is valid between begin_at_nanoseconds and expire_at_nanoseconds, that provides flexible strategies
 // to control how to generate time series indices.
 message IndexRuleBinding {

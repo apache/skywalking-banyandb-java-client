@@ -62,7 +62,7 @@ IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED,
 // tag name specifies the indexed tag
 indexRule.addTag("db.instance");
 // create the index rule "db.instance"
-this.client.create(indexRule);
+indexRuleRegistry.create(indexRule);
 ```
 
 and then create an `IndexRuleBinding` to bind it/them to the Stream,
@@ -75,7 +75,7 @@ indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
 indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
 indexRuleBinding.addRule("db.instance");
 // create the index rule binding
-this.client.create(indexRuleBinding);
+indexRuleBindingRegistry.create(indexRuleBinding);
 ```
 
 ### Measure
