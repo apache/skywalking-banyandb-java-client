@@ -29,13 +29,20 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBinding;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
@@ -186,43 +193,81 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Create a metadata client for stream schema operation.
+     * Define a new stream
      *
-     * @return stream metadata client
+     * @param stream the stream to be created
+     * @return a created stream in the BanyanDB
      */
-    public StreamMetadataRegistry streamRegistry() {
+    public Stream define(Stream stream) {
         Preconditions.checkState(this.channel != null, "channel is null");
-        return new StreamMetadataRegistry(this.group, this.channel);
+        StreamMetadataRegistry registry = new StreamMetadataRegistry(this.group, this.channel);
+        registry.create(stream);
+        return registry.get(stream.getName());
     }
 
     /**
-     * Create a metadata client for measure schema operation.
+     * Define a new measure
      *
-     * @return measure metadata client
+     * @param measure the measure to be created
+     * @return a created measure in the BanyanDB
      */
-    public MeasureMetadataRegistry measureRegistry() {
+    public Measure define(Measure measure) {
         Preconditions.checkState(this.channel != null, "channel is null");
-        return new MeasureMetadataRegistry(this.group, this.channel);
+        MeasureMetadataRegistry registry = new MeasureMetadataRegistry(this.group, this.channel);
+        registry.create(measure);
+        return registry.get(measure.getName());
     }
 
     /**
-     * Create a metadata client for indexRuleBinding schema operation.
+     * Bind index rule to the stream
      *
-     * @return indexRuleBinding metadata client
+     * @param stream     the subject of index rule binding
+     * @param beginAt    the start timestamp of this rule binding
+     * @param expireAt   the expiry timestamp of this rule binding
+     * @param indexRules rules to be bounded
      */
-    public IndexRuleBindingMetadataRegistry indexRuleBindingRegistry() {
+    public void defineIndexRules(Stream stream, ZonedDateTime beginAt, ZonedDateTime expireAt, IndexRule... indexRules) {
+        Preconditions.checkArgument(stream != null, "measure cannot be null");
         Preconditions.checkState(this.channel != null, "channel is null");
-        return new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+        IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
+        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
+        for (IndexRule ir : indexRules) {
+            irRegistry.create(ir);
+            indexRuleNames.add(ir.getName());
+        }
+        IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+        IndexRuleBinding binding = new IndexRuleBinding(stream.getName() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream(stream.getName()));
+        binding.setRules(indexRuleNames);
+        binding.setBeginAt(beginAt);
+        binding.setExpireAt(expireAt);
+        irbRegistry.create(binding);
     }
 
     /**
-     * Create a metadata client for indexRule schema operation.
+     * Bind index rule to the measure
      *
-     * @return indexRule metadata client
+     * @param measure    the subject of index rule binding
+     * @param beginAt    the start timestamp of this rule binding
+     * @param expireAt   the expiry timestamp of this rule binding
+     * @param indexRules rules to be bounded
      */
-    public IndexRuleMetadataRegistry indexRuleRegistry() {
+    public void defineIndexRules(Measure measure, ZonedDateTime beginAt, ZonedDateTime expireAt, IndexRule... indexRules) {
+        Preconditions.checkArgument(measure != null, "measure cannot be null");
         Preconditions.checkState(this.channel != null, "channel is null");
-        return new IndexRuleMetadataRegistry(this.group, this.channel);
+        IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
+        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
+        for (IndexRule ir : indexRules) {
+            irRegistry.create(ir);
+            indexRuleNames.add(ir.getName());
+        }
+        IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+        IndexRuleBinding binding = new IndexRuleBinding(measure.getName() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToMeasure(measure.getName()));
+        binding.setRules(indexRuleNames);
+        binding.setBeginAt(beginAt);
+        binding.setExpireAt(expireAt);
+        irbRegistry.create(binding);
     }
 
     @Override

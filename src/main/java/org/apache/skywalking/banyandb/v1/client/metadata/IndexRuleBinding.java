@@ -88,7 +88,7 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
         return b.build();
     }
 
-    public static IndexRuleBinding fromProtobuf(BanyandbMetadata.IndexRuleBinding pb) {
+    static IndexRuleBinding fromProtobuf(BanyandbMetadata.IndexRuleBinding pb) {
         IndexRuleBinding indexRuleBinding = new IndexRuleBinding(pb.getMetadata().getName(), Subject.fromProtobuf(pb.getSubject()), TimeUtils.parseTimestamp(pb.getUpdatedAt()));
         indexRuleBinding.setRules(new ArrayList<>(pb.getRulesList()));
         indexRuleBinding.setBeginAt(TimeUtils.parseTimestamp(pb.getBeginAt()));

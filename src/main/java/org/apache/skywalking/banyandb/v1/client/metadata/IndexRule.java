@@ -85,7 +85,7 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
         return b.build();
     }
 
-    public static IndexRule fromProtobuf(BanyandbMetadata.IndexRule pb) {
+    static IndexRule fromProtobuf(BanyandbMetadata.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
         IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
         IndexRule indexRule = new IndexRule(pb.getMetadata().getName(), indexType, indexLocation,

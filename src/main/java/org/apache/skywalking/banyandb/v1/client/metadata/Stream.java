@@ -103,7 +103,7 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
         return b.build();
     }
 
-    public static Stream fromProtobuf(final BanyandbMetadata.Stream pb) {
+    static Stream fromProtobuf(final BanyandbMetadata.Stream pb) {
         Stream s = new Stream(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
                 Duration.fromProtobuf(pb.getOpts().getTtl()), TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
         // prepare entity
@@ -112,32 +112,7 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
         }
         // build tag family spec
         for (int i = 0; i < pb.getTagFamiliesCount(); i++) {
-            final BanyandbMetadata.TagFamilySpec tfs = pb.getTagFamilies(i);
-            final TagFamilySpec tagFamilySpec = new TagFamilySpec(tfs.getName());
-            for (int j = 0; j < tfs.getTagsCount(); j++) {
-                final BanyandbMetadata.TagSpec ts = tfs.getTags(j);
-                final String tagName = ts.getName();
-                switch (ts.getType()) {
-                    case TAG_TYPE_INT:
-                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntTag(tagName));
-                        break;
-                    case TAG_TYPE_STRING:
-                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringTag(tagName));
-                        break;
-                    case TAG_TYPE_INT_ARRAY:
-                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntArrayTag(tagName));
-                        break;
-                    case TAG_TYPE_STRING_ARRAY:
-                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringArrayTag(tagName));
-                        break;
-                    case TAG_TYPE_DATA_BINARY:
-                        tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
-                        break;
-                    default:
-                        throw new IllegalStateException("unrecognized tag type");
-                }
-            }
-            s.addTagFamilySpec(tagFamilySpec);
+            s.addTagFamilySpec(TagFamilySpec.fromProtobuf(pb.getTagFamilies(i)));
         }
         return s;
     }

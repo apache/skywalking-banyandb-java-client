@@ -26,7 +26,6 @@ import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
 import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -118,11 +117,8 @@ public class IndexRuleMetadataRegistryTest {
         // Create a client channel and register for automatic graceful shutdown.
         ManagedChannel channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
-        BanyanDBClient client = new BanyanDBClient("127.0.0.1", server.getPort(), "default");
 
-        client.connect(channel);
-
-        this.client = client.indexRuleRegistry();
+        this.client = new IndexRuleMetadataRegistry("default", channel);
     }
 
     @Test

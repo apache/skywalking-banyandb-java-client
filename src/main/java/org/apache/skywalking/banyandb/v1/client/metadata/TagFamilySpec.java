@@ -73,6 +73,35 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
                 .build();
     }
 
+    static TagFamilySpec fromProtobuf(BanyandbMetadata.TagFamilySpec pb) {
+        final TagFamilySpec tagFamilySpec = new TagFamilySpec(pb.getName());
+        for (int j = 0; j < pb.getTagsCount(); j++) {
+            final BanyandbMetadata.TagSpec ts = pb.getTags(j);
+            final String tagName = ts.getName();
+            switch (ts.getType()) {
+                case TAG_TYPE_INT:
+                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntTag(tagName));
+                    break;
+                case TAG_TYPE_STRING:
+                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringTag(tagName));
+                    break;
+                case TAG_TYPE_INT_ARRAY:
+                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntArrayTag(tagName));
+                    break;
+                case TAG_TYPE_STRING_ARRAY:
+                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringArrayTag(tagName));
+                    break;
+                case TAG_TYPE_DATA_BINARY:
+                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
+                    break;
+                default:
+                    throw new IllegalStateException("unrecognized tag type");
+            }
+        }
+
+        return tagFamilySpec;
+    }
+
     @Getter
     @EqualsAndHashCode
     public static class TagSpec implements Serializable<BanyandbMetadata.TagSpec> {

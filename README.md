@@ -30,7 +30,6 @@ client.connect(channel);
 Then we may define a stream with customized configurations,
 
 ```java
-StreamMetadataRegistry streamRegistry = client.streamRegistry();
 // build a stream "sw" with 2 shards and ttl equals to 30 days
 Stream s = new Stream("sw", 2, Duration.ofDays(30));
 s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
@@ -44,47 +43,35 @@ searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
 s.addTagFamilySpec(searchableFamily);
-// create with the stream schema
-streamRegistry.create(s);
+// create with the stream schema, client is the BanyanDBClient created above
+s = client.define(s);
 ```
 
-with `StreamMetadataRegistry`, CRUD operations are supported for `Stream`, `IndexRuleBinding` and `IndexRule`.
+where simple APIs (i.e. `BanyanDBClient.define`) are provided to define the schema of `Measure` or `Stream`.
 
-### IndexRuleBinding/IndexRule
+### IndexRules
 
-For better search performance, index rules are necessary for `Stream` while `IndexRuleBinding` helps 
-bind the `IndexRule` to the `Stream`,
+For better search performance, index rules are necessary for `Stream` and `Measure`. You have to
+specify a full list of index rules that would be bounded to the target `Stream` and `Measure`.
 
 ```java
-IndexRuleMetadataRegistry indexRuleRegistry = client.indexRuleRegistry();
 // create IndexRule with inverted index type and save it to series store
 IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
 // tag name specifies the indexed tag
 indexRule.addTag("db.instance");
 // create the index rule "db.instance"
-indexRuleRegistry.create(indexRule);
+client.defineIndexRules(stream, beginAt, expireAt, indexRule);
 ```
 
-and then create an `IndexRuleBinding` to bind it/them to the Stream,
-
-```java
-IndexRuleBindingMetadataRegistry indexRuleBindingRegistry = client.indexRuleBindingRegistry();
-// define the rule binding "sw-index-rule-binding" and bind it with Stream "sw"
-IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
-indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
-indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
-indexRuleBinding.addRule("db.instance");
-// create the index rule binding
-indexRuleBindingRegistry.create(indexRuleBinding);
-```
+where multiple index rules are supported. Internally, an `IndexRuleBinding` is created automatically for users,
+which will be active between `beginAt` and `expireAt`.
 
 ### Measure
 
-`Measure` can also be created with `MeasureMetadataRegistry`,
+`Measure` can also be defined directly with `BanyanDBClient`,
 
 ```java
 // create a measure registry
-MeasureMetadataRegistry measureRegistry = client.measureRegistry();
 // create a new measure schema with 2 shards and ttl 30 days.
 Measure m = new Measure("measure-example", 2, Duration.ofDays(30));
 // set entity
@@ -101,8 +88,8 @@ m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"
 // add field spec
 // compressMethod and encodingMethod can be specified
 m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
-// send create request
-measureRegistry.create(m);
+// define a measure
+m = client.define(m);
 ```
 
 For more APIs usage, refer to test cases and API docs.
