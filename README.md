@@ -19,9 +19,83 @@ Create a `BanyanDBClient` with host, port and a user-specified group and then es
 ```java
 // use `default` group
 client = new BanyanDBClient("127.0.0.1", 17912, "default");
-// establish a connection
+// to send any request, a connection to the server must be estabilished
 client.connect(channel);
 ```
+
+## Schema Management
+
+### Stream
+
+Then we may define a stream with customized configurations,
+
+```java
+// build a stream "sw" with 2 shards and ttl equals to 30 days
+Stream s = new Stream("sw", 2, Duration.ofDays(30));
+s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
+// TagFamily - tagFamily1
+TagFamilySpec tf1 = new TagFamilySpec("tagFamily1"); // tagFamily1 as the name of the tag family
+tf1.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
+s.addTagFamilySpec(tf1);
+// TagFamily - tagFamily2
+TagFamilySpec tf2 = new TagFamilySpec("tagFamily2");
+tf2.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
+s.addTagFamilySpec(tf2);
+// create with the stream schema, client is the BanyanDBClient created above
+s = client.define(s);
+```
+
+For the last line in the code block, a simple API (i.e. `BanyanDBClient.define(Stream)`) is used to define the schema of `Stream`.
+The same works for `Measure` which will be demonstrated later.
+
+### IndexRules
+
+For better search performance, index rules are necessary for `Stream` and `Measure`. You have to
+specify a full list of index rules that would be bounded to the target `Stream` and `Measure`.
+
+```java
+// create IndexRule with inverted index type and save it to series store
+IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+// tag name specifies the indexed tag
+indexRule.addTag("db.instance");
+// create the index rule "db.instance"
+client.defineIndexRules(stream, indexRule);
+```
+
+For convenience, `BanyanDBClient.defineIndexRule` supports binding multiple index rules with a single call.
+Internally, an `IndexRuleBinding` is created automatically for users, which will be active between `beginAt` and `expireAt`.
+With this shorthand API, the indexRuleBinding object will be active from the time it is created to the far future (i.e. `2099-01-01 00:00:00.000 UTC`).
+
+### Measure
+
+`Measure` can also be defined directly with `BanyanDBClient`,
+
+```java
+// create a measure registry
+// create a new measure schema with 2 shards and ttl 30 days.
+Measure m = new Measure("measure-example", 2, Duration.ofDays(30));
+// set entity
+m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
+// TagFamily - tagFamilyName
+TagFamilySpec tf = new TagFamilySpec("tagFamilyName");
+tf.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+    .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+    .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
+s.addTagFamilySpec(tf);
+// set interval rules for different scopes
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "day", "1d"));
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "hour", "1h"));
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "minute", "1m"));
+// add field spec
+// compressMethod and encodingMethod can be specified
+m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
+// define a measure, as we've mentioned above
+m = client.define(m);
+```
+
+For more APIs usage, refer to test cases and API docs.
 
 ## Query
 

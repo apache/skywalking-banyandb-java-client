@@ -24,6 +24,12 @@ package banyandb.v1;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
+enum Catalog {
+  CATALOG_UNSPECIFIED = 0;
+  CATALOG_STREAM = 1;
+  CATALOG_MEASURE = 2;
+}
+
 // Metadata is for multi-tenant, multi-model use
 message Metadata {
   // group contains a set of options, like retention policy, max

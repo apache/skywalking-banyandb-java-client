@@ -1,0 +1,381 @@
+// Licensed to Apache Software Foundation (ASF) under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Apache Software Foundation (ASF) licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+syntax = "proto3";
+
+option java_package = "org.apache.skywalking.banyandb.database.v1.metadata";
+
+package banyandb.metadata.v1;
+
+import "google/protobuf/timestamp.proto";
+import "banyandb/v1/banyandb.proto";
+
+message ResourceOpts {
+  // shard_num is the number of shards
+  uint32 shard_num = 1;
+  // ttl indicates time to live, how long the data will be cached
+  Duration ttl = 2;
+}
+
+// Duration represents the elapsed time between two instants
+message Duration {
+  uint32 val = 1;
+  enum DurationUnit {
+    DURATION_UNIT_UNSPECIFIED = 0;
+    DURATION_UNIT_HOUR = 1;
+    DURATION_UNIT_DAY = 2;
+    DURATION_UNIT_WEEK = 3;
+    DURATION_UNIT_MONTH = 4;
+  }
+  DurationUnit unit = 2;
+}
+
+enum TagType {
+  TAG_TYPE_UNSPECIFIED = 0;
+  TAG_TYPE_STRING = 1;
+  TAG_TYPE_INT = 2;
+  TAG_TYPE_STRING_ARRAY = 3;
+  TAG_TYPE_INT_ARRAY = 4;
+  TAG_TYPE_DATA_BINARY = 5;
+}
+
+message TagFamilySpec {
+  string name = 1;
+  // tags defines accepted tags
+  repeated TagSpec tags = 2;
+}
+
+message TagSpec {
+  string name = 1;
+  TagType type = 2;
+}
+
+// Stream intends to store streaming data, for example, traces or logs
+message Stream {
+  // metadata is the identity of a trace series
+  banyandb.v1.Metadata metadata = 1;
+  // tag_families
+  repeated TagFamilySpec tag_families = 2;
+  // entity indicates how to generate a series and shard a stream
+  Entity entity = 3;
+  ResourceOpts opts = 4;
+  // updated_at_nanoseconds indicates when the TraceSeries is updated
+  google.protobuf.Timestamp updated_at_nanoseconds = 5;
+}
+
+message Entity {
+  repeated string tag_names = 1;
+}
+
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_STRING = 1;
+  FIELD_TYPE_INT = 2;
+  FIELD_TYPE_DATA_BINARY = 3;
+}
+
+enum EncodingMethod {
+  ENCODING_METHOD_UNSPECIFIED = 0;
+  ENCODING_METHOD_GORILLA = 1;
+}
+
+enum CompressionMethod {
+  COMPRESSION_METHOD_UNSPECIFIED = 0;
+  COMPRESSION_METHOD_ZSTD = 1;
+}
+
+// FieldSpec is the specification of field
+message FieldSpec {
+  // name is the identity of a field
+  string name = 1;
+  // field_type denotes the type of field value
+  FieldType field_type = 2;
+  // encoding_method indicates how to encode data during writing
+  EncodingMethod encoding_method = 3;
+  // compression_method indicates how to compress data during writing
+  CompressionMethod compression_method = 4;
+}
+
+// IntervalRule indicates how to get the interval of a measure series.
+message IntervalRule {
+  // tag_name is for matching a tag
+  string tag_name = 1;
+  // tag_value is used by a equality matcher to match a tag
+  oneof tag_value {
+    string str = 2;
+    int64 int = 3;
+  }
+  // interval indicates how frequently to send a data point
+  string interval = 4;
+}
+
+// Measure intends to store data point
+message Measure {
+  // metadata is the identity of a measure
+  banyandb.v1.Metadata metadata = 1;
+  // tag_families are for filter measures
+  repeated TagFamilySpec tag_families = 2;
+  // fields denote measure values
+  repeated FieldSpec fields = 3;
+  // entity indicates which tags will be to generate a series and shard a measure
+  Entity entity = 4;
+  // interval_rules define data points writing interval
+  repeated IntervalRule interval_rules = 5;
+  // opts is basic resource management options
+  ResourceOpts opts = 6;
+  // updated_at_nanoseconds indicates when the measure is updated
+  google.protobuf.Timestamp updated_at_nanoseconds = 7;
+}
+
+// IndexRule defines how to generate indices based on tags and the index type
+// IndexRule should bind to a subject through an IndexRuleBinding to generate proper indices.
+message IndexRule {
+  // metadata define the rule's identity
+  banyandb.v1.Metadata metadata = 1;
+  // tags are the combination that refers to an indexed object
+  // If the elements in tags are more than 1, the object will generate a multi-tag index
+  // Caveat: All tags in a multi-tag MUST have an identical IndexType
+  repeated string tags = 2;
+  // Type determine the index structure under the hood
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_TREE = 1;
+    TYPE_INVERTED = 2;
+  }
+  // type is the IndexType of this IndexObject.
+  Type type = 3;
+  enum Location {
+    LOCATION_UNSPECIFIED = 0;
+    LOCATION_SERIES = 1;
+    LOCATION_GLOBAL = 2;
+  }
+  // location indicates where to store index.
+  Location location = 4;
+  // updated_at_nanoseconds indicates when the IndexRule is updated
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// Subject defines which stream or measure would generate indices
+message Subject {
+  // catalog is where the subject belongs to
+  banyandb.v1.Catalog catalog = 1;
+  // name refers to a stream or measure in a particular catalog
+  string name = 2;
+}
+
+// IndexRuleBinding is a bridge to connect several IndexRules to a subject
+// This binding is valid between begin_at_nanoseconds and expire_at_nanoseconds, that provides flexible strategies
+// to control how to generate time series indices.
+message IndexRuleBinding {
+  // metadata is the identity of this binding
+  banyandb.v1.Metadata metadata = 1;
+  // rules refers to the IndexRule
+  repeated string rules = 2;
+  // subject indicates the subject of binding action
+  Subject subject = 3;
+  // begin_at_nanoseconds is the timestamp, after which the binding will be active
+  google.protobuf.Timestamp begin_at = 4;
+  // expire_at_nanoseconds it the timestamp, after which the binding will be inactive
+  // expire_at_nanoseconds must be larger than begin_at_nanoseconds
+  google.protobuf.Timestamp expire_at = 5;
+  // updated_at_nanoseconds indicates when the IndexRuleBinding is updated
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message StreamRegistryServiceCreateRequest {
+  banyandb.metadata.v1.Stream stream = 1;
+}
+
+message StreamRegistryServiceCreateResponse {
+}
+
+message StreamRegistryServiceUpdateRequest {
+  banyandb.metadata.v1.Stream stream = 1;
+}
+
+message StreamRegistryServiceUpdateResponse {
+}
+
+message StreamRegistryServiceDeleteRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message StreamRegistryServiceDeleteResponse {
+  bool deleted = 1;
+}
+
+message StreamRegistryServiceGetRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message StreamRegistryServiceGetResponse {
+  banyandb.metadata.v1.Stream stream = 1;
+}
+
+message StreamRegistryServiceListRequest {
+  string group = 1;
+}
+
+message StreamRegistryServiceListResponse {
+  repeated banyandb.metadata.v1.Stream stream = 1;
+}
+
+service StreamRegistryService {
+  rpc Create(StreamRegistryServiceCreateRequest) returns (StreamRegistryServiceCreateResponse);
+  rpc Update(StreamRegistryServiceUpdateRequest) returns (StreamRegistryServiceUpdateResponse);
+  rpc Delete(StreamRegistryServiceDeleteRequest) returns (StreamRegistryServiceDeleteResponse);
+  rpc Get(StreamRegistryServiceGetRequest) returns (StreamRegistryServiceGetResponse);
+  rpc List(StreamRegistryServiceListRequest) returns (StreamRegistryServiceListResponse);
+}
+
+message IndexRuleBindingRegistryServiceCreateRequest {
+  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+}
+
+message IndexRuleBindingRegistryServiceCreateResponse {
+}
+
+message IndexRuleBindingRegistryServiceUpdateRequest {
+  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+}
+
+message IndexRuleBindingRegistryServiceUpdateResponse {
+}
+
+message IndexRuleBindingRegistryServiceDeleteRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message IndexRuleBindingRegistryServiceDeleteResponse {
+  bool deleted = 1;
+}
+
+message IndexRuleBindingRegistryServiceGetRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message IndexRuleBindingRegistryServiceGetResponse {
+  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+}
+
+message IndexRuleBindingRegistryServiceListRequest {
+  string group = 1;
+}
+
+message IndexRuleBindingRegistryServiceListResponse {
+  repeated banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+}
+
+service IndexRuleBindingRegistryService {
+  rpc Create(IndexRuleBindingRegistryServiceCreateRequest) returns (IndexRuleBindingRegistryServiceCreateResponse);
+  rpc Update(IndexRuleBindingRegistryServiceUpdateRequest) returns (IndexRuleBindingRegistryServiceUpdateResponse);
+  rpc Delete(IndexRuleBindingRegistryServiceDeleteRequest) returns (IndexRuleBindingRegistryServiceDeleteResponse);
+  rpc Get(IndexRuleBindingRegistryServiceGetRequest) returns (IndexRuleBindingRegistryServiceGetResponse);
+  rpc List(IndexRuleBindingRegistryServiceListRequest) returns (IndexRuleBindingRegistryServiceListResponse);
+}
+
+message IndexRuleRegistryServiceCreateRequest {
+  banyandb.metadata.v1.IndexRule index_rule = 1;
+}
+
+message IndexRuleRegistryServiceCreateResponse {
+}
+
+message IndexRuleRegistryServiceUpdateRequest {
+  banyandb.metadata.v1.IndexRule index_rule = 1;
+}
+
+message IndexRuleRegistryServiceUpdateResponse {
+}
+
+message IndexRuleRegistryServiceDeleteRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message IndexRuleRegistryServiceDeleteResponse {
+  bool deleted = 1;
+}
+
+message IndexRuleRegistryServiceGetRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message IndexRuleRegistryServiceGetResponse {
+  banyandb.metadata.v1.IndexRule index_rule = 1;
+}
+
+message IndexRuleRegistryServiceListRequest {
+  string group = 1;
+}
+
+message IndexRuleRegistryServiceListResponse {
+  repeated banyandb.metadata.v1.IndexRule index_rule = 1;
+}
+
+service IndexRuleRegistryService {
+  rpc Create(IndexRuleRegistryServiceCreateRequest) returns (IndexRuleRegistryServiceCreateResponse);
+  rpc Update(IndexRuleRegistryServiceUpdateRequest) returns (IndexRuleRegistryServiceUpdateResponse);
+  rpc Delete(IndexRuleRegistryServiceDeleteRequest) returns (IndexRuleRegistryServiceDeleteResponse);
+  rpc Get(IndexRuleRegistryServiceGetRequest) returns (IndexRuleRegistryServiceGetResponse);
+  rpc List(IndexRuleRegistryServiceListRequest) returns (IndexRuleRegistryServiceListResponse);
+}
+
+message MeasureRegistryServiceCreateRequest {
+  banyandb.metadata.v1.Measure measure = 1;
+}
+
+message MeasureRegistryServiceCreateResponse {
+}
+
+message MeasureRegistryServiceUpdateRequest {
+  banyandb.metadata.v1.Measure measure = 1;
+}
+
+message MeasureRegistryServiceUpdateResponse {
+}
+
+message MeasureRegistryServiceDeleteRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message MeasureRegistryServiceDeleteResponse {
+  bool deleted = 1;
+}
+
+message MeasureRegistryServiceGetRequest {
+  banyandb.v1.Metadata metadata = 1;
+}
+
+message MeasureRegistryServiceGetResponse {
+  banyandb.metadata.v1.Measure measure = 1;
+}
+
+message MeasureRegistryServiceListRequest {
+  string group = 1;
+}
+
+message MeasureRegistryServiceListResponse {
+  repeated banyandb.metadata.v1.Measure measure = 1;
+}
+
+service MeasureRegistryService {
+  rpc Create(MeasureRegistryServiceCreateRequest) returns (MeasureRegistryServiceCreateResponse);
+  rpc Update(MeasureRegistryServiceUpdateRequest) returns (MeasureRegistryServiceUpdateResponse);
+  rpc Delete(MeasureRegistryServiceDeleteRequest) returns (MeasureRegistryServiceDeleteResponse);
+  rpc Get(MeasureRegistryServiceGetRequest) returns (MeasureRegistryServiceGetResponse);
+  rpc List(MeasureRegistryServiceListRequest) returns (MeasureRegistryServiceListResponse);
+}

@@ -18,6 +18,9 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.NameResolverRegistry;
@@ -26,10 +29,21 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBinding;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
+import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
+import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
 
@@ -56,9 +70,9 @@ public class BanyanDBClient implements Closeable {
      */
     private Options options;
     /**
-     * Managed gRPC connection.
+     * gRPC connection.
      */
-    private volatile ManagedChannel managedChannel;
+    private volatile Channel channel;
     /**
      * gRPC client stub
      */
@@ -120,10 +134,9 @@ public class BanyanDBClient implements Closeable {
                 final ManagedChannelBuilder<?> nettyChannelBuilder = NettyChannelBuilder.forAddress(host, port).usePlaintext();
                 nettyChannelBuilder.maxInboundMessageSize(options.getMaxInboundMessageSize());
 
-                managedChannel = nettyChannelBuilder.build();
-                streamServiceStub = StreamServiceGrpc.newStub(managedChannel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
-                        managedChannel);
+                channel = nettyChannelBuilder.build();
+                streamServiceStub = StreamServiceGrpc.newStub(channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -138,13 +151,14 @@ public class BanyanDBClient implements Closeable {
      * @param channel the channel used for communication.
      *                For tests, it is normally an in-process channel.
      */
-    void connect(ManagedChannel channel) {
+    @VisibleForTesting
+    public void connect(Channel channel) {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
+                this.channel = channel;
                 streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(
-                        channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -178,17 +192,97 @@ public class BanyanDBClient implements Closeable {
         return new StreamQueryResponse(response);
     }
 
+    /**
+     * Define a new stream
+     *
+     * @param stream the stream to be created
+     * @return a created stream in the BanyanDB
+     */
+    public Stream define(Stream stream) {
+        Preconditions.checkState(this.channel != null, "channel is null");
+        StreamMetadataRegistry registry = new StreamMetadataRegistry(this.group, this.channel);
+        registry.create(stream);
+        return registry.get(stream.getName());
+    }
+
+    /**
+     * Define a new measure
+     *
+     * @param measure the measure to be created
+     * @return a created measure in the BanyanDB
+     */
+    public Measure define(Measure measure) {
+        Preconditions.checkState(this.channel != null, "channel is null");
+        MeasureMetadataRegistry registry = new MeasureMetadataRegistry(this.group, this.channel);
+        registry.create(measure);
+        return registry.get(measure.getName());
+    }
+
+    /**
+     * Bind index rule to the stream
+     *
+     * @param stream     the subject of index rule binding
+     * @param beginAt    the start timestamp of this rule binding
+     * @param expireAt   the expiry timestamp of this rule binding
+     * @param indexRules rules to be bounded
+     */
+    public void defineIndexRules(Stream stream, ZonedDateTime beginAt, ZonedDateTime expireAt, IndexRule... indexRules) {
+        Preconditions.checkArgument(stream != null, "measure cannot be null");
+        Preconditions.checkState(this.channel != null, "channel is null");
+        IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
+        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
+        for (IndexRule ir : indexRules) {
+            irRegistry.create(ir);
+            indexRuleNames.add(ir.getName());
+        }
+        IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+        IndexRuleBinding binding = new IndexRuleBinding(stream.getName() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream(stream.getName()));
+        binding.setRules(indexRuleNames);
+        binding.setBeginAt(beginAt);
+        binding.setExpireAt(expireAt);
+        irbRegistry.create(binding);
+    }
+
+    /**
+     * Bind index rule to the measure.
+     * By default, the index rule binding will be active from now, and it will never be expired.
+     *
+     * @param measure    the subject of index rule binding
+     * @param indexRules rules to be bounded
+     */
+    public void defineIndexRules(Measure measure, IndexRule... indexRules) {
+        Preconditions.checkArgument(measure != null, "measure cannot be null");
+        Preconditions.checkState(this.channel != null, "channel is null");
+        IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
+        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
+        for (IndexRule ir : indexRules) {
+            irRegistry.create(ir);
+            indexRuleNames.add(ir.getName());
+        }
+        IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(this.group, this.channel);
+        IndexRuleBinding binding = new IndexRuleBinding(measure.getName() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToMeasure(measure.getName()));
+        binding.setRules(indexRuleNames);
+        irbRegistry.create(binding);
+    }
+
     @Override
     public void close() throws IOException {
         connectionEstablishLock.lock();
+        if (!(this.channel instanceof ManagedChannel)) {
+            return;
+        }
+        final ManagedChannel managedChannel = (ManagedChannel) this.channel;
         try {
             if (isConnected) {
-                this.managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+                managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
                 isConnected = false;
             }
         } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
             log.warn("fail to wait for channel termination, shutdown now!", interruptedException);
-            this.managedChannel.shutdownNow();
+            managedChannel.shutdownNow();
             isConnected = false;
         } finally {
             connectionEstablishLock.unlock();
