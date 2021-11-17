@@ -245,14 +245,13 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Bind index rule to the measure
+     * Bind index rule to the measure.
+     * By default, the index rule binding will be active from now, and it will never be expired.
      *
      * @param measure    the subject of index rule binding
-     * @param beginAt    the start timestamp of this rule binding
-     * @param expireAt   the expiry timestamp of this rule binding
      * @param indexRules rules to be bounded
      */
-    public void defineIndexRules(Measure measure, ZonedDateTime beginAt, ZonedDateTime expireAt, IndexRule... indexRules) {
+    public void defineIndexRules(Measure measure, IndexRule... indexRules) {
         Preconditions.checkArgument(measure != null, "measure cannot be null");
         Preconditions.checkState(this.channel != null, "channel is null");
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
@@ -265,8 +264,6 @@ public class BanyanDBClient implements Closeable {
         IndexRuleBinding binding = new IndexRuleBinding(measure.getName() + "-index-rule-binding",
                 IndexRuleBinding.Subject.referToMeasure(measure.getName()));
         binding.setRules(indexRuleNames);
-        binding.setBeginAt(beginAt);
-        binding.setExpireAt(expireAt);
         irbRegistry.create(binding);
     }
 

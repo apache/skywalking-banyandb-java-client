@@ -33,21 +33,22 @@ Then we may define a stream with customized configurations,
 // build a stream "sw" with 2 shards and ttl equals to 30 days
 Stream s = new Stream("sw", 2, Duration.ofDays(30));
 s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-// TagFamily - data
-TagFamilySpec dataFamily = new TagFamilySpec("data");
-dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-s.addTagFamilySpec(dataFamily);
-// TagFamily - searchable
-TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+// TagFamily - tagFamily1
+TagFamilySpec tf1 = new TagFamilySpec("tagFamily1"); // tagFamily1 as the name of the tag family
+tf1.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
+s.addTagFamilySpec(tf1);
+// TagFamily - tagFamily2
+TagFamilySpec tf2 = new TagFamilySpec("tagFamily2");
+tf2.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-s.addTagFamilySpec(searchableFamily);
+s.addTagFamilySpec(tf2);
 // create with the stream schema, client is the BanyanDBClient created above
 s = client.define(s);
 ```
 
-where simple APIs (i.e. `BanyanDBClient.define`) are provided to define the schema of `Measure` or `Stream`.
+For the last line in the code block, a simple API (i.e. `BanyanDBClient.define(Stream)`) is used to define the schema of `Stream`.
+The same works for `Measure` which will be demonstrated later.
 
 ### IndexRules
 
@@ -60,11 +61,12 @@ IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED,
 // tag name specifies the indexed tag
 indexRule.addTag("db.instance");
 // create the index rule "db.instance"
-client.defineIndexRules(stream, beginAt, expireAt, indexRule);
+client.defineIndexRules(stream, indexRule);
 ```
 
-where multiple index rules are supported. Internally, an `IndexRuleBinding` is created automatically for users,
-which will be active between `beginAt` and `expireAt`.
+For convenience, `BanyanDBClient.defineIndexRule` supports binding multiple index rules with a single call.
+Internally, an `IndexRuleBinding` is created automatically for users, which will be active between `beginAt` and `expireAt`.
+With this shorthand API, the indexRuleBinding object will be active from the time it is created to the far future (i.e. `2099-01-01 00:00:00.000 UTC`).
 
 ### Measure
 
@@ -76,19 +78,20 @@ which will be active between `beginAt` and `expireAt`.
 Measure m = new Measure("measure-example", 2, Duration.ofDays(30));
 // set entity
 m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-// add tag family: "searchable"
-TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+// TagFamily - tagFamilyName
+TagFamilySpec tf = new TagFamilySpec("tagFamilyName");
+tf.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
     .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
     .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-m.addTagFamilySpec(searchableFamily);
-// set interval rules
-m.addIntervalRule(Measure.IntervalRule.matchStringLabel("interval", "day", "1d"));
-m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"));
+s.addTagFamilySpec(tf);
+// set interval rules for different scopes
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "day", "1d"));
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "hour", "1h"));
+m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "minute", "1m"));
 // add field spec
 // compressMethod and encodingMethod can be specified
 m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
-// define a measure
+// define a measure, as we've mentioned above
 m = client.define(m);
 ```
 

@@ -25,6 +25,7 @@ import lombok.Setter;
 import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.List;
 @Getter
 @EqualsAndHashCode(callSuper = true)
 public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBinding> {
+    private static final ZonedDateTime DEFAULT_EXPIRE_AT = ZonedDateTime.of(2099, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     /**
      * rule names refer to the IndexRule
      */
@@ -62,6 +64,8 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
         super(name, updatedAt);
         this.rules = new ArrayList<>();
         this.subject = subject;
+        this.beginAt = ZonedDateTime.now();
+        this.expireAt = DEFAULT_EXPIRE_AT;
     }
 
     /**
