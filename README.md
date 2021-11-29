@@ -38,12 +38,14 @@ Instant begin = end.minus(15, ChronoUnit.MINUTES);
 // with stream schema, group=default, name=sw
 StreamQuery query = new StreamQuery("sw",
         new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
-        // projection tags
+        // projection tags which are indexed
         Arrays.asList("state", "start_time", "duration", "trace_id"));
 // search for all states
 query.appendCondition(PairQueryCondition.LongQueryCondition.eq("searchable", "state" , 0L));
 // set order by condition
 query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
+// set projection for un-indexed tags
+query.setDataProjections(ImmutableList.of("data_binary"));
 // send the query request
 client.queryStreams(query);
 ```
@@ -81,9 +83,11 @@ And the non-existing tags must be fulfilled (with NullValue) instead of compacti
 ```java
 StreamWrite streamWrite = StreamWrite.builder()
     .elementId(segmentId)
-    .binary(byteData)
+    // write binary data to "data" tag family
+    .dataTag(Tag.binaryField(byteData))
     .timestamp(now.toEpochMilli())
     .name("sw")
+    // write indexed tags to "searchable" tag family
     .tag(Tag.stringField(traceId))
     .tag(Tag.stringField(serviceId))
     .tag(Tag.stringField(serviceInstanceId))
