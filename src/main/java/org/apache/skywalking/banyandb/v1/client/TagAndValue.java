@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.List;
 
+import com.google.protobuf.ByteString;
 import lombok.EqualsAndHashCode;
 import org.apache.skywalking.banyandb.v1.Banyandb;
 
@@ -68,6 +69,8 @@ public abstract class TagAndValue<T> extends Tag<T> {
                 return new LongArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getIntArray().getValueList());
             case STR_ARRAY:
                 return new StringArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getStrArray().getValueList());
+            case BINARY_DATA:
+                return new BinaryTagPair(tagFamilyName, tag.getKey(), tag.getValue().getBinaryData());
             case NULL:
                 return new NullTagPair(tagFamilyName, tag.getKey());
             default:
@@ -96,6 +99,12 @@ public abstract class TagAndValue<T> extends Tag<T> {
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
         LongArrayTagPair(final String tagFamilyName, final String tagName, final List<Long> value) {
             super(tagFamilyName, tagName, value);
+        }
+    }
+
+    public static class BinaryTagPair extends TagAndValue<ByteString> {
+        public BinaryTagPair(String tagFamilyName, String fieldName, ByteString byteString) {
+            super(tagFamilyName, fieldName, byteString);
         }
     }
 

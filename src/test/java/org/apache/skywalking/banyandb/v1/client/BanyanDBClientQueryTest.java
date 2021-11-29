@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannel;
@@ -191,6 +192,7 @@ public class BanyanDBClientQueryTest {
 
         StreamQuery query = new StreamQuery("sw", Arrays.asList("state", "start_time", "duration", "trace_id"));
         query.appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "trace_id", traceId));
+        query.setDataProjections(ImmutableList.of("data_binary"));
 
         client.queryStreams(query);
 
@@ -237,12 +239,20 @@ public class BanyanDBClientQueryTest {
                                         .setValue(Banyandb.TagValue.newBuilder().setNull(NullValue.NULL_VALUE).build())
                                         .build())
                                 .build())
+                        .addTagFamilies(Banyandb.TagFamily.newBuilder()
+                                .setName("data")
+                                .addTags(Banyandb.Tag.newBuilder()
+                                        .setKey("data_binary")
+                                        .setValue(Banyandb.TagValue.newBuilder()
+                                                .setBinaryData(ByteString.copyFrom(binaryData)).build())
+                                        .build())
+                                .build())
                         .build())
                 .build();
         StreamQueryResponse resp = new StreamQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getElements().size());
-        Assert.assertEquals(1, resp.getElements().get(0).getTagFamilies().size());
+        Assert.assertEquals(2, resp.getElements().get(0).getTagFamilies().size());
         Assert.assertEquals(3, resp.getElements().get(0).getTagFamilies().get(0).size());
         Assert.assertEquals(new TagAndValue.StringTagPair("searchable", "trace_id", traceId),
                 resp.getElements().get(0).getTagFamilies().get(0).get(0));
@@ -250,6 +260,8 @@ public class BanyanDBClientQueryTest {
                 resp.getElements().get(0).getTagFamilies().get(0).get(1));
         Assert.assertEquals(new TagAndValue.StringTagPair("searchable", "mq.broker", null),
                 resp.getElements().get(0).getTagFamilies().get(0).get(2));
+        Assert.assertEquals(new TagAndValue.BinaryTagPair("data", "data_binary", ByteString.copyFrom(binaryData)),
+                resp.getElements().get(0).getTagFamilies().get(1).get(0));
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {

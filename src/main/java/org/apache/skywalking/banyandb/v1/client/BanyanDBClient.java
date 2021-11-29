@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBinding;
@@ -163,6 +164,36 @@ public class BanyanDBClient implements Closeable {
             }
         } finally {
             connectionEstablishLock.unlock();
+        }
+    }
+
+    /**
+     * Perform a single write with given entity.
+     *
+     * @param streamWrite the entity to be written
+     */
+    public void write(StreamWrite streamWrite) {
+        final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
+                = streamServiceStub
+                .write(
+                        new StreamObserver<BanyandbStream.WriteResponse>() {
+                            @Override
+                            public void onNext(BanyandbStream.WriteResponse writeResponse) {
+                            }
+
+                            @Override
+                            public void onError(Throwable throwable) {
+                                log.error("Error occurs in flushing streams.", throwable);
+                            }
+
+                            @Override
+                            public void onCompleted() {
+                            }
+                        });
+        try {
+            writeRequestStreamObserver.onNext(streamWrite.build(group));
+        } finally {
+            writeRequestStreamObserver.onCompleted();
         }
     }
 
