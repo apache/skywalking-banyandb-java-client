@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,9 +64,9 @@ public class StreamQuery {
      */
     private OrderBy orderBy;
     /**
-     * Whether to fetch data_binary for the query
+     * Whether to fetch unindexed fields from the "data" tag family for the query
      */
-    private boolean dataBinary;
+    private List<String> dataProjections;
 
     public StreamQuery(final String name, final TimestampRange timestampRange, final List<String> projections) {
         this.name = name;
@@ -74,7 +75,8 @@ public class StreamQuery {
         this.conditions = new ArrayList<>(10);
         this.offset = 0;
         this.limit = 20;
-        this.dataBinary = false;
+        // by default, we don't need projection for data tag family
+        this.dataProjections = Collections.emptyList();
     }
 
     public StreamQuery(final String name, final List<String> projections) {
@@ -110,10 +112,10 @@ public class StreamQuery {
                         .setName("searchable")
                         .addAllTags(this.projections)
                         .build());
-        if (this.dataBinary) {
+        if (!this.dataProjections.isEmpty()) {
             projectionBuilder.addTagFamilies(Banyandb.Projection.TagFamily.newBuilder()
                     .setName("data")
-                    .addTags("data_binary")
+                    .addAllTags(this.dataProjections)
                     .build());
         }
         builder.setProjection(projectionBuilder);

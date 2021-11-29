@@ -120,22 +120,22 @@ public class BanyanDBClientWriteTest {
 
         StreamWrite streamWrite = StreamWrite.builder()
                 .elementId(segmentId)
-                .binary(byteData)
+                .dataTag(Tag.binaryField(byteData))
                 .timestamp(now.toEpochMilli())
                 .name("sw")
-                .tag(Tag.stringField(traceId)) // 0
-                .tag(Tag.stringField(serviceId))
-                .tag(Tag.stringField(serviceInstanceId))
-                .tag(Tag.stringField(endpointId))
-                .tag(Tag.longField(latency)) // 4
-                .tag(Tag.longField(state))
-                .tag(Tag.stringField(httpStatusCode))
-                .tag(Tag.nullField()) // 7
-                .tag(Tag.stringField(dbType))
-                .tag(Tag.stringField(dbInstance))
-                .tag(Tag.stringField(broker))
-                .tag(Tag.stringField(topic))
-                .tag(Tag.stringField(queue)) // 12
+                .searchableTag(Tag.stringField(traceId)) // 0
+                .searchableTag(Tag.stringField(serviceId))
+                .searchableTag(Tag.stringField(serviceInstanceId))
+                .searchableTag(Tag.stringField(endpointId))
+                .searchableTag(Tag.longField(latency)) // 4
+                .searchableTag(Tag.longField(state))
+                .searchableTag(Tag.stringField(httpStatusCode))
+                .searchableTag(Tag.nullField()) // 7
+                .searchableTag(Tag.stringField(dbType))
+                .searchableTag(Tag.stringField(dbInstance))
+                .searchableTag(Tag.stringField(broker))
+                .searchableTag(Tag.stringField(topic))
+                .searchableTag(Tag.stringField(queue)) // 12
                 .build();
 
         streamBulkWriteProcessor.add(streamWrite);

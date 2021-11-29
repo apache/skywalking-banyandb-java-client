@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.List;
 
+import com.google.protobuf.ByteString;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.v1.Banyandb;
@@ -112,6 +113,20 @@ public abstract class Tag<T> {
     }
 
     /**
+     * The value of a byte array(ByteString) type field.
+     */
+    public static class BinaryField extends Tag<ByteString> implements SerializableTag<Banyandb.TagValue> {
+        public BinaryField(ByteString byteString) {
+            super(byteString);
+        }
+
+        @Override
+        public Banyandb.TagValue toTag() {
+            return Banyandb.TagValue.newBuilder().setBinaryData(value).build();
+        }
+    }
+
+    /**
      * Construct a string field
      *
      * @param val payload
@@ -139,6 +154,16 @@ public abstract class Tag<T> {
      */
     public static SerializableTag<Banyandb.TagValue> stringArrayField(List<String> val) {
         return new StringArrayField(val);
+    }
+
+    /**
+     * Construct a byte array field.
+     *
+     * @param bytes binary data
+     * @return Anonymous field with binary payload
+     */
+    public static SerializableTag<Banyandb.TagValue> binaryField(byte[] bytes) {
+        return new BinaryField(ByteString.copyFrom(bytes));
     }
 
     /**
