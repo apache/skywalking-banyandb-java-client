@@ -22,7 +22,7 @@ import com.google.protobuf.Timestamp;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
 @RequiredArgsConstructor
 @Getter(AccessLevel.PROTECTED)
@@ -40,14 +40,14 @@ public class TimestampRange {
     /**
      * @return TimeRange accordingly.
      */
-    Banyandb.TimeRange build() {
-        final Banyandb.TimeRange.Builder builder = Banyandb.TimeRange.newBuilder();
+    BanyandbModel.TimeRange build() {
+        final BanyandbModel.TimeRange.Builder builder = BanyandbModel.TimeRange.newBuilder();
         builder.setBegin(Timestamp.newBuilder()
-                                  .setSeconds(begin / 1000)
-                                  .setNanos((int) (begin % 1000 * 1_000_000)));
+                .setSeconds(begin / 1000)
+                .setNanos((int) (begin % 1000 * 1_000_000)));
         builder.setEnd(Timestamp.newBuilder()
-                                  .setSeconds(end / 1000)
-                                  .setNanos((int) (end % 1000 * 1_000_000)));
+                .setSeconds(end / 1000)
+                .setNanos((int) (end % 1000 * 1_000_000)));
         return builder.build();
     }
 }

@@ -20,49 +20,48 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.common.base.Preconditions;
 import io.grpc.Channel;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IndexRuleMetadataRegistry extends MetadataClient<BanyandbMetadata.IndexRule, IndexRule> {
+public class IndexRuleMetadataRegistry extends MetadataClient<BanyandbDatabase.IndexRule, IndexRule> {
     private final IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceBlockingStub blockingStub;
 
-    public IndexRuleMetadataRegistry(String group, Channel channel) {
-        super(group);
+    public IndexRuleMetadataRegistry(Channel channel) {
         Preconditions.checkArgument(channel != null, "channel must not be null");
         this.blockingStub = IndexRuleRegistryServiceGrpc.newBlockingStub(channel);
     }
 
     @Override
     public void create(IndexRule payload) {
-        blockingStub.create(BanyandbMetadata.IndexRuleRegistryServiceCreateRequest.newBuilder()
-                .setIndexRule(payload.serialize(this.group))
+        blockingStub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
+                .setIndexRule(payload.serialize())
                 .build());
     }
 
     @Override
     public void update(IndexRule payload) {
-        blockingStub.update(BanyandbMetadata.IndexRuleRegistryServiceUpdateRequest.newBuilder()
-                .setIndexRule(payload.serialize(this.group))
+        blockingStub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
+                .setIndexRule(payload.serialize())
                 .build());
     }
 
     @Override
-    public boolean delete(String name) {
-        BanyandbMetadata.IndexRuleRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbMetadata.IndexRuleRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+    public boolean delete(String group, String name) {
+        BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                 .build());
         return resp != null && resp.getDeleted();
     }
 
     @Override
-    public IndexRule get(String name) {
-        BanyandbMetadata.IndexRuleRegistryServiceGetResponse resp = blockingStub.get(BanyandbMetadata.IndexRuleRegistryServiceGetRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+    public IndexRule get(String group, String name) {
+        BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                 .build());
         if (resp == null) {
             return null;
@@ -72,9 +71,9 @@ public class IndexRuleMetadataRegistry extends MetadataClient<BanyandbMetadata.I
     }
 
     @Override
-    public List<IndexRule> list() {
-        BanyandbMetadata.IndexRuleRegistryServiceListResponse resp = blockingStub.list(BanyandbMetadata.IndexRuleRegistryServiceListRequest.newBuilder()
-                .setGroup(this.group)
+    public List<IndexRule> list(String group) {
+        BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
+                .setGroup(group)
                 .build());
         if (resp == null) {
             return Collections.emptyList();

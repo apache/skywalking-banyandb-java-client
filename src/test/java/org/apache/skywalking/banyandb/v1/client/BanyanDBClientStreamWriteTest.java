@@ -26,8 +26,11 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import io.grpc.util.MutableHandlerRegistry;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -41,9 +44,30 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class BanyanDBClientWriteTest {
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
+public class BanyanDBClientStreamWriteTest {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+
+    private final GroupRegistryServiceGrpc.GroupRegistryServiceImplBase groupRegistryServiceImpl =
+            mock(GroupRegistryServiceGrpc.GroupRegistryServiceImplBase.class, delegatesTo(
+                    new GroupRegistryServiceGrpc.GroupRegistryServiceImplBase() {
+                        @Override
+                        public void get(BanyandbDatabase.GroupRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.GroupRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.GroupRegistryServiceGetResponse.newBuilder()
+                                    .setGroup(BanyandbCommon.Group.newBuilder()
+                                            .setMetadata(BanyandbCommon.Metadata.newBuilder().setName("default").build())
+                                            .setCatalog(BanyandbCommon.Catalog.CATALOG_STREAM)
+                                            .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                    .setShardNum(2)
+                                                    .build())
+                                            .build())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    }));
 
     private final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
 
@@ -55,13 +79,14 @@ public class BanyanDBClientWriteTest {
         String serverName = InProcessServerBuilder.generateName();
 
         Server server = InProcessServerBuilder
-                .forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor().build();
+                .forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor()
+                .addService(groupRegistryServiceImpl).build();
         grpcCleanup.register(server.start());
 
         ManagedChannel channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        client = new BanyanDBClient("127.0.0.1", server.getPort(), "default");
+        client = new BanyanDBClient("127.0.0.1", server.getPort());
         client.connect(channel);
         streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
     }
@@ -118,25 +143,21 @@ public class BanyanDBClientWriteTest {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = StreamWrite.builder()
-                .elementId(segmentId)
-                .dataTag(Tag.binaryField(byteData))
-                .timestamp(now.toEpochMilli())
-                .name("sw")
-                .searchableTag(Tag.stringField(traceId)) // 0
-                .searchableTag(Tag.stringField(serviceId))
-                .searchableTag(Tag.stringField(serviceInstanceId))
-                .searchableTag(Tag.stringField(endpointId))
-                .searchableTag(Tag.longField(latency)) // 4
-                .searchableTag(Tag.longField(state))
-                .searchableTag(Tag.stringField(httpStatusCode))
-                .searchableTag(Tag.nullField()) // 7
-                .searchableTag(Tag.stringField(dbType))
-                .searchableTag(Tag.stringField(dbInstance))
-                .searchableTag(Tag.stringField(broker))
-                .searchableTag(Tag.stringField(topic))
-                .searchableTag(Tag.stringField(queue)) // 12
-                .build();
+        StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli(), 1, 13)
+                .dataTag(0, Value.binaryTagValue(byteData))
+                .searchableTag(0, Value.stringTagValue(traceId)) // 0
+                .searchableTag(1, Value.stringTagValue(serviceId))
+                .searchableTag(2, Value.stringTagValue(serviceInstanceId))
+                .searchableTag(3, Value.stringTagValue(endpointId))
+                .searchableTag(4, Value.longTagValue(latency)) // 4
+                .searchableTag(5, Value.longTagValue(state))
+                .searchableTag(6, Value.stringTagValue(httpStatusCode))
+                .searchableTag(7, Value.nullTagValue()) // 7
+                .searchableTag(8, Value.stringTagValue(dbType))
+                .searchableTag(9, Value.stringTagValue(dbInstance))
+                .searchableTag(10, Value.stringTagValue(broker))
+                .searchableTag(11, Value.stringTagValue(topic))
+                .searchableTag(12, Value.stringTagValue(queue)); // 12
 
         streamBulkWriteProcessor.add(streamWrite);
 
@@ -201,25 +222,21 @@ public class BanyanDBClientWriteTest {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = StreamWrite.builder()
-                .elementId(segmentId)
-                .dataTag(Tag.binaryField(byteData))
-                .timestamp(now.toEpochMilli())
-                .name("sw")
-                .searchableTag(Tag.stringField(traceId)) // 0
-                .searchableTag(Tag.stringField(serviceId))
-                .searchableTag(Tag.stringField(serviceInstanceId))
-                .searchableTag(Tag.stringField(endpointId))
-                .searchableTag(Tag.longField(latency)) // 4
-                .searchableTag(Tag.longField(state))
-                .searchableTag(Tag.stringField(httpStatusCode))
-                .searchableTag(Tag.nullField()) // 7
-                .searchableTag(Tag.stringField(dbType))
-                .searchableTag(Tag.stringField(dbInstance))
-                .searchableTag(Tag.stringField(broker))
-                .searchableTag(Tag.stringField(topic))
-                .searchableTag(Tag.stringField(queue)) // 12
-                .build();
+        StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli(), 1, 13)
+                .dataTag(0, Value.binaryTagValue(byteData))
+                .searchableTag(0, Value.stringTagValue(traceId)) // 0
+                .searchableTag(1, Value.stringTagValue(serviceId))
+                .searchableTag(2, Value.stringTagValue(serviceInstanceId))
+                .searchableTag(3, Value.stringTagValue(endpointId))
+                .searchableTag(4, Value.longTagValue(latency)) // 4
+                .searchableTag(5, Value.longTagValue(state))
+                .searchableTag(6, Value.stringTagValue(httpStatusCode))
+                .searchableTag(7, Value.nullTagValue()) // 7
+                .searchableTag(8, Value.stringTagValue(dbType))
+                .searchableTag(9, Value.stringTagValue(dbInstance))
+                .searchableTag(10, Value.stringTagValue(broker))
+                .searchableTag(11, Value.stringTagValue(topic))
+                .searchableTag(12, Value.stringTagValue(queue)); // 12
 
         client.write(streamWrite);
 

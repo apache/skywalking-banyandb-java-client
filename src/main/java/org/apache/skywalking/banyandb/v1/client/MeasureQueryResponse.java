@@ -18,10 +18,29 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import lombok.Getter;
+import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * An interface that represents an object which can be converted to the protobuf representation
- * of BanyanDB.Field. BanyanDB.Field is used for writing entities to the database.
+ * MeasureQueryResponse represents the measure query result.
  */
-public interface SerializableTag<T> {
-    T toTag();
+public class MeasureQueryResponse {
+    @Getter
+    private final List<DataPoint> dataPoints;
+
+    MeasureQueryResponse(BanyandbMeasure.QueryResponse response) {
+        final List<BanyandbMeasure.DataPoint> dataPointList = response.getDataPointsList();
+        this.dataPoints = new ArrayList<>(dataPointList.size());
+        dataPointList.forEach(dataPoint -> dataPoints.add(DataPoint.create(dataPoint)));
+    }
+
+    /**
+     * @return size of the response set.
+     */
+    public int size() {
+        return dataPoints.size();
+    }
 }

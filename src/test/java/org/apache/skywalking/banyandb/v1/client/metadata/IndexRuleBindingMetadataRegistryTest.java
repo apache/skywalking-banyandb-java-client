@@ -24,8 +24,8 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleBindingRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,51 +53,51 @@ public class IndexRuleBindingMetadataRegistryTest {
     private IndexRuleBindingMetadataRegistry client;
 
     // play as an in-memory registry
-    private Map<String, BanyandbMetadata.IndexRuleBinding> indexRuleBindingRegistry;
+    private Map<String, BanyandbDatabase.IndexRuleBinding> indexRuleBindingRegistry;
 
     private final IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceImplBase serviceImpl =
             mock(IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceImplBase.class, delegatesTo(
                     new IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceImplBase() {
                         @Override
-                        public void create(BanyandbMetadata.IndexRuleBindingRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
+                        public void create(BanyandbDatabase.IndexRuleBindingRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.IndexRuleBindingRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleBindingRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleBindingRegistryServiceCreateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void update(BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
+                        public void update(BanyandbDatabase.IndexRuleBindingRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.IndexRuleBindingRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.IndexRuleBinding s = request.getIndexRuleBinding().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleBindingRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleBindingRegistryServiceUpdateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void delete(BanyandbMetadata.IndexRuleBindingRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.IndexRuleBinding oldIndexRuleBinding = indexRuleBindingRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceDeleteResponse.newBuilder()
+                        public void delete(BanyandbDatabase.IndexRuleBindingRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.IndexRuleBindingRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.IndexRuleBinding oldIndexRuleBinding = indexRuleBindingRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleBindingRegistryServiceDeleteResponse.newBuilder()
                                     .setDeleted(oldIndexRuleBinding != null)
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void get(BanyandbMetadata.IndexRuleBindingRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceGetResponse.newBuilder()
+                        public void get(BanyandbDatabase.IndexRuleBindingRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.IndexRuleBindingRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleBindingRegistryServiceGetResponse.newBuilder()
                                     .setIndexRuleBinding(indexRuleBindingRegistry.get(request.getMetadata().getName()))
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void list(BanyandbMetadata.IndexRuleBindingRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.IndexRuleBindingRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleBindingRegistryServiceListResponse.newBuilder()
+                        public void list(BanyandbDatabase.IndexRuleBindingRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.IndexRuleBindingRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleBindingRegistryServiceListResponse.newBuilder()
                                     .addAllIndexRuleBinding(indexRuleBindingRegistry.values())
                                     .build());
                             responseObserver.onCompleted();
@@ -120,12 +120,12 @@ public class IndexRuleBindingMetadataRegistryTest {
         ManagedChannel channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        this.client = new IndexRuleBindingMetadataRegistry("default", channel);
+        this.client = new IndexRuleBindingMetadataRegistry(channel);
     }
 
     @Test
     public void testIndexRuleBindingRegistry_create() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
+        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
         indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
         indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
         indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
@@ -135,12 +135,12 @@ public class IndexRuleBindingMetadataRegistryTest {
 
     @Test
     public void testIndexRuleBindingRegistry_createAndGet() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
+        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
         indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
         indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
         indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
         this.client.create(indexRuleBinding);
-        IndexRuleBinding getIndexRuleBinding = this.client.get("sw-index-rule-binding");
+        IndexRuleBinding getIndexRuleBinding = this.client.get("default", "sw-index-rule-binding");
         Assert.assertNotNull(getIndexRuleBinding);
         Assert.assertEquals(indexRuleBinding, getIndexRuleBinding);
         Assert.assertNotNull(getIndexRuleBinding.getUpdatedAt());
@@ -148,12 +148,12 @@ public class IndexRuleBindingMetadataRegistryTest {
 
     @Test
     public void testIndexRuleBindingRegistry_createAndList() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
+        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
         indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
         indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
         indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
         this.client.create(indexRuleBinding);
-        List<IndexRuleBinding> listIndexRuleBinding = this.client.list();
+        List<IndexRuleBinding> listIndexRuleBinding = this.client.list("default");
         Assert.assertNotNull(listIndexRuleBinding);
         Assert.assertEquals(1, listIndexRuleBinding.size());
         Assert.assertEquals(listIndexRuleBinding.get(0), indexRuleBinding);
@@ -161,12 +161,12 @@ public class IndexRuleBindingMetadataRegistryTest {
 
     @Test
     public void testIndexRuleBindingRegistry_createAndDelete() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
+        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
         indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
         indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
         indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
         this.client.create(indexRuleBinding);
-        boolean deleted = this.client.delete("sw-index-rule-binding");
+        boolean deleted = this.client.delete("default", "sw-index-rule-binding");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, indexRuleBindingRegistry.size());
     }

@@ -21,7 +21,7 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -31,7 +31,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
+public class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     /**
      * specs of tag families
      */
@@ -42,26 +42,14 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
      */
     private List<String> entityTagNames;
 
-    /**
-     * number of shards
-     */
-    private int shardNum;
-
-    /**
-     * duration determines how long a Stream keeps its data
-     */
-    private Duration ttl;
-
-    public Stream(String name, int shardNum, Duration ttl) {
-        this(name, shardNum, ttl, null);
+    public Stream(String group, String name) {
+        this(group, name, null);
     }
 
-    private Stream(String name, int shardNum, Duration ttl, ZonedDateTime updatedAt) {
-        super(name, updatedAt);
+    private Stream(String group, String name, ZonedDateTime updatedAt) {
+        super(group, name, updatedAt);
         this.tagFamilySpecs = new ArrayList<>(2);
         this.entityTagNames = new ArrayList<>();
-        this.shardNum = shardNum;
-        this.ttl = ttl;
     }
 
     /**
@@ -85,27 +73,26 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
     }
 
     @Override
-    public BanyandbMetadata.Stream serialize(String group) {
-        List<BanyandbMetadata.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilySpecs.size());
+    public BanyandbDatabase.Stream serialize() {
+        List<BanyandbDatabase.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilySpecs.size());
         for (final TagFamilySpec spec : this.tagFamilySpecs) {
             metadataTagFamilySpecs.add(spec.serialize());
         }
 
-        BanyandbMetadata.Stream.Builder b = BanyandbMetadata.Stream.newBuilder()
-                .setMetadata(buildMetadata(group))
+        BanyandbDatabase.Stream.Builder b = BanyandbDatabase.Stream.newBuilder()
+                .setMetadata(buildMetadata())
                 .addAllTagFamilies(metadataTagFamilySpecs)
-                .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
-                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
+                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityTagNames).build());
 
         if (this.updatedAt != null) {
-            b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));
+            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
         }
         return b.build();
     }
 
-    static Stream fromProtobuf(final BanyandbMetadata.Stream pb) {
-        Stream s = new Stream(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
-                Duration.fromProtobuf(pb.getOpts().getTtl()), TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
+    public static Stream fromProtobuf(final BanyandbDatabase.Stream pb) {
+        Stream s = new Stream(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
+                TimeUtils.parseTimestamp(pb.getUpdatedAt()));
         // prepare entity
         for (int i = 0; i < pb.getEntity().getTagNamesCount(); i++) {
             s.addTagNameAsEntity(pb.getEntity().getTagNames(i));

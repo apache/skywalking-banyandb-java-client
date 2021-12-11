@@ -22,63 +22,62 @@ import com.google.common.base.Preconditions;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
-import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MeasureMetadataRegistry extends MetadataClient<BanyandbDatabase.Measure, Measure> {
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub blockingStub;
+public class GroupMetadataRegistry extends MetadataClient<BanyandbCommon.Group, Group> {
+    private final GroupRegistryServiceGrpc.GroupRegistryServiceBlockingStub blockingStub;
 
-    public MeasureMetadataRegistry(Channel channel) {
+    public GroupMetadataRegistry(Channel channel) {
         Preconditions.checkArgument(channel != null, "channel must not be null");
-        this.blockingStub = MeasureRegistryServiceGrpc.newBlockingStub(channel);
+        this.blockingStub = GroupRegistryServiceGrpc.newBlockingStub(channel);
     }
 
     @Override
-    public void create(Measure payload) {
-        blockingStub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
-                .setMeasure(payload.serialize())
+    public void create(Group payload) {
+        blockingStub.create(BanyandbDatabase.GroupRegistryServiceCreateRequest.newBuilder()
+                .setGroup(payload.serialize())
                 .build());
     }
 
     @Override
-    public void update(Measure payload) {
-        blockingStub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
-                .setMeasure(payload.serialize())
+    public void update(Group payload) {
+        blockingStub.update(BanyandbDatabase.GroupRegistryServiceUpdateRequest.newBuilder()
+                .setGroup(payload.serialize())
                 .build());
     }
 
     @Override
     public boolean delete(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+        BanyandbDatabase.GroupRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.GroupRegistryServiceDeleteRequest.newBuilder()
+                .setGroup(name)
                 .build());
         return resp != null && resp.getDeleted();
     }
 
     @Override
-    public Measure get(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.MeasureRegistryServiceGetRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+    public Group get(String group, String name) {
+        BanyandbDatabase.GroupRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.GroupRegistryServiceGetRequest.newBuilder()
+                .setGroup(name)
                 .build());
         if (resp == null) {
             return null;
         }
 
-        return Measure.fromProtobuf(resp.getMeasure());
+        return Group.fromProtobuf(resp.getGroup());
     }
 
     @Override
-    public List<Measure> list(String group) {
-        BanyandbDatabase.MeasureRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.MeasureRegistryServiceListRequest.newBuilder()
-                .setGroup(group)
+    public List<Group> list(String group) {
+        BanyandbDatabase.GroupRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.GroupRegistryServiceListRequest.newBuilder()
                 .build());
         if (resp == null) {
             return Collections.emptyList();
         }
 
-        return resp.getMeasureList().stream().map(Measure::fromProtobuf).collect(Collectors.toList());
+        return resp.getGroupList().stream().map(Group::fromProtobuf).collect(Collectors.toList());
     }
 }

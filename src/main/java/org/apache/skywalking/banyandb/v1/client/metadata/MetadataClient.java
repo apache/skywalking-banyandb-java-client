@@ -18,8 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.protobuf.GeneratedMessageV3;
 
 import java.util.List;
@@ -31,13 +29,6 @@ import java.util.List;
  * @param <S> NamedSchema: Java implementation (POJO) which can be serialized to P
  */
 public abstract class MetadataClient<P extends GeneratedMessageV3, S extends NamedSchema<P>> {
-    protected final String group;
-
-    protected MetadataClient(String group) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(group), "group must not be null or empty");
-        this.group = group;
-    }
-
     /**
      * Create a schema
      *
@@ -55,23 +46,25 @@ public abstract class MetadataClient<P extends GeneratedMessageV3, S extends Nam
     /**
      * Delete a schema
      *
-     * @param name the name of the schema to be removed
+     * @param group the group of the schema to be removed
+     * @param name  the name of the schema to be removed
      * @return whether this schema is deleted
      */
-    abstract boolean delete(String name);
+    abstract boolean delete(String group, String name);
 
     /**
      * Get a schema with name
      *
-     * @param name the name of the schema to be found
+     * @param group the group of the schema to be found
+     * @param name  the name of the schema to be found
      * @return the schema, null if not found
      */
-    abstract S get(String name);
+    abstract S get(String group, String name);
 
     /**
      * List all schemas with the same group name
      *
      * @return a list of schemas found
      */
-    abstract List<S> list();
+    abstract List<S> list(String group);
 }

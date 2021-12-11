@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -32,7 +32,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
+public class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> {
     /**
      * tags are the combination that refers to an indexed object
      * If the elements in tags are more than 1, the object will generate a multi-tag index
@@ -50,12 +50,12 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
      */
     private IndexLocation indexLocation;
 
-    public IndexRule(String name, IndexType indexType, IndexLocation indexLocation) {
-        this(name, indexType, indexLocation, null);
+    public IndexRule(String group, String name, IndexType indexType, IndexLocation indexLocation) {
+        this(group, name, indexType, indexLocation, null);
     }
 
-    private IndexRule(String name, IndexType indexType, IndexLocation indexLocation, ZonedDateTime updatedAt) {
-        super(name, updatedAt);
+    private IndexRule(String group, String name, IndexType indexType, IndexLocation indexLocation, ZonedDateTime updatedAt) {
+        super(group, name, updatedAt);
         this.tags = new ArrayList<>();
         this.indexType = indexType;
         this.indexLocation = indexLocation;
@@ -72,9 +72,9 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
     }
 
     @Override
-    public BanyandbMetadata.IndexRule serialize(String group) {
-        BanyandbMetadata.IndexRule.Builder b = BanyandbMetadata.IndexRule.newBuilder()
-                .setMetadata(buildMetadata(group))
+    public BanyandbDatabase.IndexRule serialize() {
+        BanyandbDatabase.IndexRule.Builder b = BanyandbDatabase.IndexRule.newBuilder()
+                .setMetadata(buildMetadata())
                 .addAllTags(this.tags)
                 .setLocation(this.indexLocation.location)
                 .setType(this.indexType.type);
@@ -85,10 +85,11 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
         return b.build();
     }
 
-    static IndexRule fromProtobuf(BanyandbMetadata.IndexRule pb) {
+    public static IndexRule fromProtobuf(BanyandbDatabase.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
         IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
-        IndexRule indexRule = new IndexRule(pb.getMetadata().getName(), indexType, indexLocation,
+        IndexRule indexRule = new IndexRule(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
+                indexType, indexLocation,
                 TimeUtils.parseTimestamp(pb.getUpdatedAt()));
         indexRule.setTags(new ArrayList<>(pb.getTagsList()));
         return indexRule;
@@ -96,11 +97,11 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
 
     @RequiredArgsConstructor
     public enum IndexType {
-        TREE(BanyandbMetadata.IndexRule.Type.TYPE_TREE), INVERTED(BanyandbMetadata.IndexRule.Type.TYPE_INVERTED);
+        TREE(BanyandbDatabase.IndexRule.Type.TYPE_TREE), INVERTED(BanyandbDatabase.IndexRule.Type.TYPE_INVERTED);
 
-        private final BanyandbMetadata.IndexRule.Type type;
+        private final BanyandbDatabase.IndexRule.Type type;
 
-        private static IndexType fromProtobuf(BanyandbMetadata.IndexRule.Type type) {
+        private static IndexType fromProtobuf(BanyandbDatabase.IndexRule.Type type) {
             switch (type) {
                 case TYPE_TREE:
                     return TREE;
@@ -114,11 +115,11 @@ public class IndexRule extends NamedSchema<BanyandbMetadata.IndexRule> {
 
     @RequiredArgsConstructor
     public enum IndexLocation {
-        SERIES(BanyandbMetadata.IndexRule.Location.LOCATION_SERIES), GLOBAL(BanyandbMetadata.IndexRule.Location.LOCATION_GLOBAL);
+        SERIES(BanyandbDatabase.IndexRule.Location.LOCATION_SERIES), GLOBAL(BanyandbDatabase.IndexRule.Location.LOCATION_GLOBAL);
 
-        private final BanyandbMetadata.IndexRule.Location location;
+        private final BanyandbDatabase.IndexRule.Location location;
 
-        private static IndexLocation fromProtobuf(BanyandbMetadata.IndexRule.Location loc) {
+        private static IndexLocation fromProtobuf(BanyandbDatabase.IndexRule.Location loc) {
             switch (loc) {
                 case LOCATION_GLOBAL:
                     return GLOBAL;

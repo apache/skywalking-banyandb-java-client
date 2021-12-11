@@ -20,72 +20,74 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.Timestamp;
 
-import java.util.List;
-
-import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.Singular;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 /**
  * StreamWrite represents a write operation, including necessary fields, for {@link
  * BanyanDBClient#buildStreamWriteProcessor}.
  */
-@Builder
-@Getter(AccessLevel.PROTECTED)
-public class StreamWrite {
-    /**
-     * Owner name current entity
-     */
-    private final String name;
+public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
     /**
      * ID of current entity
      */
+    @Getter
     private final String elementId;
-    /**
-     * Timestamp represents the time of current stream
-     * in the timeunit of milliseconds.
-     */
-    private final long timestamp;
     /**
      * The fields represent objects of current stream, and they are not indexed.
      * It could be organized by different serialization formats.
      * For instance, regarding the binary format, SkyWalking may use protobuf, but it is not required.
      * The BanyanDB server wouldn't deserialize binary data. Thus, no specific format requirement.
      */
-    @Singular
-    private final List<SerializableTag<Banyandb.TagValue>> dataTags;
+    private Object[] dataTags;
     /**
      * The values of "searchable" fields, which are defined by the schema.
      * In the bulk write process, BanyanDB client doesn't require field names anymore.
      */
-    @Singular
-    private final List<SerializableTag<Banyandb.TagValue>> searchableTags;
+    private Object[] searchableTags;
+
+    public StreamWrite(final String group, final String name, final String elementId, long timestamp, int dataTagCap, int searchableTagLen) {
+        super(group, name, timestamp);
+        this.elementId = elementId;
+        this.dataTags = new Object[dataTagCap];
+        this.searchableTags = new Object[searchableTagLen];
+    }
+
+    public StreamWrite dataTag(int index, Serializable<BanyandbModel.TagValue> tag) {
+        this.dataTags[index] = tag;
+        return this;
+    }
+
+    public StreamWrite searchableTag(int index, Serializable<BanyandbModel.TagValue> tag) {
+        this.searchableTags[index] = tag;
+        return this;
+    }
 
     /**
-     * @param group of the BanyanDB client connected.
+     * Build a write request
+     *
      * @return {@link BanyandbStream.WriteRequest} for the bulk process.
      */
-    BanyandbStream.WriteRequest build(String group) {
+    @Override
+    protected BanyandbStream.WriteRequest build(BanyandbCommon.Metadata metadata, Timestamp ts) {
         final BanyandbStream.WriteRequest.Builder builder = BanyandbStream.WriteRequest.newBuilder();
-        builder.setMetadata(Banyandb.Metadata.newBuilder().setGroup(group).setName(name).build());
+        builder.setMetadata(metadata);
         final BanyandbStream.ElementValue.Builder elemValBuilder = BanyandbStream.ElementValue.newBuilder();
         elemValBuilder.setElementId(elementId);
-        elemValBuilder.setTimestamp(Timestamp.newBuilder()
-                .setSeconds(timestamp / 1000)
-                .setNanos((int) (timestamp % 1000 * 1_000_000)));
+        elemValBuilder.setTimestamp(ts);
         // 1 - add "data" tags
-        Banyandb.TagFamilyForWrite.Builder dataBuilder = Banyandb.TagFamilyForWrite.newBuilder();
-        for (final SerializableTag<Banyandb.TagValue> dataTag : this.dataTags) {
-            dataBuilder.addTags(dataTag.toTag());
+        BanyandbModel.TagFamilyForWrite.Builder dataBuilder = BanyandbModel.TagFamilyForWrite.newBuilder();
+        for (final Object dataTag : this.dataTags) {
+            dataBuilder.addTags(((Serializable<BanyandbModel.TagValue>) dataTag).serialize());
         }
         elemValBuilder.addTagFamilies(dataBuilder.build());
         // 2 - add "searchable" tags
-        Banyandb.TagFamilyForWrite.Builder searchableBuilder = Banyandb.TagFamilyForWrite.newBuilder();
-        for (final SerializableTag<Banyandb.TagValue> searchableTag : this.searchableTags) {
-            searchableBuilder.addTags(searchableTag.toTag());
+        BanyandbModel.TagFamilyForWrite.Builder searchableBuilder = BanyandbModel.TagFamilyForWrite.newBuilder();
+        for (final Object searchableTag : this.searchableTags) {
+            searchableBuilder.addTags(((Serializable<BanyandbModel.TagValue>) searchableTag).serialize());
         }
         elemValBuilder.addTagFamilies(searchableBuilder);
         builder.setElement(elemValBuilder);

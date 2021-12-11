@@ -24,8 +24,8 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.StreamRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,51 +53,51 @@ public class StreamMetadataRegistryTest {
     private StreamMetadataRegistry client;
 
     // play as an in-memory registry
-    private Map<String, BanyandbMetadata.Stream> streamRegistry;
+    private Map<String, BanyandbDatabase.Stream> streamRegistry;
 
     private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase serviceImpl =
             mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
                     new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
                         @Override
-                        public void create(BanyandbMetadata.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                        public void create(BanyandbDatabase.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void update(BanyandbMetadata.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                        public void update(BanyandbDatabase.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void delete(BanyandbMetadata.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceDeleteResponse.newBuilder()
+                        public void delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceDeleteResponse.newBuilder()
                                     .setDeleted(oldStream != null)
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void get(BanyandbMetadata.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceGetResponse.newBuilder()
+                        public void get(BanyandbDatabase.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceGetResponse.newBuilder()
                                     .setStream(streamRegistry.get(request.getMetadata().getName()))
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void list(BanyandbMetadata.StreamRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceListResponse.newBuilder()
+                        public void list(BanyandbDatabase.StreamRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceListResponse.newBuilder()
                                     .addAllStream(streamRegistry.values())
                                     .build());
                             responseObserver.onCompleted();
@@ -120,19 +120,19 @@ public class StreamMetadataRegistryTest {
         ManagedChannel channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        this.client = new StreamMetadataRegistry("default", channel);
+        this.client = new StreamMetadataRegistry(channel);
     }
 
     @Test
     public void testStreamRegistry_create() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
+        Stream s = new Stream("default", "sw");
         this.client.create(s);
         Assert.assertEquals(streamRegistry.size(), 1);
     }
 
     @Test
     public void testStreamRegistry_createAndGet() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
+        Stream s = new Stream("default", "sw");
         s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
         // data
         TagFamilySpec dataFamily = new TagFamilySpec("data");
@@ -145,7 +145,7 @@ public class StreamMetadataRegistryTest {
                 .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
         s.addTagFamilySpec(searchableFamily);
         this.client.create(s);
-        Stream getStream = this.client.get("sw");
+        Stream getStream = this.client.get("default", "sw");
         Assert.assertNotNull(getStream);
         Assert.assertEquals(s, getStream);
         Assert.assertNotNull(getStream.getUpdatedAt());
@@ -153,7 +153,7 @@ public class StreamMetadataRegistryTest {
 
     @Test
     public void testStreamRegistry_createAndList() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
+        Stream s = new Stream("default", "sw");
         s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
         // data
         TagFamilySpec dataFamily = new TagFamilySpec("data");
@@ -166,7 +166,7 @@ public class StreamMetadataRegistryTest {
                 .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
         s.addTagFamilySpec(searchableFamily);
         this.client.create(s);
-        List<Stream> listStream = this.client.list();
+        List<Stream> listStream = this.client.list("default");
         Assert.assertNotNull(listStream);
         Assert.assertEquals(1, listStream.size());
         Assert.assertEquals(listStream.get(0), s);
@@ -174,7 +174,7 @@ public class StreamMetadataRegistryTest {
 
     @Test
     public void testStreamRegistry_createAndDelete() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
+        Stream s = new Stream("default", "sw");
         s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
         // data
         TagFamilySpec dataFamily = new TagFamilySpec("data");
@@ -187,7 +187,7 @@ public class StreamMetadataRegistryTest {
                 .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
         s.addTagFamilySpec(searchableFamily);
         this.client.create(s);
-        boolean deleted = this.client.delete("sw");
+        boolean deleted = this.client.delete("default", "sw");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, streamRegistry.size());
     }

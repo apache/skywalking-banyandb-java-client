@@ -16,48 +16,41 @@
  *
  */
 
-package org.apache.skywalking.banyandb.v1.client.metadata;
+package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.protobuf.GeneratedMessageV3;
-import lombok.EqualsAndHashCode;
+import com.google.protobuf.Timestamp;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 
-import java.time.ZonedDateTime;
-
-/**
- * NamedSchema is a kind of metadata registered in the BanyanDB.
- *
- * @param <P> In BanyanDB, we have Stream, IndexRule, IndexRuleBinding and Measure
- */
-@Getter
-@EqualsAndHashCode
-public abstract class NamedSchema<P extends GeneratedMessageV3> {
-    /**
-     * group of the NamedSchema
-     */
+public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
+    @Getter
     protected final String group;
     /**
-     * name of the NamedSchema
+     * Owner name of current entity
      */
+    @Getter
     protected final String name;
-
     /**
-     * last updated timestamp
-     * This field can only be set by the server.
+     * Timestamp represents the time of current stream
+     * in the timeunit of milliseconds.
      */
-    @EqualsAndHashCode.Exclude
-    protected final ZonedDateTime updatedAt;
+    @Getter
+    protected final long timestamp;
 
-    protected NamedSchema(String group, String name, ZonedDateTime updatedAt) {
+    public AbstractWrite(String group, String name, long timestamp) {
         this.group = group;
         this.name = name;
-        this.updatedAt = updatedAt;
+        this.timestamp = timestamp;
     }
 
-    public abstract P serialize();
-
-    protected BanyandbCommon.Metadata buildMetadata() {
-        return BanyandbCommon.Metadata.newBuilder().setName(this.name).setGroup(this.group).build();
+    P build() {
+        BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
+                .setGroup(this.group).setName(this.name).build();
+        Timestamp ts = Timestamp.newBuilder()
+                .setSeconds(timestamp / 1000)
+                .setNanos((int) (timestamp % 1000 * 1_000_000)).build();
+        return build(metadata, ts);
     }
+
+    protected abstract P build(BanyandbCommon.Metadata metadata, Timestamp ts);
 }
