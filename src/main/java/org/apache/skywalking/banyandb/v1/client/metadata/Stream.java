@@ -21,7 +21,7 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -31,7 +31,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
+public class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     /**
      * specs of tag families
      */
@@ -85,17 +85,17 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
     }
 
     @Override
-    public BanyandbMetadata.Stream serialize(String group) {
-        List<BanyandbMetadata.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilySpecs.size());
+    public BanyandbDatabase.Stream serialize(String group) {
+        List<BanyandbDatabase.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilySpecs.size());
         for (final TagFamilySpec spec : this.tagFamilySpecs) {
             metadataTagFamilySpecs.add(spec.serialize());
         }
 
-        BanyandbMetadata.Stream.Builder b = BanyandbMetadata.Stream.newBuilder()
+        BanyandbDatabase.Stream.Builder b = BanyandbDatabase.Stream.newBuilder()
                 .setMetadata(buildMetadata(group))
                 .addAllTagFamilies(metadataTagFamilySpecs)
-                .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
-                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
+                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityTagNames).build())
+                .setOpts(BanyandbDatabase.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
 
         if (this.updatedAt != null) {
             b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));
@@ -103,7 +103,7 @@ public class Stream extends NamedSchema<BanyandbMetadata.Stream> {
         return b.build();
     }
 
-    static Stream fromProtobuf(final BanyandbMetadata.Stream pb) {
+    public static Stream fromProtobuf(final BanyandbDatabase.Stream pb) {
         Stream s = new Stream(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
                 Duration.fromProtobuf(pb.getOpts().getTtl()), TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
         // prepare entity

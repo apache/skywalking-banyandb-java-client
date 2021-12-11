@@ -20,15 +20,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.common.base.Preconditions;
 import io.grpc.Channel;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleBindingRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServiceGrpc;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IndexRuleBindingMetadataRegistry extends MetadataClient<BanyandbMetadata.IndexRuleBinding, IndexRuleBinding> {
+public class IndexRuleBindingMetadataRegistry extends MetadataClient<BanyandbDatabase.IndexRuleBinding, IndexRuleBinding> {
     private final IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceBlockingStub blockingStub;
 
     public IndexRuleBindingMetadataRegistry(String group, Channel channel) {
@@ -39,30 +39,30 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<BanyandbMet
 
     @Override
     public void create(IndexRuleBinding payload) {
-        blockingStub.create(BanyandbMetadata.IndexRuleBindingRegistryServiceCreateRequest.newBuilder()
+        blockingStub.create(BanyandbDatabase.IndexRuleBindingRegistryServiceCreateRequest.newBuilder()
                 .setIndexRuleBinding(payload.serialize(this.group))
                 .build());
     }
 
     @Override
     public void update(IndexRuleBinding payload) {
-        blockingStub.update(BanyandbMetadata.IndexRuleBindingRegistryServiceUpdateRequest.newBuilder()
+        blockingStub.update(BanyandbDatabase.IndexRuleBindingRegistryServiceUpdateRequest.newBuilder()
                 .setIndexRuleBinding(payload.serialize(this.group))
                 .build());
     }
 
     @Override
     public boolean delete(String name) {
-        BanyandbMetadata.IndexRuleBindingRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbMetadata.IndexRuleBindingRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+        BanyandbDatabase.IndexRuleBindingRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.IndexRuleBindingRegistryServiceDeleteRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(this.group).setName(name).build())
                 .build());
         return resp != null && resp.getDeleted();
     }
 
     @Override
     public IndexRuleBinding get(String name) {
-        BanyandbMetadata.IndexRuleBindingRegistryServiceGetResponse resp = blockingStub.get(BanyandbMetadata.IndexRuleBindingRegistryServiceGetRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+        BanyandbDatabase.IndexRuleBindingRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.IndexRuleBindingRegistryServiceGetRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(this.group).setName(name).build())
                 .build());
         if (resp == null) {
             return null;
@@ -73,7 +73,7 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<BanyandbMet
 
     @Override
     public List<IndexRuleBinding> list() {
-        BanyandbMetadata.IndexRuleBindingRegistryServiceListResponse resp = blockingStub.list(BanyandbMetadata.IndexRuleBindingRegistryServiceListRequest.newBuilder()
+        BanyandbDatabase.IndexRuleBindingRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.IndexRuleBindingRegistryServiceListRequest.newBuilder()
                 .setGroup(this.group)
                 .build());
         if (resp == null) {

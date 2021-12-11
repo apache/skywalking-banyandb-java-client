@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZoneOffset;
@@ -33,7 +33,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBinding> {
+public class IndexRuleBinding extends NamedSchema<BanyandbDatabase.IndexRuleBinding> {
     private static final ZonedDateTime DEFAULT_EXPIRE_AT = ZonedDateTime.of(2099, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     /**
      * rule names refer to the IndexRule
@@ -79,8 +79,8 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
     }
 
     @Override
-    public BanyandbMetadata.IndexRuleBinding serialize(String group) {
-        BanyandbMetadata.IndexRuleBinding.Builder b = BanyandbMetadata.IndexRuleBinding.newBuilder()
+    public BanyandbDatabase.IndexRuleBinding serialize(String group) {
+        BanyandbDatabase.IndexRuleBinding.Builder b = BanyandbDatabase.IndexRuleBinding.newBuilder()
                 .setMetadata(buildMetadata(group))
                 .addAllRules(this.rules)
                 .setSubject(this.subject.serialize())
@@ -92,7 +92,7 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
         return b.build();
     }
 
-    static IndexRuleBinding fromProtobuf(BanyandbMetadata.IndexRuleBinding pb) {
+    static IndexRuleBinding fromProtobuf(BanyandbDatabase.IndexRuleBinding pb) {
         IndexRuleBinding indexRuleBinding = new IndexRuleBinding(pb.getMetadata().getName(), Subject.fromProtobuf(pb.getSubject()), TimeUtils.parseTimestamp(pb.getUpdatedAt()));
         indexRuleBinding.setRules(new ArrayList<>(pb.getRulesList()));
         indexRuleBinding.setBeginAt(TimeUtils.parseTimestamp(pb.getBeginAt()));
@@ -103,7 +103,7 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
     @RequiredArgsConstructor
     @Getter
     @EqualsAndHashCode
-    public static class Subject implements Serializable<BanyandbMetadata.Subject> {
+    public static class Subject implements Serializable<BanyandbDatabase.Subject> {
         /**
          * name refers to a stream or measure in a particular catalog
          */
@@ -115,8 +115,8 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
         private final Catalog catalog;
 
         @Override
-        public BanyandbMetadata.Subject serialize() {
-            return BanyandbMetadata.Subject.newBuilder()
+        public BanyandbDatabase.Subject serialize() {
+            return BanyandbDatabase.Subject.newBuilder()
                     .setName(this.name)
                     .setCatalog(this.catalog.getCatalog())
                     .build();
@@ -142,7 +142,7 @@ public class IndexRuleBinding extends NamedSchema<BanyandbMetadata.IndexRuleBind
             return new Subject(name, Catalog.MEASURE);
         }
 
-        private static Subject fromProtobuf(BanyandbMetadata.Subject pb) {
+        private static Subject fromProtobuf(BanyandbDatabase.Subject pb) {
             switch (pb.getCatalog()) {
                 case CATALOG_STREAM:
                     return referToStream(pb.getName());

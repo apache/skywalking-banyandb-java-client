@@ -21,7 +21,7 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import com.google.protobuf.GeneratedMessageV3;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 
 import java.time.ZonedDateTime;
 
@@ -52,7 +52,7 @@ public abstract class NamedSchema<P extends GeneratedMessageV3> {
 
     public abstract P serialize(String group);
 
-    protected Banyandb.Metadata buildMetadata(String group) {
-        return Banyandb.Metadata.newBuilder().setName(this.name).setGroup(group).build();
+    protected BanyandbCommon.Metadata buildMetadata(String group) {
+        return BanyandbCommon.Metadata.newBuilder().setName(this.name).setGroup(group).build();
     }
 }

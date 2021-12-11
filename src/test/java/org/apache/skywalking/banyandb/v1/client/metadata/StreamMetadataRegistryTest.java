@@ -24,8 +24,8 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.StreamRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,51 +53,51 @@ public class StreamMetadataRegistryTest {
     private StreamMetadataRegistry client;
 
     // play as an in-memory registry
-    private Map<String, BanyandbMetadata.Stream> streamRegistry;
+    private Map<String, BanyandbDatabase.Stream> streamRegistry;
 
     private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase serviceImpl =
             mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
                     new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
                         @Override
-                        public void create(BanyandbMetadata.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
+                        public void create(BanyandbDatabase.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
                                     .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void update(BanyandbMetadata.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
+                        public void update(BanyandbDatabase.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
                                     .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void delete(BanyandbMetadata.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceDeleteResponse.newBuilder()
+                        public void delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceDeleteResponse.newBuilder()
                                     .setDeleted(oldStream != null)
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void get(BanyandbMetadata.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceGetResponse.newBuilder()
+                        public void get(BanyandbDatabase.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceGetResponse.newBuilder()
                                     .setStream(streamRegistry.get(request.getMetadata().getName()))
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void list(BanyandbMetadata.StreamRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceListResponse.newBuilder()
+                        public void list(BanyandbDatabase.StreamRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceListResponse.newBuilder()
                                     .addAllStream(streamRegistry.values())
                                     .build());
                             responseObserver.onCompleted();

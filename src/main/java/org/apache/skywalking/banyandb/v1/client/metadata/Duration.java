@@ -22,10 +22,10 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 
 @EqualsAndHashCode
-public class Duration implements Serializable<BanyandbMetadata.Duration> {
+public class Duration implements Serializable<BanyandbDatabase.Duration> {
     private final int val;
     private final Unit unit;
 
@@ -75,8 +75,8 @@ public class Duration implements Serializable<BanyandbMetadata.Duration> {
     }
 
     @Override
-    public BanyandbMetadata.Duration serialize() {
-        return BanyandbMetadata.Duration.newBuilder()
+    public BanyandbDatabase.Duration serialize() {
+        return BanyandbDatabase.Duration.newBuilder()
                 .setVal(this.val)
                 .setUnit(this.unit.getDurationUnit())
                 .build();
@@ -84,16 +84,16 @@ public class Duration implements Serializable<BanyandbMetadata.Duration> {
 
     @RequiredArgsConstructor
     public enum Unit {
-        HOUR(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_HOUR),
-        DAY(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_DAY),
-        WEEK(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_WEEK),
-        MONTH(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_MONTH);
+        HOUR(BanyandbDatabase.Duration.DurationUnit.DURATION_UNIT_HOUR),
+        DAY(BanyandbDatabase.Duration.DurationUnit.DURATION_UNIT_DAY),
+        WEEK(BanyandbDatabase.Duration.DurationUnit.DURATION_UNIT_WEEK),
+        MONTH(BanyandbDatabase.Duration.DurationUnit.DURATION_UNIT_MONTH);
 
         @Getter(AccessLevel.PRIVATE)
-        private final BanyandbMetadata.Duration.DurationUnit durationUnit;
+        private final BanyandbDatabase.Duration.DurationUnit durationUnit;
     }
 
-    static Duration fromProtobuf(BanyandbMetadata.Duration duration) {
+    public static Duration fromProtobuf(BanyandbDatabase.Duration duration) {
         switch (duration.getUnit()) {
             case DURATION_UNIT_DAY:
                 return ofDays(duration.getVal());

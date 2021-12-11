@@ -22,7 +22,7 @@ import java.util.List;
 
 import com.google.protobuf.ByteString;
 import lombok.EqualsAndHashCode;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
 /**
  * TagAndValue represents a value of column in the response
@@ -59,7 +59,7 @@ public abstract class TagAndValue<T> extends Tag<T> {
         return this.value == null;
     }
 
-    static TagAndValue<?> build(String tagFamilyName, Banyandb.Tag tag) {
+    static TagAndValue<?> build(String tagFamilyName, BanyandbModel.Tag tag) {
         switch (tag.getValue().getValueCase()) {
             case INT:
                 return new LongTagPair(tagFamilyName, tag.getKey(), tag.getValue().getInt().getValue());

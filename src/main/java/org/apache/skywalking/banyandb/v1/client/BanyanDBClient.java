@@ -29,7 +29,6 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +44,8 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 
 /**
  * BanyanDBClient represents a client instance interacting with BanyanDB server. This is built on the top of BanyanDB v1
@@ -253,11 +252,9 @@ public class BanyanDBClient implements Closeable {
      * Bind index rule to the stream
      *
      * @param stream     the subject of index rule binding
-     * @param beginAt    the start timestamp of this rule binding
-     * @param expireAt   the expiry timestamp of this rule binding
      * @param indexRules rules to be bounded
      */
-    public void defineIndexRules(Stream stream, ZonedDateTime beginAt, ZonedDateTime expireAt, IndexRule... indexRules) {
+    public void defineIndexRules(Stream stream, IndexRule... indexRules) {
         Preconditions.checkArgument(stream != null, "measure cannot be null");
         Preconditions.checkState(this.channel != null, "channel is null");
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(this.group, this.channel);
@@ -270,8 +267,6 @@ public class BanyanDBClient implements Closeable {
         IndexRuleBinding binding = new IndexRuleBinding(stream.getName() + "-index-rule-binding",
                 IndexRuleBinding.Subject.referToStream(stream.getName()));
         binding.setRules(indexRuleNames);
-        binding.setBeginAt(beginAt);
-        binding.setExpireAt(expireAt);
         irbRegistry.create(binding);
     }
 

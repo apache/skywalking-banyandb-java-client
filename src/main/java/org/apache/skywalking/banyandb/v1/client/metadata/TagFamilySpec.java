@@ -24,14 +24,14 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @EqualsAndHashCode
-public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpec> {
+public class TagFamilySpec implements Serializable<BanyandbDatabase.TagFamilySpec> {
     /**
      * name of the tag family
      */
@@ -62,21 +62,21 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
         return this;
     }
 
-    public BanyandbMetadata.TagFamilySpec serialize() {
-        List<BanyandbMetadata.TagSpec> metadataTagSpecs = new ArrayList<>(this.tagSpecs.size());
+    public BanyandbDatabase.TagFamilySpec serialize() {
+        List<BanyandbDatabase.TagSpec> metadataTagSpecs = new ArrayList<>(this.tagSpecs.size());
         for (final TagSpec spec : this.tagSpecs) {
             metadataTagSpecs.add(spec.serialize());
         }
-        return BanyandbMetadata.TagFamilySpec.newBuilder()
+        return BanyandbDatabase.TagFamilySpec.newBuilder()
                 .setName(this.tagFamilyName)
                 .addAllTags(metadataTagSpecs)
                 .build();
     }
 
-    static TagFamilySpec fromProtobuf(BanyandbMetadata.TagFamilySpec pb) {
+    static TagFamilySpec fromProtobuf(BanyandbDatabase.TagFamilySpec pb) {
         final TagFamilySpec tagFamilySpec = new TagFamilySpec(pb.getName());
         for (int j = 0; j < pb.getTagsCount(); j++) {
-            final BanyandbMetadata.TagSpec ts = pb.getTags(j);
+            final BanyandbDatabase.TagSpec ts = pb.getTags(j);
             final String tagName = ts.getName();
             switch (ts.getType()) {
                 case TAG_TYPE_INT:
@@ -104,7 +104,7 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
 
     @Getter
     @EqualsAndHashCode
-    public static class TagSpec implements Serializable<BanyandbMetadata.TagSpec> {
+    public static class TagSpec implements Serializable<BanyandbDatabase.TagSpec> {
         /**
          * name of the tag
          */
@@ -171,8 +171,8 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
         }
 
         @Override
-        public BanyandbMetadata.TagSpec serialize() {
-            return BanyandbMetadata.TagSpec.newBuilder()
+        public BanyandbDatabase.TagSpec serialize() {
+            return BanyandbDatabase.TagSpec.newBuilder()
                     .setName(this.tagName)
                     .setType(this.tagType.getTagType())
                     .build();
@@ -180,14 +180,14 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
 
         @RequiredArgsConstructor
         public enum TagType {
-            INT(BanyandbMetadata.TagType.TAG_TYPE_INT),
-            STRING(BanyandbMetadata.TagType.TAG_TYPE_STRING),
-            INT_ARRAY(BanyandbMetadata.TagType.TAG_TYPE_INT_ARRAY),
-            STRING_ARRAY(BanyandbMetadata.TagType.TAG_TYPE_STRING_ARRAY),
-            BINARY(BanyandbMetadata.TagType.TAG_TYPE_DATA_BINARY);
+            INT(BanyandbDatabase.TagType.TAG_TYPE_INT),
+            STRING(BanyandbDatabase.TagType.TAG_TYPE_STRING),
+            INT_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_INT_ARRAY),
+            STRING_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_STRING_ARRAY),
+            BINARY(BanyandbDatabase.TagType.TAG_TYPE_DATA_BINARY);
 
             @Getter(AccessLevel.PRIVATE)
-            private final BanyandbMetadata.TagType tagType;
+            private final BanyandbDatabase.TagType tagType;
         }
     }
 }

@@ -24,8 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
  * RowEntity represents an entity of BanyanDB entity.
@@ -54,9 +54,9 @@ public class RowEntity {
         final int tagFamilyCount = element.getTagFamiliesCount();
         this.tagFamilies = new ArrayList<>(tagFamilyCount);
         for (int i = 0; i < tagFamilyCount; i++) {
-            Banyandb.TagFamily tagFamily = element.getTagFamilies(i);
+            BanyandbModel.TagFamily tagFamily = element.getTagFamilies(i);
             List<TagAndValue<?>> tagAndValuesInTagFamily = tagFamily.getTagsList().stream()
-                    .map((Function<Banyandb.Tag, TagAndValue<?>>) tag -> TagAndValue.build(tagFamily.getName(), tag))
+                    .map((Function<BanyandbModel.Tag, TagAndValue<?>>) tag -> TagAndValue.build(tagFamily.getName(), tag))
                     .collect(Collectors.toList());
             this.tagFamilies.add(tagAndValuesInTagFamily);
         }

@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 import javax.annotation.concurrent.ThreadSafe;
 

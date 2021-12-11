@@ -24,8 +24,8 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.IndexRuleRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,49 +53,49 @@ public class IndexRuleMetadataRegistryTest {
     private IndexRuleMetadataRegistry client;
 
     // play as an in-memory registry
-    private Map<String, BanyandbMetadata.IndexRule> indexRuleRegistry;
+    private Map<String, BanyandbDatabase.IndexRule> indexRuleRegistry;
 
     private final IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase serviceImpl =
             mock(IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase.class, delegatesTo(
                     new IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceImplBase() {
                         @Override
-                        public void create(BanyandbMetadata.IndexRuleRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                        public void create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.IndexRuleRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleRegistryServiceCreateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void update(BanyandbMetadata.IndexRuleRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                        public void update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.IndexRuleRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.IndexRule s = request.getIndexRule().toBuilder().setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                                     .build();
                             indexRuleRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleRegistryServiceUpdateResponse.newBuilder().build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void delete(BanyandbMetadata.IndexRuleRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.IndexRule oldIndexRule = indexRuleRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceDeleteResponse.newBuilder()
+                        public void delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.IndexRule oldIndexRule = indexRuleRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse.newBuilder()
                                     .setDeleted(oldIndexRule != null)
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void get(BanyandbMetadata.IndexRuleRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceGetResponse.newBuilder()
+                        public void get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.IndexRuleRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleRegistryServiceGetResponse.newBuilder()
                                     .setIndexRule(indexRuleRegistry.get(request.getMetadata().getName()))
                                     .build());
                             responseObserver.onCompleted();
                         }
 
                         @Override
-                        public void list(BanyandbMetadata.IndexRuleRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.IndexRuleRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.IndexRuleRegistryServiceListResponse.newBuilder()
+                        public void list(BanyandbDatabase.IndexRuleRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.IndexRuleRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.IndexRuleRegistryServiceListResponse.newBuilder()
                                     .addAllIndexRule(indexRuleRegistry.values())
                                     .build());
                             responseObserver.onCompleted();

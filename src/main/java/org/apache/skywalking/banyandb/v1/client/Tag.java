@@ -23,7 +23,7 @@ import java.util.List;
 import com.google.protobuf.ByteString;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
 import static com.google.protobuf.NullValue.NULL_VALUE;
 
@@ -43,7 +43,7 @@ public abstract class Tag<T> {
      * NullField is a value which can be converted to {@link com.google.protobuf.NullValue}.
      * Users should use the singleton instead of create a new instance everytime.
      */
-    public static class NullField extends Tag<Object> implements SerializableTag<Banyandb.TagValue> {
+    public static class NullField extends Tag<Object> implements SerializableTag<BanyandbModel.TagValue> {
         private static final NullField INSTANCE = new NullField();
 
         private NullField() {
@@ -51,78 +51,78 @@ public abstract class Tag<T> {
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setNull(NULL_VALUE).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setNull(NULL_VALUE).build();
         }
     }
 
     /**
      * The value of a String type field.
      */
-    public static class StringField extends Tag<String> implements SerializableTag<Banyandb.TagValue> {
+    public static class StringField extends Tag<String> implements SerializableTag<BanyandbModel.TagValue> {
         private StringField(String value) {
             super(value);
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setStr(Banyandb.Str.newBuilder().setValue(value)).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setStr(BanyandbModel.Str.newBuilder().setValue(value)).build();
         }
     }
 
     /**
      * The value of a String array type field.
      */
-    public static class StringArrayField extends Tag<List<String>> implements SerializableTag<Banyandb.TagValue> {
+    public static class StringArrayField extends Tag<List<String>> implements SerializableTag<BanyandbModel.TagValue> {
         private StringArrayField(List<String> value) {
             super(value);
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setStrArray(Banyandb.StrArray.newBuilder().addAllValue(value)).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setStrArray(BanyandbModel.StrArray.newBuilder().addAllValue(value)).build();
         }
     }
 
     /**
      * The value of an int64(Long) type field.
      */
-    public static class LongField extends Tag<Long> implements SerializableTag<Banyandb.TagValue> {
+    public static class LongField extends Tag<Long> implements SerializableTag<BanyandbModel.TagValue> {
         private LongField(Long value) {
             super(value);
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setInt(Banyandb.Int.newBuilder().setValue(value)).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setInt(BanyandbModel.Int.newBuilder().setValue(value)).build();
         }
     }
 
     /**
      * The value of an int64(Long) array type field.
      */
-    public static class LongArrayField extends Tag<List<Long>> implements SerializableTag<Banyandb.TagValue> {
+    public static class LongArrayField extends Tag<List<Long>> implements SerializableTag<BanyandbModel.TagValue> {
         private LongArrayField(List<Long> value) {
             super(value);
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setIntArray(Banyandb.IntArray.newBuilder().addAllValue(value)).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setIntArray(BanyandbModel.IntArray.newBuilder().addAllValue(value)).build();
         }
     }
 
     /**
      * The value of a byte array(ByteString) type field.
      */
-    public static class BinaryField extends Tag<ByteString> implements SerializableTag<Banyandb.TagValue> {
+    public static class BinaryField extends Tag<ByteString> implements SerializableTag<BanyandbModel.TagValue> {
         public BinaryField(ByteString byteString) {
             super(byteString);
         }
 
         @Override
-        public Banyandb.TagValue toTag() {
-            return Banyandb.TagValue.newBuilder().setBinaryData(value).build();
+        public BanyandbModel.TagValue toTag() {
+            return BanyandbModel.TagValue.newBuilder().setBinaryData(value).build();
         }
     }
 
@@ -132,7 +132,7 @@ public abstract class Tag<T> {
      * @param val payload
      * @return Anonymous field with String payload
      */
-    public static SerializableTag<Banyandb.TagValue> stringField(String val) {
+    public static SerializableTag<BanyandbModel.TagValue> stringField(String val) {
         return new StringField(val);
     }
 
@@ -142,7 +142,7 @@ public abstract class Tag<T> {
      * @param val payload
      * @return Anonymous field with numeric payload
      */
-    public static SerializableTag<Banyandb.TagValue> longField(long val) {
+    public static SerializableTag<BanyandbModel.TagValue> longField(long val) {
         return new LongField(val);
     }
 
@@ -152,7 +152,7 @@ public abstract class Tag<T> {
      * @param val payload
      * @return Anonymous field with string array payload
      */
-    public static SerializableTag<Banyandb.TagValue> stringArrayField(List<String> val) {
+    public static SerializableTag<BanyandbModel.TagValue> stringArrayField(List<String> val) {
         return new StringArrayField(val);
     }
 
@@ -162,7 +162,7 @@ public abstract class Tag<T> {
      * @param bytes binary data
      * @return Anonymous field with binary payload
      */
-    public static SerializableTag<Banyandb.TagValue> binaryField(byte[] bytes) {
+    public static SerializableTag<BanyandbModel.TagValue> binaryField(byte[] bytes) {
         return new BinaryField(ByteString.copyFrom(bytes));
     }
 
@@ -172,11 +172,11 @@ public abstract class Tag<T> {
      * @param val payload
      * @return Anonymous field with numeric array payload
      */
-    public static SerializableTag<Banyandb.TagValue> longArrayField(List<Long> val) {
+    public static SerializableTag<BanyandbModel.TagValue> longArrayField(List<Long> val) {
         return new LongArrayField(val);
     }
 
-    public static SerializableTag<Banyandb.TagValue> nullField() {
+    public static SerializableTag<BanyandbModel.TagValue> nullField() {
         return NullField.INSTANCE;
     }
 }

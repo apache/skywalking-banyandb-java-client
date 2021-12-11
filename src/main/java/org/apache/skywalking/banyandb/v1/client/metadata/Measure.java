@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -32,7 +32,7 @@ import java.util.List;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true)
-public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
+public class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     /**
      * specs of tag families
      */
@@ -117,7 +117,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         return this;
     }
 
-    static Measure fromProtobuf(BanyandbMetadata.Measure pb) {
+    static Measure fromProtobuf(BanyandbDatabase.Measure pb) {
         Measure m = new Measure(pb.getMetadata().getName(), pb.getOpts().getShardNum(),
                 Duration.fromProtobuf(pb.getOpts().getTtl()),
                 TimeUtils.parseTimestamp(pb.getUpdatedAtNanoseconds()));
@@ -146,29 +146,29 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
     }
 
     @Override
-    public BanyandbMetadata.Measure serialize(String group) {
-        List<BanyandbMetadata.TagFamilySpec> tfs = new ArrayList<>(this.tagFamilySpecs.size());
+    public BanyandbDatabase.Measure serialize(String group) {
+        List<BanyandbDatabase.TagFamilySpec> tfs = new ArrayList<>(this.tagFamilySpecs.size());
         for (final TagFamilySpec spec : this.tagFamilySpecs) {
             tfs.add(spec.serialize());
         }
 
-        List<BanyandbMetadata.FieldSpec> fs = new ArrayList<>(this.fieldSpecs.size());
+        List<BanyandbDatabase.FieldSpec> fs = new ArrayList<>(this.fieldSpecs.size());
         for (final FieldSpec spec : this.fieldSpecs) {
             fs.add(spec.serialize());
         }
 
-        List<BanyandbMetadata.IntervalRule> irs = new ArrayList<>(this.intervalRules.size());
+        List<BanyandbDatabase.IntervalRule> irs = new ArrayList<>(this.intervalRules.size());
         for (final IntervalRule<?> spec : this.intervalRules) {
             irs.add(spec.serialize());
         }
 
-        BanyandbMetadata.Measure.Builder b = BanyandbMetadata.Measure.newBuilder()
+        BanyandbDatabase.Measure.Builder b = BanyandbDatabase.Measure.newBuilder()
                 .setMetadata(buildMetadata(group))
                 .addAllTagFamilies(tfs)
                 .addAllFields(fs)
                 .addAllIntervalRules(irs)
-                .setEntity(BanyandbMetadata.Entity.newBuilder().addAllTagNames(entityTagNames).build())
-                .setOpts(BanyandbMetadata.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
+                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityTagNames).build())
+                .setOpts(BanyandbDatabase.ResourceOpts.newBuilder().setShardNum(this.shardNum).setTtl(this.ttl.serialize()));
 
         if (this.updatedAt != null) {
             b.setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(this.updatedAt));
@@ -178,7 +178,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
     }
 
     @EqualsAndHashCode
-    public static class FieldSpec implements Serializable<BanyandbMetadata.FieldSpec> {
+    public static class FieldSpec implements Serializable<BanyandbDatabase.FieldSpec> {
         /**
          * name is the identity of a field
          */
@@ -205,33 +205,33 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
 
         @RequiredArgsConstructor
         public enum FieldType {
-            UNSPECIFIED(BanyandbMetadata.FieldType.FIELD_TYPE_UNSPECIFIED),
-            STRING(BanyandbMetadata.FieldType.FIELD_TYPE_STRING),
-            INT(BanyandbMetadata.FieldType.FIELD_TYPE_INT),
-            BINARY(BanyandbMetadata.FieldType.FIELD_TYPE_DATA_BINARY);
+            UNSPECIFIED(BanyandbDatabase.FieldType.FIELD_TYPE_UNSPECIFIED),
+            STRING(BanyandbDatabase.FieldType.FIELD_TYPE_STRING),
+            INT(BanyandbDatabase.FieldType.FIELD_TYPE_INT),
+            BINARY(BanyandbDatabase.FieldType.FIELD_TYPE_DATA_BINARY);
 
-            private final BanyandbMetadata.FieldType fieldType;
+            private final BanyandbDatabase.FieldType fieldType;
         }
 
         @RequiredArgsConstructor
         public enum EncodingMethod {
-            UNSPECIFIED(BanyandbMetadata.EncodingMethod.ENCODING_METHOD_UNSPECIFIED),
-            GORILLA(BanyandbMetadata.EncodingMethod.ENCODING_METHOD_GORILLA);
+            UNSPECIFIED(BanyandbDatabase.EncodingMethod.ENCODING_METHOD_UNSPECIFIED),
+            GORILLA(BanyandbDatabase.EncodingMethod.ENCODING_METHOD_GORILLA);
 
-            private final BanyandbMetadata.EncodingMethod encodingMethod;
+            private final BanyandbDatabase.EncodingMethod encodingMethod;
         }
 
         @RequiredArgsConstructor
         public enum CompressionMethod {
-            UNSPECIFIED(BanyandbMetadata.CompressionMethod.COMPRESSION_METHOD_UNSPECIFIED),
-            ZSTD(BanyandbMetadata.CompressionMethod.COMPRESSION_METHOD_ZSTD);
+            UNSPECIFIED(BanyandbDatabase.CompressionMethod.COMPRESSION_METHOD_UNSPECIFIED),
+            ZSTD(BanyandbDatabase.CompressionMethod.COMPRESSION_METHOD_ZSTD);
 
-            private final BanyandbMetadata.CompressionMethod compressionMethod;
+            private final BanyandbDatabase.CompressionMethod compressionMethod;
         }
 
         @Override
-        public BanyandbMetadata.FieldSpec serialize() {
-            return BanyandbMetadata.FieldSpec.newBuilder()
+        public BanyandbDatabase.FieldSpec serialize() {
+            return BanyandbDatabase.FieldSpec.newBuilder()
                     .setName(this.name)
                     .setFieldType(this.fieldType.fieldType)
                     .setEncodingMethod(this.encodingMethod.encodingMethod)
@@ -239,7 +239,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
                     .build();
         }
 
-        private static FieldSpec fromProtobuf(BanyandbMetadata.FieldSpec pb) {
+        private static FieldSpec fromProtobuf(BanyandbDatabase.FieldSpec pb) {
             Builder b = null;
             switch (pb.getFieldType()) {
                 case FIELD_TYPE_STRING:
@@ -335,7 +335,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
 
     @Getter
     @EqualsAndHashCode
-    public static abstract class IntervalRule<T> implements Serializable<BanyandbMetadata.IntervalRule> {
+    public static abstract class IntervalRule<T> implements Serializable<BanyandbDatabase.IntervalRule> {
         /**
          * name of the tag to be matched
          */
@@ -355,7 +355,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
             this.interval = interval;
         }
 
-        protected abstract BanyandbMetadata.IntervalRule.Builder applyTagValue(BanyandbMetadata.IntervalRule.Builder b);
+        protected abstract BanyandbDatabase.IntervalRule.Builder applyTagValue(BanyandbDatabase.IntervalRule.Builder b);
 
         /**
          * Create an interval rule to match a tag with string value
@@ -368,7 +368,7 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         public static IntervalRule<String> matchStringLabel(final String tagName, final String tagValue, final String interval) {
             return new IntervalRule<String>(tagName, tagValue, interval) {
                 @Override
-                protected BanyandbMetadata.IntervalRule.Builder applyTagValue(BanyandbMetadata.IntervalRule.Builder b) {
+                protected BanyandbDatabase.IntervalRule.Builder applyTagValue(BanyandbDatabase.IntervalRule.Builder b) {
                     return b.setStr(this.tagValue);
                 }
             };
@@ -385,21 +385,21 @@ public class Measure extends NamedSchema<BanyandbMetadata.Measure> {
         public static IntervalRule<Long> matchNumericLabel(final String tagName, final Long tagValue, final String interval) {
             return new IntervalRule<Long>(tagName, tagValue, interval) {
                 @Override
-                protected BanyandbMetadata.IntervalRule.Builder applyTagValue(BanyandbMetadata.IntervalRule.Builder b) {
+                protected BanyandbDatabase.IntervalRule.Builder applyTagValue(BanyandbDatabase.IntervalRule.Builder b) {
                     return b.setInt(this.tagValue);
                 }
             };
         }
 
         @Override
-        public BanyandbMetadata.IntervalRule serialize() {
-            return applyTagValue(BanyandbMetadata.IntervalRule.newBuilder()
+        public BanyandbDatabase.IntervalRule serialize() {
+            return applyTagValue(BanyandbDatabase.IntervalRule.newBuilder()
                     .setTagName(this.tagName)
                     .setInterval(this.interval))
                     .build();
         }
 
-        private static IntervalRule<?> fromProtobuf(BanyandbMetadata.IntervalRule pb) {
+        private static IntervalRule<?> fromProtobuf(BanyandbDatabase.IntervalRule pb) {
             switch (pb.getTagValueCase()) {
                 case STR:
                     return matchStringLabel(pb.getTagName(), pb.getStr(), pb.getInterval());

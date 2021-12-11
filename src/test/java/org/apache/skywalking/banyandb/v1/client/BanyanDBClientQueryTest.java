@@ -29,9 +29,9 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -124,10 +124,10 @@ public class BanyanDBClientQueryTest {
         // assert fields, we only have state as a condition which should be state
         Assert.assertEquals(1, request.getCriteriaCount());
         // assert orderBy, by default DESC
-        Assert.assertEquals(Banyandb.QueryOrder.Sort.SORT_DESC, request.getOrderBy().getSort());
+        Assert.assertEquals(BanyandbModel.QueryOrder.Sort.SORT_DESC, request.getOrderBy().getSort());
         Assert.assertEquals("duration", request.getOrderBy().getIndexRuleName());
         // assert state
-        Assert.assertEquals(Banyandb.Condition.BinaryOp.BINARY_OP_EQ, request.getCriteria(0).getConditions(0).getOp());
+        Assert.assertEquals(BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, request.getCriteria(0).getConditions(0).getOp());
         Assert.assertEquals(0L, request.getCriteria(0).getConditions(0).getValue().getInt().getValue());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"),
@@ -170,7 +170,7 @@ public class BanyanDBClientQueryTest {
         // assert fields, we only have state as a condition
         Assert.assertEquals(6, request.getCriteria(0).getConditionsCount());
         // assert orderBy, by default DESC
-        Assert.assertEquals(Banyandb.QueryOrder.Sort.SORT_ASC, request.getOrderBy().getSort());
+        Assert.assertEquals(BanyandbModel.QueryOrder.Sort.SORT_ASC, request.getOrderBy().getSort());
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"), parseProjectionList(request.getProjection()));
@@ -222,28 +222,28 @@ public class BanyanDBClientQueryTest {
                                 .setSeconds(now.toEpochMilli() / 1000)
                                 .setNanos((int) TimeUnit.MILLISECONDS.toNanos(now.toEpochMilli() % 1000))
                                 .build())
-                        .addTagFamilies(Banyandb.TagFamily.newBuilder()
+                        .addTagFamilies(BanyandbModel.TagFamily.newBuilder()
                                 .setName("searchable")
-                                .addTags(Banyandb.Tag.newBuilder()
+                                .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("trace_id")
-                                        .setValue(Banyandb.TagValue.newBuilder()
-                                                .setStr(Banyandb.Str.newBuilder().setValue(traceId).build()).build())
+                                        .setValue(BanyandbModel.TagValue.newBuilder()
+                                                .setStr(BanyandbModel.Str.newBuilder().setValue(traceId).build()).build())
                                         .build())
-                                .addTags(Banyandb.Tag.newBuilder()
+                                .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("duration")
-                                        .setValue(Banyandb.TagValue.newBuilder()
-                                                .setInt(Banyandb.Int.newBuilder().setValue(duration).build()).build())
+                                        .setValue(BanyandbModel.TagValue.newBuilder()
+                                                .setInt(BanyandbModel.Int.newBuilder().setValue(duration).build()).build())
                                         .build())
-                                .addTags(Banyandb.Tag.newBuilder()
+                                .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("mq.broker")
-                                        .setValue(Banyandb.TagValue.newBuilder().setNull(NullValue.NULL_VALUE).build())
+                                        .setValue(BanyandbModel.TagValue.newBuilder().setNull(NullValue.NULL_VALUE).build())
                                         .build())
                                 .build())
-                        .addTagFamilies(Banyandb.TagFamily.newBuilder()
+                        .addTagFamilies(BanyandbModel.TagFamily.newBuilder()
                                 .setName("data")
-                                .addTags(Banyandb.Tag.newBuilder()
+                                .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("data_binary")
-                                        .setValue(Banyandb.TagValue.newBuilder()
+                                        .setValue(BanyandbModel.TagValue.newBuilder()
                                                 .setBinaryData(ByteString.copyFrom(binaryData)).build())
                                         .build())
                                 .build())
@@ -268,10 +268,10 @@ public class BanyanDBClientQueryTest {
         Assert.assertTrue(c1.size() == c2.size() && c1.containsAll(c2) && c2.containsAll(c1));
     }
 
-    static List<String> parseProjectionList(Banyandb.Projection projection) {
+    static List<String> parseProjectionList(BanyandbModel.Projection projection) {
         List<String> projectionList = new ArrayList<>();
         for (int i = 0; i < projection.getTagFamiliesCount(); i++) {
-            final Banyandb.Projection.TagFamily tagFamily = projection.getTagFamilies(i);
+            final BanyandbModel.Projection.TagFamily tagFamily = projection.getTagFamilies(i);
             for (int j = 0; j < tagFamily.getTagsCount(); j++) {
                 projectionList.add(tagFamily.getName() + ":" + tagFamily.getTags(j));
             }

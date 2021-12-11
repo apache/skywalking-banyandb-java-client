@@ -20,15 +20,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.common.base.Preconditions;
 import io.grpc.Channel;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.StreamRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StreamMetadataRegistry extends MetadataClient<BanyandbMetadata.Stream, Stream> {
+public class StreamMetadataRegistry extends MetadataClient<BanyandbDatabase.Stream, Stream> {
     private final StreamRegistryServiceGrpc.StreamRegistryServiceBlockingStub blockingStub;
 
     public StreamMetadataRegistry(String group, Channel channel) {
@@ -39,30 +39,30 @@ public class StreamMetadataRegistry extends MetadataClient<BanyandbMetadata.Stre
 
     @Override
     public void create(Stream payload) {
-        blockingStub.create(BanyandbMetadata.StreamRegistryServiceCreateRequest.newBuilder()
+        blockingStub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
                 .setStream(payload.serialize(this.group))
                 .build());
     }
 
     @Override
     public void update(Stream payload) {
-        blockingStub.update(BanyandbMetadata.StreamRegistryServiceUpdateRequest.newBuilder()
+        blockingStub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
                 .setStream(payload.serialize(this.group))
                 .build());
     }
 
     @Override
     public boolean delete(String name) {
-        BanyandbMetadata.StreamRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbMetadata.StreamRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+        BanyandbDatabase.StreamRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(this.group).setName(name).build())
                 .build());
         return resp != null && resp.getDeleted();
     }
 
     @Override
     public Stream get(String name) {
-        BanyandbMetadata.StreamRegistryServiceGetResponse resp = blockingStub.get(BanyandbMetadata.StreamRegistryServiceGetRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
+        BanyandbDatabase.StreamRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.StreamRegistryServiceGetRequest.newBuilder()
+                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(this.group).setName(name).build())
                 .build());
         if (resp == null) {
             return null;
@@ -73,7 +73,7 @@ public class StreamMetadataRegistry extends MetadataClient<BanyandbMetadata.Stre
 
     @Override
     public List<Stream> list() {
-        BanyandbMetadata.StreamRegistryServiceListResponse resp = blockingStub.list(BanyandbMetadata.StreamRegistryServiceListRequest.newBuilder()
+        BanyandbDatabase.StreamRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.StreamRegistryServiceListRequest.newBuilder()
                 .setGroup(this.group)
                 .build());
         if (resp == null) {

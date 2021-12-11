@@ -17,12 +17,12 @@
 
 syntax = "proto3";
 
-option java_package = "org.apache.skywalking.banyandb.database.v1.metadata";
+option java_package = "org.apache.skywalking.banyandb.database.v1";
 
-package banyandb.metadata.v1;
+package banyandb.database.v1;
 
 import "google/protobuf/timestamp.proto";
-import "banyandb/v1/banyandb.proto";
+import "banyandb/v1/banyandb-common.proto";
 
 message ResourceOpts {
   // shard_num is the number of shards
@@ -67,7 +67,7 @@ message TagSpec {
 // Stream intends to store streaming data, for example, traces or logs
 message Stream {
   // metadata is the identity of a trace series
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
   // tag_families
   repeated TagFamilySpec tag_families = 2;
   // entity indicates how to generate a series and shard a stream
@@ -126,7 +126,7 @@ message IntervalRule {
 // Measure intends to store data point
 message Measure {
   // metadata is the identity of a measure
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
   // tag_families are for filter measures
   repeated TagFamilySpec tag_families = 2;
   // fields denote measure values
@@ -145,7 +145,7 @@ message Measure {
 // IndexRule should bind to a subject through an IndexRuleBinding to generate proper indices.
 message IndexRule {
   // metadata define the rule's identity
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
   // tags are the combination that refers to an indexed object
   // If the elements in tags are more than 1, the object will generate a multi-tag index
   // Caveat: All tags in a multi-tag MUST have an identical IndexType
@@ -172,7 +172,7 @@ message IndexRule {
 // Subject defines which stream or measure would generate indices
 message Subject {
   // catalog is where the subject belongs to
-  banyandb.v1.Catalog catalog = 1;
+  banyandb.common.v1.Catalog catalog = 1;
   // name refers to a stream or measure in a particular catalog
   string name = 2;
 }
@@ -182,7 +182,7 @@ message Subject {
 // to control how to generate time series indices.
 message IndexRuleBinding {
   // metadata is the identity of this binding
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
   // rules refers to the IndexRule
   repeated string rules = 2;
   // subject indicates the subject of binding action
@@ -197,21 +197,21 @@ message IndexRuleBinding {
 }
 
 message StreamRegistryServiceCreateRequest {
-  banyandb.metadata.v1.Stream stream = 1;
+  banyandb.database.v1.Stream stream = 1;
 }
 
 message StreamRegistryServiceCreateResponse {
 }
 
 message StreamRegistryServiceUpdateRequest {
-  banyandb.metadata.v1.Stream stream = 1;
+  banyandb.database.v1.Stream stream = 1;
 }
 
 message StreamRegistryServiceUpdateResponse {
 }
 
 message StreamRegistryServiceDeleteRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message StreamRegistryServiceDeleteResponse {
@@ -219,11 +219,11 @@ message StreamRegistryServiceDeleteResponse {
 }
 
 message StreamRegistryServiceGetRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message StreamRegistryServiceGetResponse {
-  banyandb.metadata.v1.Stream stream = 1;
+  banyandb.database.v1.Stream stream = 1;
 }
 
 message StreamRegistryServiceListRequest {
@@ -231,7 +231,7 @@ message StreamRegistryServiceListRequest {
 }
 
 message StreamRegistryServiceListResponse {
-  repeated banyandb.metadata.v1.Stream stream = 1;
+  repeated banyandb.database.v1.Stream stream = 1;
 }
 
 service StreamRegistryService {
@@ -243,21 +243,21 @@ service StreamRegistryService {
 }
 
 message IndexRuleBindingRegistryServiceCreateRequest {
-  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+  banyandb.database.v1.IndexRuleBinding index_rule_binding = 1;
 }
 
 message IndexRuleBindingRegistryServiceCreateResponse {
 }
 
 message IndexRuleBindingRegistryServiceUpdateRequest {
-  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+  banyandb.database.v1.IndexRuleBinding index_rule_binding = 1;
 }
 
 message IndexRuleBindingRegistryServiceUpdateResponse {
 }
 
 message IndexRuleBindingRegistryServiceDeleteRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message IndexRuleBindingRegistryServiceDeleteResponse {
@@ -265,11 +265,11 @@ message IndexRuleBindingRegistryServiceDeleteResponse {
 }
 
 message IndexRuleBindingRegistryServiceGetRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message IndexRuleBindingRegistryServiceGetResponse {
-  banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+  banyandb.database.v1.IndexRuleBinding index_rule_binding = 1;
 }
 
 message IndexRuleBindingRegistryServiceListRequest {
@@ -277,7 +277,7 @@ message IndexRuleBindingRegistryServiceListRequest {
 }
 
 message IndexRuleBindingRegistryServiceListResponse {
-  repeated banyandb.metadata.v1.IndexRuleBinding index_rule_binding = 1;
+  repeated banyandb.database.v1.IndexRuleBinding index_rule_binding = 1;
 }
 
 service IndexRuleBindingRegistryService {
@@ -289,21 +289,21 @@ service IndexRuleBindingRegistryService {
 }
 
 message IndexRuleRegistryServiceCreateRequest {
-  banyandb.metadata.v1.IndexRule index_rule = 1;
+  banyandb.database.v1.IndexRule index_rule = 1;
 }
 
 message IndexRuleRegistryServiceCreateResponse {
 }
 
 message IndexRuleRegistryServiceUpdateRequest {
-  banyandb.metadata.v1.IndexRule index_rule = 1;
+  banyandb.database.v1.IndexRule index_rule = 1;
 }
 
 message IndexRuleRegistryServiceUpdateResponse {
 }
 
 message IndexRuleRegistryServiceDeleteRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message IndexRuleRegistryServiceDeleteResponse {
@@ -311,11 +311,11 @@ message IndexRuleRegistryServiceDeleteResponse {
 }
 
 message IndexRuleRegistryServiceGetRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message IndexRuleRegistryServiceGetResponse {
-  banyandb.metadata.v1.IndexRule index_rule = 1;
+  banyandb.database.v1.IndexRule index_rule = 1;
 }
 
 message IndexRuleRegistryServiceListRequest {
@@ -323,7 +323,7 @@ message IndexRuleRegistryServiceListRequest {
 }
 
 message IndexRuleRegistryServiceListResponse {
-  repeated banyandb.metadata.v1.IndexRule index_rule = 1;
+  repeated banyandb.database.v1.IndexRule index_rule = 1;
 }
 
 service IndexRuleRegistryService {
@@ -335,21 +335,21 @@ service IndexRuleRegistryService {
 }
 
 message MeasureRegistryServiceCreateRequest {
-  banyandb.metadata.v1.Measure measure = 1;
+  banyandb.database.v1.Measure measure = 1;
 }
 
 message MeasureRegistryServiceCreateResponse {
 }
 
 message MeasureRegistryServiceUpdateRequest {
-  banyandb.metadata.v1.Measure measure = 1;
+  banyandb.database.v1.Measure measure = 1;
 }
 
 message MeasureRegistryServiceUpdateResponse {
 }
 
 message MeasureRegistryServiceDeleteRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message MeasureRegistryServiceDeleteResponse {
@@ -357,11 +357,11 @@ message MeasureRegistryServiceDeleteResponse {
 }
 
 message MeasureRegistryServiceGetRequest {
-  banyandb.v1.Metadata metadata = 1;
+  banyandb.common.v1.Metadata metadata = 1;
 }
 
 message MeasureRegistryServiceGetResponse {
-  banyandb.metadata.v1.Measure measure = 1;
+  banyandb.database.v1.Measure measure = 1;
 }
 
 message MeasureRegistryServiceListRequest {
@@ -369,7 +369,7 @@ message MeasureRegistryServiceListRequest {
 }
 
 message MeasureRegistryServiceListResponse {
-  repeated banyandb.metadata.v1.Measure measure = 1;
+  repeated banyandb.database.v1.Measure measure = 1;
 }
 
 service MeasureRegistryService {

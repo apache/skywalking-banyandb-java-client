@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
  * StreamQueryResponse represents the stream query result.
