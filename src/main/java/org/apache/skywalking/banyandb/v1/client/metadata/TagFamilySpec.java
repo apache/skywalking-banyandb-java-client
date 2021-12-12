@@ -73,7 +73,7 @@ public class TagFamilySpec implements Serializable<BanyandbDatabase.TagFamilySpe
                 .build();
     }
 
-    static TagFamilySpec fromProtobuf(BanyandbDatabase.TagFamilySpec pb) {
+    public static TagFamilySpec fromProtobuf(BanyandbDatabase.TagFamilySpec pb) {
         final TagFamilySpec tagFamilySpec = new TagFamilySpec(pb.getName());
         for (int j = 0; j < pb.getTagsCount(); j++) {
             final BanyandbDatabase.TagSpec ts = pb.getTags(j);
