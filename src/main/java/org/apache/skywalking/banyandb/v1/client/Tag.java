@@ -133,6 +133,9 @@ public abstract class Tag<T> {
      * @return Anonymous field with String payload
      */
     public static SerializableTag<BanyandbModel.TagValue> stringField(String val) {
+        if (val == null) {
+            return nullField();
+        }
         return new StringField(val);
     }
 
