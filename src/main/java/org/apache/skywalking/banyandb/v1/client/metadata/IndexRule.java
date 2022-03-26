@@ -18,69 +18,84 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-@Setter
-@Getter
-@EqualsAndHashCode(callSuper = true)
-public class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> {
+@AutoValue
+public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> {
     /**
      * tags are the combination that refers to an indexed object
      * If the elements in tags are more than 1, the object will generate a multi-tag index
      * Caveat: All tags in a multi-tag MUST have an identical IndexType
      */
-    private List<String> tags;
+    abstract ImmutableList<String> tags();
 
     /**
      * indexType determine the index structure under the hood
      */
-    private IndexType indexType;
+    abstract IndexType indexType();
 
     /**
      * indexLocation indicates where to store index.
      */
-    private IndexLocation indexLocation;
+    abstract IndexLocation indexLocation();
 
-    public IndexRule(String group, String name, IndexType indexType, IndexLocation indexLocation) {
-        this(group, name, indexType, indexLocation, null);
+    abstract Builder toBuilder();
+
+    public final IndexRule withGroup(String group) {
+        return toBuilder().setGroup(group).build();
     }
 
-    private IndexRule(String group, String name, IndexType indexType, IndexLocation indexLocation, ZonedDateTime updatedAt) {
-        super(group, name, updatedAt);
-        this.tags = new ArrayList<>();
-        this.indexType = indexType;
-        this.indexLocation = indexLocation;
+    public static IndexRule create(String name, IndexType indexType, IndexLocation indexLocation) {
+        return new AutoValue_IndexRule.Builder().setName(name)
+                .setTags(ImmutableList.of(name))
+                .setIndexType(indexType)
+                .setIndexLocation(indexLocation)
+                .build();
     }
 
-    /**
-     * Add tag to the index rule
-     *
-     * @param tag the name of the tag to be appended
-     */
-    public IndexRule addTag(String tag) {
-        this.tags.add(tag);
-        return this;
+    @VisibleForTesting
+    static IndexRule create(String group, String name, IndexType indexType, IndexLocation indexLocation) {
+        return new AutoValue_IndexRule.Builder().setGroup(group).setName(name)
+                .setTags(ImmutableList.of(name))
+                .setIndexType(indexType)
+                .setIndexLocation(indexLocation)
+                .build();
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+        abstract Builder setGroup(String group);
+
+        abstract Builder setName(String name);
+
+        abstract Builder setTags(ImmutableList<String> tags);
+
+        abstract Builder setIndexType(IndexType indexType);
+
+        abstract Builder setIndexLocation(IndexLocation indexLocation);
+
+        abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
+
+        abstract IndexRule build();
     }
 
     @Override
     public BanyandbDatabase.IndexRule serialize() {
-        BanyandbDatabase.IndexRule.Builder b = BanyandbDatabase.IndexRule.newBuilder()
+        final BanyandbDatabase.IndexRule.Builder b = BanyandbDatabase.IndexRule.newBuilder()
                 .setMetadata(buildMetadata())
-                .addAllTags(this.tags)
-                .setLocation(this.indexLocation.location)
-                .setType(this.indexType.type);
+                .addAllTags(tags())
+                .setLocation(indexLocation().location)
+                .setType(indexType().type);
 
-        if (this.updatedAt != null) {
-            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
+        if (updatedAt() != null) {
+            b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
         return b.build();
     }
@@ -88,11 +103,13 @@ public class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> {
     public static IndexRule fromProtobuf(BanyandbDatabase.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
         IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
-        IndexRule indexRule = new IndexRule(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
-                indexType, indexLocation,
-                TimeUtils.parseTimestamp(pb.getUpdatedAt()));
-        indexRule.setTags(new ArrayList<>(pb.getTagsList()));
-        return indexRule;
+        return new AutoValue_IndexRule.Builder()
+                .setGroup(pb.getMetadata().getGroup())
+                .setName(pb.getMetadata().getName())
+                .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
+                .setIndexLocation(indexLocation)
+                .setIndexType(indexType)
+                .setTags(ImmutableList.copyOf(pb.getTagsList())).build();
     }
 
     @RequiredArgsConstructor

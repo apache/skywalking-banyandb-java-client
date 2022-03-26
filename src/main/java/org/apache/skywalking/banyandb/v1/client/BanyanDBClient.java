@@ -29,10 +29,10 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
 import lombok.AccessLevel;
@@ -286,7 +286,7 @@ public class BanyanDBClient implements Closeable {
     public Group define(Group group) {
         GroupMetadataRegistry registry = new GroupMetadataRegistry(checkNotNull(this.channel));
         registry.create(group);
-        return registry.get(null, group.getName());
+        return registry.get(null, group.name());
     }
 
     /**
@@ -298,7 +298,8 @@ public class BanyanDBClient implements Closeable {
     public Stream define(Stream stream) {
         StreamMetadataRegistry registry = new StreamMetadataRegistry(checkNotNull(this.channel));
         registry.create(stream);
-        return registry.get(stream.getGroup(), stream.getName());
+        defineIndexRules(stream, stream.indexRules());
+        return registry.get(stream.group(), stream.name());
     }
 
     /**
@@ -310,7 +311,8 @@ public class BanyanDBClient implements Closeable {
     public Measure define(Measure measure) {
         MeasureMetadataRegistry registry = new MeasureMetadataRegistry(checkNotNull(this.channel));
         registry.create(measure);
-        return registry.get(measure.getGroup(), measure.getName());
+        defineIndexRules(measure, measure.indexRules());
+        return registry.get(measure.group(), measure.name());
     }
 
     /**
@@ -319,19 +321,21 @@ public class BanyanDBClient implements Closeable {
      * @param stream     the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    public void defineIndexRules(Stream stream, IndexRule... indexRules) {
+    private void defineIndexRules(Stream stream, List<IndexRule> indexRules) {
         Preconditions.checkArgument(stream != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
-        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
-        for (IndexRule ir : indexRules) {
+        for (final IndexRule ir : indexRules) {
             irRegistry.create(ir);
-            indexRuleNames.add(ir.getName());
         }
+
+        List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
+
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
-        IndexRuleBinding binding = new IndexRuleBinding(stream.getGroup(), stream.getName() + "-index-rule-binding",
-                IndexRuleBinding.Subject.referToStream(stream.getName()));
-        binding.setRules(indexRuleNames);
+        IndexRuleBinding binding = IndexRuleBinding.create(stream.group(),
+                stream.name() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream(stream.name()),
+                indexRuleNames);
         irbRegistry.create(binding);
     }
 
@@ -342,19 +346,21 @@ public class BanyanDBClient implements Closeable {
      * @param measure    the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    public void defineIndexRules(Measure measure, IndexRule... indexRules) {
+    private void defineIndexRules(Measure measure, List<IndexRule> indexRules) {
         Preconditions.checkArgument(measure != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
-        List<String> indexRuleNames = new ArrayList<>(indexRules.length);
-        for (IndexRule ir : indexRules) {
+        for (final IndexRule ir : indexRules) {
             irRegistry.create(ir);
-            indexRuleNames.add(ir.getName());
         }
+
+        List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
+
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
-        IndexRuleBinding binding = new IndexRuleBinding(measure.getGroup(), measure.getName() + "-index-rule-binding",
-                IndexRuleBinding.Subject.referToMeasure(measure.getName()));
-        binding.setRules(indexRuleNames);
+        IndexRuleBinding binding = IndexRuleBinding.create(measure.group(),
+                measure.name() + "-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream(measure.name()),
+                indexRuleNames);
         irbRegistry.create(binding);
     }
 

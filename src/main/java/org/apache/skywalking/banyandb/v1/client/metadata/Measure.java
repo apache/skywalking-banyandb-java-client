@@ -18,10 +18,10 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
@@ -29,116 +29,117 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
-@EqualsAndHashCode(callSuper = true)
-public class Measure extends NamedSchema<BanyandbDatabase.Measure> {
+@AutoValue
+public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     /**
      * specs of tag families
      */
-    private List<TagFamilySpec> tagFamilySpecs;
+    abstract ImmutableList<TagFamilySpec> tagFamilies();
 
     /**
      * fieldSpecs denote measure values
      */
-    private List<FieldSpec> fieldSpecs;
+    abstract ImmutableList<FieldSpec> fields();
 
     /**
      * tag names used to generate an entity
      */
-    private List<String> entityTagNames;
+    abstract ImmutableList<String> entityRelativeTags();
 
     /**
      * interval indicates how frequently to send a data point
      */
-    private final Duration interval;
-
-    public Measure(String group, String name, Duration interval) {
-        this(group, name, interval, null);
-    }
-
-    private Measure(String group, String name, Duration interval, ZonedDateTime updatedAt) {
-        super(group, name, updatedAt);
-        this.tagFamilySpecs = new ArrayList<>();
-        this.entityTagNames = new ArrayList<>();
-        this.fieldSpecs = new ArrayList<>();
-        this.interval = interval;
-    }
+    abstract Duration interval();
 
     /**
-     * Add a tag name as a part of the entity
-     *
-     * @param name the name of the tag
+     * index rules bound to the stream
      */
-    public Measure addTagNameAsEntity(String name) {
-        this.entityTagNames.add(name);
-        return this;
+    public abstract ImmutableList<IndexRule> indexRules();
+
+    public static Measure.Builder create(String group, String name, Duration interval) {
+        return new AutoValue_Measure.Builder().setGroup(group).setName(name).setInterval(interval);
     }
 
-    /**
-     * Add a tag family spec to the schema
-     *
-     * @param tagFamilySpec a tag family containing tag specs
-     */
-    public Measure addTagFamilySpec(TagFamilySpec tagFamilySpec) {
-        this.tagFamilySpecs.add(tagFamilySpec);
-        return this;
-    }
+    @AutoValue.Builder
+    abstract static class Builder {
+        abstract String group();
 
-    /**
-     * Add a tag family spec to the schema
-     *
-     * @param fieldSpec a tag family containing tag specs
-     */
-    public Measure addFieldSpec(FieldSpec fieldSpec) {
-        this.fieldSpecs.add(fieldSpec);
-        return this;
+        abstract Measure.Builder setGroup(String group);
+
+        abstract Measure.Builder setName(String name);
+
+        abstract Measure.Builder setUpdatedAt(ZonedDateTime updatedAt);
+
+        abstract ImmutableList.Builder<TagFamilySpec> tagFamiliesBuilder();
+
+        public final Measure.Builder addTagFamily(TagFamilySpec tagFamilySpec) {
+            tagFamiliesBuilder().add(tagFamilySpec);
+            return this;
+        }
+
+        abstract ImmutableList.Builder<FieldSpec> fieldsBuilder();
+
+        public final Measure.Builder addField(FieldSpec fieldSpec) {
+            fieldsBuilder().add(fieldSpec);
+            return this;
+        }
+
+        abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
+
+        public final Measure.Builder addIndex(IndexRule indexRule) {
+            indexRulesBuilder().add(indexRule.withGroup(group()));
+            return this;
+        }
+
+        abstract Measure.Builder setInterval(Duration interval);
+
+        public abstract Measure.Builder setEntityRelativeTags(List<String> entityRelativeTags);
+
+        public abstract Measure.Builder setEntityRelativeTags(String... entityRelativeTags);
+
+        public abstract Measure build();
     }
 
     static Measure fromProtobuf(BanyandbDatabase.Measure pb) {
-        Measure m = new Measure(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
-                Duration.parse(pb.getInterval()),
-                TimeUtils.parseTimestamp(pb.getUpdatedAt()));
-
-        // prepare entity
-        for (int i = 0; i < pb.getEntity().getTagNamesCount(); i++) {
-            m.addTagNameAsEntity(pb.getEntity().getTagNames(i));
-        }
+        final Measure.Builder m = Measure.create(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
+                        Duration.parse(pb.getInterval()))
+                .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
+                .setEntityRelativeTags(pb.getEntity().getTagNamesList());
 
         // build tag family spec
         for (int i = 0; i < pb.getTagFamiliesCount(); i++) {
-            m.addTagFamilySpec(TagFamilySpec.fromProtobuf(pb.getTagFamilies(i)));
+            m.addTagFamily(TagFamilySpec.fromProtobuf(pb.getTagFamilies(i)));
         }
 
         // build field spec
         for (int i = 0; i < pb.getFieldsCount(); i++) {
-            m.addFieldSpec(FieldSpec.fromProtobuf(pb.getFields(i)));
+            m.addField(FieldSpec.fromProtobuf(pb.getFields(i)));
         }
 
-        return m;
+        return m.build();
     }
 
     @Override
     public BanyandbDatabase.Measure serialize() {
-        List<BanyandbDatabase.TagFamilySpec> tfs = new ArrayList<>(this.tagFamilySpecs.size());
-        for (final TagFamilySpec spec : this.tagFamilySpecs) {
+        List<BanyandbDatabase.TagFamilySpec> tfs = new ArrayList<>(this.tagFamilies().size());
+        for (final TagFamilySpec spec : this.tagFamilies()) {
             tfs.add(spec.serialize());
         }
 
-        List<BanyandbDatabase.FieldSpec> fs = new ArrayList<>(this.fieldSpecs.size());
-        for (final FieldSpec spec : this.fieldSpecs) {
+        List<BanyandbDatabase.FieldSpec> fs = new ArrayList<>(this.fields().size());
+        for (final FieldSpec spec : this.fields()) {
             fs.add(spec.serialize());
         }
 
         BanyandbDatabase.Measure.Builder b = BanyandbDatabase.Measure.newBuilder()
-                .setInterval(this.interval.format())
+                .setInterval(interval().format())
                 .setMetadata(buildMetadata())
                 .addAllTagFamilies(tfs)
                 .addAllFields(fs)
-                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityTagNames).build());
+                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityRelativeTags()).build());
 
-        if (this.updatedAt != null) {
-            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
+        if (updatedAt() != null) {
+            b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
 
         return b.build();

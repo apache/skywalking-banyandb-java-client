@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,33 +126,45 @@ public class IndexRuleBindingMetadataRegistryTest {
 
     @Test
     public void testIndexRuleBindingRegistry_create() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
-        indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
-        indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
-        indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
+        IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
+                "default",
+                "sw-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream("sw"),
+                Arrays.asList("trace_id", "duration", "endpoint_id"),
+                ZonedDateTime.now().minusDays(15),
+                ZonedDateTime.now().plusYears(100)
+        );
         this.client.create(indexRuleBinding);
         Assert.assertEquals(indexRuleBindingRegistry.size(), 1);
     }
 
     @Test
     public void testIndexRuleBindingRegistry_createAndGet() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
-        indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
-        indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
-        indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
+        IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
+                "default",
+                "sw-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream("sw"),
+                Arrays.asList("trace_id", "duration", "endpoint_id"),
+                ZonedDateTime.now().minusDays(15),
+                ZonedDateTime.now().plusYears(100)
+        );
         this.client.create(indexRuleBinding);
         IndexRuleBinding getIndexRuleBinding = this.client.get("default", "sw-index-rule-binding");
         Assert.assertNotNull(getIndexRuleBinding);
         Assert.assertEquals(indexRuleBinding, getIndexRuleBinding);
-        Assert.assertNotNull(getIndexRuleBinding.getUpdatedAt());
+        Assert.assertNotNull(getIndexRuleBinding.updatedAt());
     }
 
     @Test
     public void testIndexRuleBindingRegistry_createAndList() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
-        indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
-        indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
-        indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
+        IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
+                "default",
+                "sw-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream("sw"),
+                Arrays.asList("trace_id", "duration", "endpoint_id"),
+                ZonedDateTime.now().minusDays(15),
+                ZonedDateTime.now().plusYears(100)
+        );
         this.client.create(indexRuleBinding);
         List<IndexRuleBinding> listIndexRuleBinding = this.client.list("default");
         Assert.assertNotNull(listIndexRuleBinding);
@@ -161,10 +174,14 @@ public class IndexRuleBindingMetadataRegistryTest {
 
     @Test
     public void testIndexRuleBindingRegistry_createAndDelete() {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding("default", "sw-index-rule-binding", IndexRuleBinding.Subject.referToStream("sw"));
-        indexRuleBinding.setBeginAt(ZonedDateTime.now().minusDays(15));
-        indexRuleBinding.setExpireAt(ZonedDateTime.now().plusYears(100));
-        indexRuleBinding.addRule("trace_id").addRule("duration").addRule("endpoint_id");
+        IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
+                "default",
+                "sw-index-rule-binding",
+                IndexRuleBinding.Subject.referToStream("sw"),
+                Arrays.asList("trace_id", "duration", "endpoint_id"),
+                ZonedDateTime.now().minusDays(15),
+                ZonedDateTime.now().plusYears(100)
+        );
         this.client.create(indexRuleBinding);
         boolean deleted = this.client.delete("default", "sw-index-rule-binding");
         Assert.assertTrue(deleted);

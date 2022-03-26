@@ -124,43 +124,34 @@ public class MeasureMetadataRegistryTest {
     }
 
     @Test
-    public void testMeasureRegistry_create() {
-        Measure s = new Measure("default", "sw", Duration.ofHours(1));
-        this.client.create(s);
-        Assert.assertEquals(measureRegistry.size(), 1);
-    }
-
-    @Test
     public void testMeasureRegistry_createAndGet() {
-        Measure m = new Measure("sw_metric", "service_cpm_minute", Duration.ofHours(1));
-        m.addTagNameAsEntity("entity_id");
-        // tags
-        TagFamilySpec defaultFamily = new TagFamilySpec("default");
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"));
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"));
-        m.addTagFamilySpec(defaultFamily);
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
-                .addFieldSpec(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build());
+        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .build();
         this.client.create(m);
         Measure getMeasure = this.client.get("sw_metric", "service_cpm_minute");
         Assert.assertNotNull(getMeasure);
         Assert.assertEquals(m, getMeasure);
-        Assert.assertNotNull(getMeasure.getUpdatedAt());
+        Assert.assertNotNull(getMeasure.updatedAt());
     }
 
     @Test
     public void testMeasureRegistry_createAndList() {
-        Measure m = new Measure("sw_metric", "service_cpm_minute", Duration.ofHours(1));
-        m.addTagNameAsEntity("entity_id");
-        // tags
-        TagFamilySpec defaultFamily = new TagFamilySpec("default");
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"));
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"));
-        m.addTagFamilySpec(defaultFamily);
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
-                .addFieldSpec(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build());
+        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .build();
         this.client.create(m);
         List<Measure> listMeasure = this.client.list("sw_metric");
         Assert.assertNotNull(listMeasure);
@@ -170,16 +161,15 @@ public class MeasureMetadataRegistryTest {
 
     @Test
     public void testMeasureRegistry_createAndDelete() {
-        Measure m = new Measure("sw_metric", "service_cpm_minute", Duration.ofHours(1));
-        m.addTagNameAsEntity("entity_id");
-        // tags
-        TagFamilySpec defaultFamily = new TagFamilySpec("default");
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"));
-        defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"));
-        m.addTagFamilySpec(defaultFamily);
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
-                .addFieldSpec(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build());
+        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .build();
         this.client.create(m);
         boolean deleted = this.client.delete("sw_metric", "service_cpm_minute");
         Assert.assertTrue(deleted);

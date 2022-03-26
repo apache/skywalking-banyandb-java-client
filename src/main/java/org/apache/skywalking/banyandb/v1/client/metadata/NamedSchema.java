@@ -19,10 +19,10 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.protobuf.GeneratedMessageV3;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.v1.client.util.IgnoreHashEquals;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
 /**
@@ -30,34 +30,29 @@ import java.time.ZonedDateTime;
  *
  * @param <P> In BanyanDB, we have Stream, IndexRule, IndexRuleBinding and Measure
  */
-@Getter
-@EqualsAndHashCode
-public abstract class NamedSchema<P extends GeneratedMessageV3> {
+abstract class NamedSchema<P extends GeneratedMessageV3> {
     /**
      * group of the NamedSchema
      */
-    protected final String group;
+    @Nullable
+    public abstract String group();
+
     /**
      * name of the NamedSchema
      */
-    protected final String name;
+    public abstract String name();
 
     /**
      * last updated timestamp
      * This field can only be set by the server.
      */
-    @EqualsAndHashCode.Exclude
-    protected final ZonedDateTime updatedAt;
-
-    protected NamedSchema(String group, String name, ZonedDateTime updatedAt) {
-        this.group = group;
-        this.name = name;
-        this.updatedAt = updatedAt;
-    }
+    @Nullable
+    @IgnoreHashEquals
+    abstract ZonedDateTime updatedAt();
 
     public abstract P serialize();
 
     protected BanyandbCommon.Metadata buildMetadata() {
-        return BanyandbCommon.Metadata.newBuilder().setName(this.name).setGroup(this.group).build();
+        return BanyandbCommon.Metadata.newBuilder().setName(name()).setGroup(group()).build();
     }
 }

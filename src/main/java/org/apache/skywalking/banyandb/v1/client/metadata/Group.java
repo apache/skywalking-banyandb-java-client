@@ -18,42 +18,36 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import com.google.auto.value.AutoValue;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
-@Setter
-@Getter
-@EqualsAndHashCode(callSuper = true)
-public class Group extends NamedSchema<BanyandbCommon.Group> {
+@AutoValue
+public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
     /**
      * catalog denotes which type of data the group contains
      */
-    private final Catalog catalog;
+    abstract Catalog catalog();
 
     /**
      * shard_num is the number of shards in this group
      */
-    private final int shardNum;
+    abstract int shardNum();
 
-    private final int blockNum;
+    @Nullable
+    abstract Integer blockNum();
 
-    private final Duration ttl;
+    abstract Duration ttl();
 
-    public Group(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl) {
-        this(name, catalog, shardNum, blockNum, ttl, null);
+    public static Group create(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl) {
+        return new AutoValue_Group(null, name, null, catalog, shardNum, blockNum, ttl);
     }
 
-    public Group(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl, ZonedDateTime updatedAt) {
-        super(null, name, updatedAt);
-        this.catalog = catalog;
-        this.shardNum = shardNum;
-        this.blockNum = blockNum;
-        this.ttl = ttl;
+    public static Group create(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl, ZonedDateTime updatedAt) {
+        return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, blockNum, ttl);
     }
 
     @Override
@@ -61,11 +55,11 @@ public class Group extends NamedSchema<BanyandbCommon.Group> {
         return BanyandbCommon.Group.newBuilder()
                 // use name as the group
                 .setMetadata(this.buildMetadata())
-                .setCatalog(this.catalog.getCatalog())
+                .setCatalog(catalog().getCatalog())
                 .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
-                        .setShardNum(this.shardNum)
-                        .setBlockNum(this.blockNum)
-                        .setTtl(this.ttl.format())
+                        .setShardNum(shardNum())
+                        .setBlockNum(blockNum())
+                        .setTtl(ttl().format())
                         .build())
                 .build();
     }
@@ -81,11 +75,12 @@ public class Group extends NamedSchema<BanyandbCommon.Group> {
                 break;
         }
 
-        return new Group(group.getMetadata().getName(),
+        return new AutoValue_Group(null,
+                group.getMetadata().getName(),
+                TimeUtils.parseTimestamp(group.getUpdatedAt()),
                 catalog,
                 group.getResourceOpts().getShardNum(),
                 group.getResourceOpts().getBlockNum(),
-                Duration.parse(group.getResourceOpts().getTtl()),
-                TimeUtils.parseTimestamp(group.getUpdatedAt()));
+                Duration.parse(group.getResourceOpts().getTtl()));
     }
 }

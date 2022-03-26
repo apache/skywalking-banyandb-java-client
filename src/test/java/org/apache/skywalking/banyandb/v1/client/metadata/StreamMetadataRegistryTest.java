@@ -124,47 +124,38 @@ public class StreamMetadataRegistryTest {
     }
 
     @Test
-    public void testStreamRegistry_create() {
-        Stream s = new Stream("default", "sw");
-        this.client.create(s);
-        Assert.assertEquals(streamRegistry.size(), 1);
-    }
-
-    @Test
     public void testStreamRegistry_createAndGet() {
-        Stream s = new Stream("default", "sw");
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
+        Stream s = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .build())
+                .build();
         this.client.create(s);
         Stream getStream = this.client.get("default", "sw");
         Assert.assertNotNull(getStream);
         Assert.assertEquals(s, getStream);
-        Assert.assertNotNull(getStream.getUpdatedAt());
+        Assert.assertNotNull(getStream.updatedAt());
     }
 
     @Test
     public void testStreamRegistry_createAndList() {
-        Stream s = new Stream("default", "sw");
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
+        Stream s = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .build())
+                .build();
         this.client.create(s);
         List<Stream> listStream = this.client.list("default");
         Assert.assertNotNull(listStream);
@@ -174,18 +165,17 @@ public class StreamMetadataRegistryTest {
 
     @Test
     public void testStreamRegistry_createAndDelete() {
-        Stream s = new Stream("default", "sw");
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
+        Stream s = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .build())
+                .build();
         this.client.create(s);
         boolean deleted = this.client.delete("default", "sw");
         Assert.assertTrue(deleted);

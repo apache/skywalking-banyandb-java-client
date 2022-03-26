@@ -123,27 +123,24 @@ public class IndexRuleMetadataRegistryTest {
 
     @Test
     public void testIndexRuleRegistry_create() {
-        IndexRule indexRule = new IndexRule("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-        indexRule.addTag("db.instance");
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.client.create(indexRule);
         Assert.assertEquals(indexRuleRegistry.size(), 1);
     }
 
     @Test
     public void testIndexRuleRegistry_createAndGet() {
-        IndexRule indexRule = new IndexRule("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-        indexRule.addTag("db.instance");
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.client.create(indexRule);
         IndexRule getIndexRule = this.client.get("default", "db.instance");
         Assert.assertNotNull(getIndexRule);
         Assert.assertEquals(indexRule, getIndexRule);
-        Assert.assertNotNull(getIndexRule.getUpdatedAt());
+        Assert.assertNotNull(getIndexRule.updatedAt());
     }
 
     @Test
     public void testIndexRuleRegistry_createAndList() {
-        IndexRule indexRule = new IndexRule("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-        indexRule.addTag("db.instance");
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.client.create(indexRule);
         List<IndexRule> listIndexRule = this.client.list("default");
         Assert.assertNotNull(listIndexRule);
@@ -153,8 +150,7 @@ public class IndexRuleMetadataRegistryTest {
 
     @Test
     public void testIndexRuleRegistry_createAndDelete() {
-        IndexRule indexRule = new IndexRule("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-        indexRule.addTag("db.instance");
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.client.create(indexRule);
         boolean deleted = this.client.delete("default", "db.instance");
         Assert.assertTrue(deleted);

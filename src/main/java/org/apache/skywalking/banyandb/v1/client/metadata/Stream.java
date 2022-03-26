@@ -18,9 +18,8 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
@@ -28,79 +27,84 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
-@EqualsAndHashCode(callSuper = true)
-public class Stream extends NamedSchema<BanyandbDatabase.Stream> {
+@AutoValue
+public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     /**
      * specs of tag families
      */
-    private List<TagFamilySpec> tagFamilySpecs;
+    abstract ImmutableList<TagFamilySpec> tagFamilies();
 
     /**
      * tag names used to generate an entity
      */
-    private List<String> entityTagNames;
-
-    public Stream(String group, String name) {
-        this(group, name, null);
-    }
-
-    private Stream(String group, String name, ZonedDateTime updatedAt) {
-        super(group, name, updatedAt);
-        this.tagFamilySpecs = new ArrayList<>(2);
-        this.entityTagNames = new ArrayList<>();
-    }
+    abstract ImmutableList<String> entityRelativeTags();
 
     /**
-     * Add a tag name as a part of the entity
-     *
-     * @param name the name of the tag
+     * index rules bound to the stream
      */
-    public Stream addTagNameAsEntity(String name) {
-        this.entityTagNames.add(name);
-        return this;
+    public abstract ImmutableList<IndexRule> indexRules();
+
+    public static Stream.Builder create(String group, String name) {
+        return new AutoValue_Stream.Builder().setGroup(group).setName(name);
     }
 
-    /**
-     * Add a tag family spec to the schema
-     *
-     * @param tagFamilySpec a tag family containing tag specs
-     */
-    public Stream addTagFamilySpec(TagFamilySpec tagFamilySpec) {
-        this.tagFamilySpecs.add(tagFamilySpec);
-        return this;
+    @AutoValue.Builder
+    abstract static class Builder {
+        abstract String group();
+
+        abstract Builder setGroup(String group);
+
+        abstract Builder setName(String name);
+
+        abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
+
+        abstract ImmutableList.Builder<TagFamilySpec> tagFamiliesBuilder();
+
+        public final Builder addTagFamily(TagFamilySpec tagFamilySpec) {
+            tagFamiliesBuilder().add(tagFamilySpec);
+            return this;
+        }
+
+        abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
+
+        public final Builder addIndex(IndexRule indexRule) {
+            indexRulesBuilder().add(indexRule.withGroup(group()));
+            return this;
+        }
+
+        public abstract Builder setEntityRelativeTags(String... entityRelativeTags);
+
+        public abstract Builder setEntityRelativeTags(List<String> entityRelativeTags);
+
+        public abstract Stream build();
     }
 
     @Override
     public BanyandbDatabase.Stream serialize() {
-        List<BanyandbDatabase.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilySpecs.size());
-        for (final TagFamilySpec spec : this.tagFamilySpecs) {
+        List<BanyandbDatabase.TagFamilySpec> metadataTagFamilySpecs = new ArrayList<>(this.tagFamilies().size());
+        for (final TagFamilySpec spec : this.tagFamilies()) {
             metadataTagFamilySpecs.add(spec.serialize());
         }
 
         BanyandbDatabase.Stream.Builder b = BanyandbDatabase.Stream.newBuilder()
                 .setMetadata(buildMetadata())
                 .addAllTagFamilies(metadataTagFamilySpecs)
-                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityTagNames).build());
+                .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityRelativeTags()).build());
 
-        if (this.updatedAt != null) {
-            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
+        if (this.updatedAt() != null) {
+            b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
         return b.build();
     }
 
     public static Stream fromProtobuf(final BanyandbDatabase.Stream pb) {
-        Stream s = new Stream(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
-                TimeUtils.parseTimestamp(pb.getUpdatedAt()));
-        // prepare entity
-        for (int i = 0; i < pb.getEntity().getTagNamesCount(); i++) {
-            s.addTagNameAsEntity(pb.getEntity().getTagNames(i));
-        }
+        Stream.Builder s = Stream.create(pb.getMetadata().getGroup(), pb.getMetadata().getName())
+                .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
+                .setEntityRelativeTags(pb.getEntity().getTagNamesList());
         // build tag family spec
         for (int i = 0; i < pb.getTagFamiliesCount(); i++) {
-            s.addTagFamilySpec(TagFamilySpec.fromProtobuf(pb.getTagFamilies(i)));
+            s.addTagFamily(TagFamilySpec.fromProtobuf(pb.getTagFamilies(i)));
         }
-        return s;
+        return s.build();
     }
 }

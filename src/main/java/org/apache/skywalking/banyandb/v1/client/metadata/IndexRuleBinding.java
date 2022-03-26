@@ -18,88 +18,79 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-@Setter
-@Getter
-@EqualsAndHashCode(callSuper = true)
-public class IndexRuleBinding extends NamedSchema<BanyandbDatabase.IndexRuleBinding> {
+@AutoValue
+public abstract class IndexRuleBinding extends NamedSchema<BanyandbDatabase.IndexRuleBinding> {
     private static final ZonedDateTime DEFAULT_EXPIRE_AT = ZonedDateTime.of(2099, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+
     /**
      * rule names refer to the IndexRule
      */
-    private List<String> rules;
+    abstract ImmutableList<String> rules();
 
     /**
      * subject indicates the subject of binding action
      */
-    private final Subject subject;
+    abstract Subject subject();
 
     /**
      * begin_at is the timestamp, after which the binding will be active
      */
-    private ZonedDateTime beginAt;
+    abstract ZonedDateTime beginAt();
 
     /**
      * expire_at is the timestamp, after which the binding will be inactive
      * expire_at must be larger than begin_at
      */
-    private ZonedDateTime expireAt;
+    abstract ZonedDateTime expireAt();
 
-    public IndexRuleBinding(String group, String name, Subject subject) {
-        this(group, name, subject, null);
+    public static IndexRuleBinding create(String group, String name, Subject subject, List<String> rules) {
+        return new AutoValue_IndexRuleBinding(group, name, null,
+                ImmutableList.copyOf(rules), subject, ZonedDateTime.now(), DEFAULT_EXPIRE_AT);
     }
 
-    private IndexRuleBinding(String group, String name, Subject subject, ZonedDateTime updatedAt) {
-        super(group, name, updatedAt);
-        this.rules = new ArrayList<>();
-        this.subject = subject;
-        this.beginAt = ZonedDateTime.now();
-        this.expireAt = DEFAULT_EXPIRE_AT;
-    }
-
-    /**
-     * Add a rule name
-     *
-     * @param ruleName the name of the IndexRule in the same group
-     */
-    public IndexRuleBinding addRule(String ruleName) {
-        this.rules.add(ruleName);
-        return this;
+    @VisibleForTesting
+    static IndexRuleBinding create(String group, String name, Subject subject, List<String> rules, ZonedDateTime beginAt, ZonedDateTime expireAt) {
+        return new AutoValue_IndexRuleBinding(group, name, null,
+                ImmutableList.copyOf(rules), subject, beginAt, expireAt);
     }
 
     @Override
     public BanyandbDatabase.IndexRuleBinding serialize() {
         BanyandbDatabase.IndexRuleBinding.Builder b = BanyandbDatabase.IndexRuleBinding.newBuilder()
                 .setMetadata(buildMetadata())
-                .addAllRules(this.rules)
-                .setSubject(this.subject.serialize())
-                .setBeginAt(TimeUtils.buildTimestamp(this.beginAt))
-                .setExpireAt(TimeUtils.buildTimestamp(this.expireAt));
-        if (this.updatedAt != null) {
-            b.setUpdatedAt(TimeUtils.buildTimestamp(this.updatedAt));
+                .addAllRules(rules())
+                .setSubject(subject().serialize())
+                .setBeginAt(TimeUtils.buildTimestamp(beginAt()))
+                .setExpireAt(TimeUtils.buildTimestamp(expireAt()));
+        if (updatedAt() != null) {
+            b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
         return b.build();
     }
 
     static IndexRuleBinding fromProtobuf(BanyandbDatabase.IndexRuleBinding pb) {
-        IndexRuleBinding indexRuleBinding = new IndexRuleBinding(pb.getMetadata().getGroup(),
-                pb.getMetadata().getName(), Subject.fromProtobuf(pb.getSubject()),
-                TimeUtils.parseTimestamp(pb.getUpdatedAt()));
-        indexRuleBinding.setRules(new ArrayList<>(pb.getRulesList()));
-        indexRuleBinding.setBeginAt(TimeUtils.parseTimestamp(pb.getBeginAt()));
-        indexRuleBinding.setExpireAt(TimeUtils.parseTimestamp(pb.getExpireAt()));
-        return indexRuleBinding;
+        return new AutoValue_IndexRuleBinding(
+                pb.getMetadata().getGroup(),
+                pb.getMetadata().getName(),
+                TimeUtils.parseTimestamp(pb.getUpdatedAt()),
+                ImmutableList.copyOf(pb.getRulesList()),
+                Subject.fromProtobuf(pb.getSubject()),
+                TimeUtils.parseTimestamp(pb.getBeginAt()),
+                TimeUtils.parseTimestamp(pb.getExpireAt())
+        );
     }
 
     @RequiredArgsConstructor
