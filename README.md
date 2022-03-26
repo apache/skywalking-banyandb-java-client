@@ -25,68 +25,54 @@ client.connect();
 
 ## Schema Management
 
-### Stream
+### Stream and index rules
 
 Then we may define a stream with customized configurations. The following example uses `SegmentRecord` in SkyWalking OAP
 as an illustration,
 
 ```java
 // build a stream default(group)/sw(name) with 2 shards and ttl equals to 30 days
-Stream s = new Stream("default", "sw");
-s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("is_error");
-// data
-TagFamilySpec dataFamily = new TagFamilySpec("data");
-dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-s.addTagFamilySpec(dataFamily);
-// searchable
-TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-    .addTagSpec(TagFamilySpec.TagSpec.newIntTag("is_error"))
-    .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-s.addTagFamilySpec(searchableFamily);
+Stream s = Stream.create("default", "sw")
+        // set entities
+        .setEntityRelativeTags("service_id", "service_instance_id", "is_error")
+        // add a tag family "data"
+        .addTagFamily(TagFamilySpec.create("data")
+            .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+            .build())
+        // add a tag family "searchable"
+        .addTagFamily(TagFamilySpec.create("searchable")
+            // create a string tag "trace_id"
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+            .addTagSpec(TagFamilySpec.TagSpec.newIntTag("is_error"))
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+            .build())
+        .build();
 registry.create(s);
 ```
 
 For the last line in the code block, a simple API (i.e. `BanyanDBClient.define(Stream)`) is used to define the schema of `Stream`.
 The same works for `Measure` which will be demonstrated later.
 
-### IndexRules
-
-For better search performance, index rules are necessary for `Stream` and `Measure`. You have to
-specify a full list of index rules that would be bounded to the target `Stream` and `Measure`.
-
-```java
-// create IndexRule with inverted index type and save it to series store
-IndexRule indexRule = new IndexRule("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-// tag name specifies the indexed tag
-indexRule.addTag("db.instance");
-// create the index rule default(group)/db.instance(name)
-registry.create(indexRule);
-```
-
-For convenience, `BanyanDBClient.defineIndexRule` supports binding multiple index rules with a single call.
-Internally, an `IndexRuleBinding` is created automatically for users, which will be active between `beginAt` and `expireAt`.
-With this shorthand API, the indexRuleBinding object will be active from the time it is created to the far future (i.e. `2099-01-01 00:00:00.000 UTC`).
-
-### Measure
+### Measure and index rules
 
 `Measure` can also be defined directly with `BanyanDBClient`,
 
 ```java
 // create a new measure schema with an additional interval
 // the interval is used to specify how frequently to send a data point
-Measure m = new Measure("sw_metric", "service_cpm_minute", Duration.ofHours(1));
-// set entity
-m.addTagNameAsEntity("entity_id");
-// define tag specs - add a default tag family
-TagFamilySpec defaultFamily = new TagFamilySpec("default");
-defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"));
-defaultFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"));
-m.addTagFamilySpec(defaultFamily);
-// define field specs
-// compressMethod and encodingMethod can be specified
-m.addFieldSpec(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
-    .addFieldSpec(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build());
+Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        // set entity
+        .setEntityRelativeTags("entity_id")
+        // define a tag family "default"
+        .addTagFamily(TagFamilySpec.create("default")
+            .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+            .build())
+        // define field specs
+        // compressMethod and encodingMethod can be specified
+        .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+        .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+        .build();
 // define a measure, as we've mentioned above
 registry.create(m);
 ```
