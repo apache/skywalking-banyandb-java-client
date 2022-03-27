@@ -25,6 +25,7 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
+import io.grpc.util.MutableHandlerRegistry;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
@@ -42,7 +43,7 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class BanyanDBMetadataRegistryTest {
     @Rule
-    protected final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
     // play as an in-memory registry
     protected Map<String, BanyandbDatabase.IndexRuleBinding> indexRuleBindingRegistry;
@@ -146,6 +147,8 @@ public class BanyanDBMetadataRegistryTest {
                         }
                     }));
 
+    protected final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
+
     protected BanyanDBClient client;
 
     protected ManagedChannel channel;
@@ -160,6 +163,7 @@ public class BanyanDBMetadataRegistryTest {
         // Create a server, add service, start, and register for automatic graceful shutdown.
         InProcessServerBuilder serverBuilder = InProcessServerBuilder
                 .forName(serverName).directExecutor()
+                .fallbackHandlerRegistry(serviceRegistry)
                 .addService(indexRuleBindingServiceImpl)
                 .addService(indexRuleServiceImpl);
         for (final BindableService svc : services) {

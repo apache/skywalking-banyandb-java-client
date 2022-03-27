@@ -52,6 +52,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadat
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 
@@ -304,7 +305,7 @@ public class BanyanDBClient implements Closeable {
         Stream createdStream = streamRegistry.get(stream.group(), stream.name());
 
         List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdStream.group(), createdStream.name() + "-index-rule-binding");
-        return createdStream.withIndexRules(indexRules);
+        return MetadataCache.INSTANCE.register(createdStream.withIndexRules(indexRules));
     }
 
     /**
@@ -320,7 +321,7 @@ public class BanyanDBClient implements Closeable {
         Measure createdMeasure = measureRegistry.get(measure.group(), measure.name());
 
         List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdMeasure.group(), createdMeasure.name() + "-index-rule-binding");
-        return createdMeasure.withIndexRules(indexRules);
+        return MetadataCache.INSTANCE.register(createdMeasure.withIndexRules(indexRules));
     }
 
     /**

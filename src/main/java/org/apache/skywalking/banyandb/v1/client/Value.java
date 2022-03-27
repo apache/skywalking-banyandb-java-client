@@ -217,6 +217,13 @@ public abstract class Value<T> {
         }
     }
 
+    public static Serializable<BanyandbModel.FieldValue> stringFieldValue(String val) {
+        if (Strings.isNullOrEmpty(val)) {
+            return nullFieldValue();
+        }
+        return new StringFieldValue(val);
+    }
+
     /**
      * NullFieldValue is a value which can be converted to {@link com.google.protobuf.NullValue}.
      * Users should use the singleton instead of create a new instance everytime.

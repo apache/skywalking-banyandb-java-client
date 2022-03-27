@@ -18,38 +18,38 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import io.grpc.util.MutableHandlerRegistry;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
+import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
+import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
-public class BanyanDBClientMeasureWriteTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
+public class BanyanDBClientMeasureWriteTest extends BanyanDBMetadataRegistryTest {
     private final GroupRegistryServiceGrpc.GroupRegistryServiceImplBase groupRegistryServiceImpl =
             mock(GroupRegistryServiceGrpc.GroupRegistryServiceImplBase.class, delegatesTo(
                     new GroupRegistryServiceGrpc.GroupRegistryServiceImplBase() {
@@ -70,26 +70,78 @@ public class BanyanDBClientMeasureWriteTest {
                         }
                     }));
 
-    private final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
+    // play as an in-memory registry
+    private Map<String, BanyandbDatabase.Measure> measureRegistry;
 
-    private BanyanDBClient client;
+    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase measureRegistryServiceImpl =
+            mock(MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase.class, delegatesTo(
+                    new MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase() {
+                        @Override
+                        public void create(BanyandbDatabase.MeasureRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .build();
+                            measureRegistry.put(s.getMetadata().getName(), s);
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .build();
+                            measureRegistry.put(s.getMetadata().getName(), s);
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.Measure oldMeasure = measureRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceDeleteResponse.newBuilder()
+                                    .setDeleted(oldMeasure != null)
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void get(BanyandbDatabase.MeasureRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceGetResponse.newBuilder()
+                                    .setMeasure(measureRegistry.get(request.getMetadata().getName()))
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void list(BanyandbDatabase.MeasureRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceListResponse.newBuilder()
+                                    .addAllMeasure(measureRegistry.values())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    }));
+
     private MeasureBulkWriteProcessor measureBulkWriteProcessor;
 
     @Before
     public void setUp() throws IOException {
-        String serverName = InProcessServerBuilder.generateName();
+        measureRegistry = new HashMap<>();
+        setUp(groupRegistryServiceImpl, measureRegistryServiceImpl);
 
-        Server server = InProcessServerBuilder
-                .forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor()
-                .addService(groupRegistryServiceImpl).build();
-        grpcCleanup.register(server.start());
-
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        client = new BanyanDBClient("127.0.0.1", server.getPort());
-        client.connect(channel);
         measureBulkWriteProcessor = client.buildMeasureWriteProcessor(1000, 1, 1);
+
+        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .build();
+        client.define(m);
     }
 
     @After
@@ -129,11 +181,11 @@ public class BanyanDBClientMeasureWriteTest {
         serviceRegistry.addService(serviceImpl);
 
         Instant now = Instant.now();
-        MeasureWrite measureWrite = new MeasureWrite("sw_metrics", "service_cpm_minute", now.toEpochMilli(), 2, 2);
-        measureWrite.defaultTag(0, Value.idTagValue("1"))
-                .defaultTag(1, Value.stringTagValue("entity_1"))
-                .field(0, Value.longFieldValue(100L))
-                .field(1, Value.longFieldValue(1L));
+        MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
+        measureWrite.tag("id", TagAndValue.idTagValue("1"))
+                .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
+                .field("total", TagAndValue.longFieldValue(100))
+                .field("value", TagAndValue.longFieldValue(1));
 
         measureBulkWriteProcessor.add(measureWrite);
 

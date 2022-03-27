@@ -21,12 +21,18 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.protobuf.Timestamp;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
+import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
+    /**
+     * Group name of the current entity
+     */
     @Getter
     protected final String group;
     /**
-     * Owner name of current entity
+     * Owner name of the current entity
      */
     @Getter
     protected final String name;
@@ -37,10 +43,25 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     @Getter
     protected final long timestamp;
 
+    protected final Object[] tags;
+
+    protected final MetadataCache.EntityMetadata entityMetadata;
+
     public AbstractWrite(String group, String name, long timestamp) {
         this.group = group;
         this.name = name;
         this.timestamp = timestamp;
+        this.entityMetadata = MetadataCache.INSTANCE.findMetadata(group, name);
+        if (this.entityMetadata == null) {
+            throw new IllegalArgumentException("metadata not found");
+        }
+        this.tags = new Object[this.entityMetadata.getTotalTags()];
+    }
+
+    public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
+        final int index = this.entityMetadata.findTagInfo(tagName);
+        this.tags[index] = tagValue;
+        return this;
     }
 
     P build() {

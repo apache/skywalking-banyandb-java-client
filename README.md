@@ -169,21 +169,21 @@ the order of tags must exactly be the same with that defined in the schema.
 And the non-existing tags must be fulfilled (with NullValue) instead of compacting all non-null tag values.
 
 ```java
-StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli(), 1, 13)
-    .dataTag(0, Value.binaryTagValue(byteData))
-    .searchableTag(0, Value.stringTagValue(traceId)) // 0
-    .searchableTag(1, Value.stringTagValue(serviceId))
-    .searchableTag(2, Value.stringTagValue(serviceInstanceId))
-    .searchableTag(3, Value.stringTagValue(endpointId))
-    .searchableTag(4, Value.longTagValue(latency)) // 4
-    .searchableTag(5, Value.longTagValue(state))
-    .searchableTag(6, Value.stringTagValue(httpStatusCode))
-    .searchableTag(7, Value.nullTagValue()) // 7
-    .searchableTag(8, Value.stringTagValue(dbType))
-    .searchableTag(9, Value.stringTagValue(dbInstance))
-    .searchableTag(10, Value.stringTagValue(broker))
-    .searchableTag(11, Value.stringTagValue(topic))
-    .searchableTag(12, Value.stringTagValue(queue)); // 12
+StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+    .tag("data_binary", Value.binaryTagValue(byteData))
+    .tag("trace_id", Value.stringTagValue(traceId)) // 0
+    .tag("state", Value.longTagValue(state)) // 1
+    .tag("service_id", Value.stringTagValue(serviceId)) // 2
+    .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
+    .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
+    .tag("duration", Value.longTagValue(latency)) // 5
+    .tag("http.method", Value.stringTagValue(null)) // 6
+    .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
+    .tag("db.type", Value.stringTagValue(dbType)) // 8
+    .tag("db.instance", Value.stringTagValue(dbInstance)) // 9
+    .tag("mq.broker", Value.stringTagValue(broker)) // 10
+    .tag("mq.topic", Value.stringTagValue(topic)) // 11
+    .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
 streamBulkWriteProcessor.add(streamWrite);
 ```
@@ -201,11 +201,11 @@ A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then 
 
 ```java
 Instant now = Instant.now();
-MeasureWrite measureWrite = new MeasureWrite("sw_metrics", "service_cpm_minute", now.toEpochMilli(), 2, 2);
-measureWrite.defaultTag(0, Value.idTagValue("1"))
-    .defaultTag(1, Value.stringTagValue("entity_1"))
-    .field(0, Value.longFieldValue(100L))
-    .field(1, Value.longFieldValue(1L));
+MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
+    measureWrite.tag("id", TagAndValue.idTagValue("1"))
+    .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
+    .field("total", TagAndValue.longFieldValue(100))
+    .field("value", TagAndValue.longFieldValue(1));
 
 measureBulkWriteProcessor.add(measureWrite);
 ```

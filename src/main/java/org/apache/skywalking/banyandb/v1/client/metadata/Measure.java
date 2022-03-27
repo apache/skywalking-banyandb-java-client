@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
@@ -68,7 +69,7 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     }
 
     @AutoValue.Builder
-    abstract static class Builder {
+    public abstract static class Builder {
         abstract String group();
 
         abstract Measure.Builder setGroup(String group);
@@ -162,6 +163,7 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
         /**
          * name is the identity of a field
          */
+        @Getter
         private final String name;
         /**
          * fieldType denotes the type of field value

@@ -55,7 +55,7 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     }
 
     @AutoValue.Builder
-    abstract static class Builder {
+    public abstract static class Builder {
         abstract String group();
 
         abstract Builder setGroup(String group);

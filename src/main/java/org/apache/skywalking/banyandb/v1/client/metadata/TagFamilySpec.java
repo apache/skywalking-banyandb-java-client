@@ -48,7 +48,7 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
     }
 
     @AutoValue.Builder
-    abstract static class Builder {
+    public abstract static class Builder {
         abstract Builder setTagFamilyName(String tagFamilyName);
 
         abstract ImmutableList.Builder<TagSpec> tagSpecsBuilder();

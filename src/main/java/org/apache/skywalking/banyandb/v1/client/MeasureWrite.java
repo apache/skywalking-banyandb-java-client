@@ -24,34 +24,30 @@ import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
+import java.util.Deque;
+import java.util.LinkedList;
+
 public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
-    /**
-     * The fields represent objects of current stream, and they are not indexed.
-     * It could be organized by different serialization formats.
-     * For instance, regarding the binary format, SkyWalking may use protobuf, but it is not required.
-     * The BanyanDB server wouldn't deserialize binary data. Thus, no specific format requirement.
-     */
-    private Object[] defaultTags;
     /**
      * The values of "searchable" fields, which are defined by the schema.
      * In the bulk write process, BanyanDB client doesn't require field names anymore.
      */
-    private Object[] fields;
+    private final Object[] fields;
 
-    public MeasureWrite(final String group, final String name, long timestamp, int defaultTagsCap, int fieldsCap) {
+    public MeasureWrite(final String group, final String name, long timestamp) {
         super(group, name, timestamp);
-        this.defaultTags = new Object[defaultTagsCap];
-        this.fields = new Object[fieldsCap];
+        this.fields = new Object[this.entityMetadata.getTotalFields()];
     }
 
-    public MeasureWrite field(int index, Serializable<BanyandbModel.FieldValue> field) {
-        this.fields[index] = field;
+    public MeasureWrite field(String fieldName, Serializable<BanyandbModel.FieldValue> fieldVal) {
+        final int index = this.entityMetadata.findFieldInfo(fieldName);
+        this.fields[index] = fieldVal;
         return this;
     }
 
-    public MeasureWrite defaultTag(int index, Serializable<BanyandbModel.TagValue> tag) {
-        this.defaultTags[index] = tag;
-        return this;
+    @Override
+    public MeasureWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
+        return (MeasureWrite) super.tag(tagName, tagValue);
     }
 
     /**
@@ -65,15 +61,34 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
         builder.setMetadata(metadata);
         final BanyandbMeasure.DataPointValue.Builder datapointValueBuilder = BanyandbMeasure.DataPointValue.newBuilder();
         datapointValueBuilder.setTimestamp(ts);
-        // 1 - add "default" tags
-        BanyandbModel.TagFamilyForWrite.Builder defaultBuilder = BanyandbModel.TagFamilyForWrite.newBuilder();
-        for (final Object dataTag : this.defaultTags) {
-            defaultBuilder.addTags(((Serializable<BanyandbModel.TagValue>) dataTag).serialize());
+        // memorize the last offset for the last tag family
+        int lastFamilyOffset = 0;
+        for (final int tagsPerFamily : this.entityMetadata.getTagFamilyCapacity()) {
+            final BanyandbModel.TagFamilyForWrite.Builder b = BanyandbModel.TagFamilyForWrite.newBuilder();
+            boolean firstNonNullTagFound = false;
+            Deque<BanyandbModel.TagValue> tags = new LinkedList<>();
+            for (int j = tagsPerFamily - 1; j >= 0; j--) {
+                Object obj = this.tags[lastFamilyOffset + j];
+                if (obj == null) {
+                    if (firstNonNullTagFound) {
+                        b.addTags(TagAndValue.nullTagValue().serialize());
+                    }
+                    continue;
+                }
+                firstNonNullTagFound = true;
+                tags.addFirst(((Serializable<BanyandbModel.TagValue>) obj).serialize());
+            }
+            lastFamilyOffset += tagsPerFamily;
+            datapointValueBuilder.addTagFamilies(b.addAllTags(tags).build());
         }
-        datapointValueBuilder.addTagFamilies(defaultBuilder.build());
-        // 2 - add fields
-        for (final Object field : this.fields) {
-            datapointValueBuilder.addFields(((Serializable<BanyandbModel.FieldValue>) field).serialize());
+
+        for (int i = 0; i < this.entityMetadata.getTotalFields(); i++) {
+            Object obj = this.fields[i];
+            if (obj != null) {
+                datapointValueBuilder.addFields(((Serializable<BanyandbModel.FieldValue>) obj).serialize());
+            } else {
+                datapointValueBuilder.addFields(TagAndValue.nullFieldValue().serialize());
+            }
         }
 
         builder.setDataPoint(datapointValueBuilder);
