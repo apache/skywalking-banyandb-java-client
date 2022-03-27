@@ -47,7 +47,7 @@ Stream s = Stream.create("default", "sw")
             .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
             .build())
         .build();
-registry.create(s);
+client.define(s);
 ```
 
 For the last line in the code block, a simple API (i.e. `BanyanDBClient.define(Stream)`) is used to define the schema of `Stream`.
@@ -74,7 +74,7 @@ Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1
         .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
         .build();
 // define a measure, as we've mentioned above
-registry.create(m);
+client.define(m);
 ```
 
 For more APIs usage, refer to test cases and API docs.
