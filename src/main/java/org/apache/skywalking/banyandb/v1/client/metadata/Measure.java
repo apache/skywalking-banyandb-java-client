@@ -56,6 +56,13 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
      */
     public abstract ImmutableList<IndexRule> indexRules();
 
+    abstract Measure.Builder toBuilder();
+
+    public final Measure withIndexRules(List<IndexRule> indexRules) {
+        return toBuilder().addIndexes(indexRules)
+                .build();
+    }
+
     public static Measure.Builder create(String group, String name, Duration interval) {
         return new AutoValue_Measure.Builder().setGroup(group).setName(name).setInterval(interval);
     }
@@ -85,6 +92,11 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
         }
 
         abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
+
+        public final Measure.Builder addIndexes(Iterable<IndexRule> indexRules) {
+            indexRulesBuilder().addAll(indexRules);
+            return this;
+        }
 
         public final Measure.Builder addIndex(IndexRule indexRule) {
             indexRulesBuilder().add(indexRule.withGroup(group()));

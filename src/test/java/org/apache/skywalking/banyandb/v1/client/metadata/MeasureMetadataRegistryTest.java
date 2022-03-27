@@ -18,18 +18,12 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -46,16 +40,11 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class MeasureMetadataRegistryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private MeasureMetadataRegistry client;
-
+public class MeasureMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
     // play as an in-memory registry
     private Map<String, BanyandbDatabase.Measure> measureRegistry;
 
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase serviceImpl =
+    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase measureRegistryServiceImpl =
             mock(MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase.class, delegatesTo(
                     new MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase() {
                         @Override
@@ -107,71 +96,62 @@ public class MeasureMetadataRegistryTest {
     @Before
     public void setUp() throws IOException {
         measureRegistry = new HashMap<>();
-
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
-
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor().addService(serviceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        this.client = new MeasureMetadataRegistry(channel);
+        this.setUp(measureRegistryServiceImpl);
     }
 
     @Test
     public void testMeasureRegistry_createAndGet() {
-        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
                         .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
-        this.client.create(m);
-        Measure getMeasure = this.client.get("sw_metric", "service_cpm_minute");
-        Assert.assertNotNull(getMeasure);
-        Assert.assertEquals(m, getMeasure);
-        Assert.assertNotNull(getMeasure.updatedAt());
+        Measure actualMeasure = this.client.define(expectedMeasure);
+        Assert.assertNotNull(actualMeasure);
+        Assert.assertEquals(expectedMeasure, actualMeasure);
+        Assert.assertNotNull(actualMeasure.updatedAt());
     }
 
     @Test
     public void testMeasureRegistry_createAndList() {
-        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
                         .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
-        this.client.create(m);
-        List<Measure> listMeasure = this.client.list("sw_metric");
-        Assert.assertNotNull(listMeasure);
-        Assert.assertEquals(1, listMeasure.size());
-        Assert.assertEquals(listMeasure.get(0), m);
+        this.client.define(expectedMeasure);
+        List<Measure> actualMeasures = new MeasureMetadataRegistry(this.channel).list("sw_metric");
+        Assert.assertNotNull(actualMeasures);
+        Assert.assertEquals(1, actualMeasures.size());
     }
 
     @Test
     public void testMeasureRegistry_createAndDelete() {
-        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
                         .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
-        this.client.create(m);
-        boolean deleted = this.client.delete("sw_metric", "service_cpm_minute");
+        this.client.define(expectedMeasure);
+        boolean deleted = new MeasureMetadataRegistry(this.channel).delete("sw_metric", "service_cpm_minute");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, measureRegistry.size());
     }

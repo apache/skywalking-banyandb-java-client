@@ -44,6 +44,12 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
      */
     public abstract ImmutableList<IndexRule> indexRules();
 
+    abstract Builder toBuilder();
+
+    public final Stream withIndexRules(List<IndexRule> indexRules) {
+        return toBuilder().addIndexes(indexRules).build();
+    }
+
     public static Stream.Builder create(String group, String name) {
         return new AutoValue_Stream.Builder().setGroup(group).setName(name);
     }
@@ -66,6 +72,11 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
         }
 
         abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
+
+        public final Builder addIndexes(Iterable<IndexRule> indexRules) {
+            indexRulesBuilder().addAll(indexRules);
+            return this;
+        }
 
         public final Builder addIndex(IndexRule indexRule) {
             indexRulesBuilder().add(indexRule.withGroup(group()));

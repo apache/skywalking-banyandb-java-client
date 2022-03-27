@@ -18,18 +18,12 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -46,16 +40,11 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class StreamMetadataRegistryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private StreamMetadataRegistry client;
-
+public class StreamMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
     // play as an in-memory registry
     private Map<String, BanyandbDatabase.Stream> streamRegistry;
 
-    private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase serviceImpl =
+    private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase streamRegistryServiceImpl =
             mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
                     new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
                         @Override
@@ -107,25 +96,12 @@ public class StreamMetadataRegistryTest {
     @Before
     public void setUp() throws IOException {
         streamRegistry = new HashMap<>();
-
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
-
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor().addService(serviceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        this.client = new StreamMetadataRegistry(channel);
+        setUp(streamRegistryServiceImpl);
     }
 
     @Test
     public void testStreamRegistry_createAndGet() {
-        Stream s = Stream.create("default", "sw")
+        Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")
                         .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
@@ -134,18 +110,19 @@ public class StreamMetadataRegistryTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
                         .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
                 .build();
-        this.client.create(s);
-        Stream getStream = this.client.get("default", "sw");
-        Assert.assertNotNull(getStream);
-        Assert.assertEquals(s, getStream);
-        Assert.assertNotNull(getStream.updatedAt());
+        Stream actualStream = this.client.define(expectedStream);
+        Assert.assertNotNull(actualStream);
+        Assert.assertEquals(expectedStream, actualStream);
+        Assert.assertNotNull(actualStream.updatedAt());
     }
 
     @Test
     public void testStreamRegistry_createAndList() {
-        Stream s = Stream.create("default", "sw")
+        Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")
                         .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
@@ -155,17 +132,17 @@ public class StreamMetadataRegistryTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
                 .build();
-        this.client.create(s);
-        List<Stream> listStream = this.client.list("default");
-        Assert.assertNotNull(listStream);
-        Assert.assertEquals(1, listStream.size());
-        Assert.assertEquals(listStream.get(0), s);
+        client.define(expectedStream);
+        List<Stream> actualStreams = new StreamMetadataRegistry(this.channel).list("default");
+        Assert.assertNotNull(actualStreams);
+        Assert.assertEquals(1, actualStreams.size());
     }
 
     @Test
     public void testStreamRegistry_createAndDelete() {
-        Stream s = Stream.create("default", "sw")
+        Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")
                         .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
@@ -175,9 +152,10 @@ public class StreamMetadataRegistryTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
                 .build();
-        this.client.create(s);
-        boolean deleted = this.client.delete("default", "sw");
+        this.client.define(expectedStream);
+        boolean deleted = new StreamMetadataRegistry(this.channel).delete("default", "sw");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, streamRegistry.size());
     }

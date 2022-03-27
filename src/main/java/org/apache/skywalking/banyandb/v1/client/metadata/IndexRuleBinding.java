@@ -38,7 +38,7 @@ public abstract class IndexRuleBinding extends NamedSchema<BanyandbDatabase.Inde
     /**
      * rule names refer to the IndexRule
      */
-    abstract ImmutableList<String> rules();
+    public abstract ImmutableList<String> rules();
 
     /**
      * subject indicates the subject of binding action

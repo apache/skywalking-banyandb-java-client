@@ -29,6 +29,8 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -296,10 +298,13 @@ public class BanyanDBClient implements Closeable {
      * @return a created stream in the BanyanDB
      */
     public Stream define(Stream stream) {
-        StreamMetadataRegistry registry = new StreamMetadataRegistry(checkNotNull(this.channel));
-        registry.create(stream);
+        StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
+        streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
-        return registry.get(stream.group(), stream.name());
+        Stream createdStream = streamRegistry.get(stream.group(), stream.name());
+
+        List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdStream.group(), createdStream.name() + "-index-rule-binding");
+        return createdStream.withIndexRules(indexRules);
     }
 
     /**
@@ -309,10 +314,13 @@ public class BanyanDBClient implements Closeable {
      * @return a created measure in the BanyanDB
      */
     public Measure define(Measure measure) {
-        MeasureMetadataRegistry registry = new MeasureMetadataRegistry(checkNotNull(this.channel));
-        registry.create(measure);
+        MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
+        measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
-        return registry.get(measure.group(), measure.name());
+        Measure createdMeasure = measureRegistry.get(measure.group(), measure.name());
+
+        List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdMeasure.group(), createdMeasure.name() + "-index-rule-binding");
+        return createdMeasure.withIndexRules(indexRules);
     }
 
     /**
@@ -362,6 +370,22 @@ public class BanyanDBClient implements Closeable {
                 IndexRuleBinding.Subject.referToStream(measure.name()),
                 indexRuleNames);
         irbRegistry.create(binding);
+    }
+
+    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) {
+        IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
+
+        IndexRuleBinding irb = irbRegistry.get(group, bindingName);
+        if (irb == null) {
+            return Collections.emptyList();
+        }
+
+        IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
+        List<IndexRule> indexRules = new ArrayList<>(irb.rules().size());
+        for (final String rule : irb.rules()) {
+            indexRules.add(irRegistry.get(group, rule));
+        }
+        return indexRules;
     }
 
     @Override
