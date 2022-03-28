@@ -16,11 +16,14 @@
  *
  */
 
-package org.apache.skywalking.banyandb.v1.client.metadata;
+package org.apache.skywalking.banyandb.v1.client.grpc;
 
 import com.google.protobuf.GeneratedMessageV3;
+import io.grpc.stub.AbstractFutureStub;
+import org.apache.skywalking.banyandb.v1.client.metadata.NamedSchema;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * abstract metadata client which defines CRUD operations for a specific kind of schema.
@@ -28,20 +31,26 @@ import java.util.List;
  * @param <P> ProtoBuf: schema defined in ProtoBuf format
  * @param <S> NamedSchema: Java implementation (POJO) which can be serialized to P
  */
-public abstract class MetadataClient<P extends GeneratedMessageV3, S extends NamedSchema<P>> {
+public abstract class MetadataClient<STUB extends AbstractFutureStub<STUB>, P extends GeneratedMessageV3, S extends NamedSchema<P>> {
+    protected final STUB stub;
+
+    protected MetadataClient(STUB stub) {
+        this.stub = stub;
+    }
+
     /**
      * Create a schema
      *
      * @param payload the schema to be created
      */
-    abstract void create(S payload);
+    public abstract void create(S payload);
 
     /**
      * Update the schema
      *
      * @param payload the schema which will be updated with the given name and group
      */
-    abstract void update(S payload);
+    public abstract void update(S payload);
 
     /**
      * Delete a schema
@@ -50,7 +59,7 @@ public abstract class MetadataClient<P extends GeneratedMessageV3, S extends Nam
      * @param name  the name of the schema to be removed
      * @return whether this schema is deleted
      */
-    abstract boolean delete(String group, String name);
+    public abstract boolean delete(String group, String name);
 
     /**
      * Get a schema with name
@@ -59,12 +68,16 @@ public abstract class MetadataClient<P extends GeneratedMessageV3, S extends Nam
      * @param name  the name of the schema to be found
      * @return the schema, null if not found
      */
-    abstract S get(String group, String name);
+    public abstract S get(String group, String name);
 
     /**
      * List all schemas with the same group name
      *
      * @return a list of schemas found
      */
-    abstract List<S> list(String group);
+    public abstract List<S> list(String group);
+
+    protected <REQ, RESP> RESP execute(Future<RESP> future) {
+        return ApiExceptions.callAndTranslateApiException(future);
+    }
 }

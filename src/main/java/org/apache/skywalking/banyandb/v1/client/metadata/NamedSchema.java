@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
  *
  * @param <P> In BanyanDB, we have Stream, IndexRule, IndexRuleBinding and Measure
  */
-abstract class NamedSchema<P extends GeneratedMessageV3> {
+public abstract class NamedSchema<P extends GeneratedMessageV3> {
     /**
      * group of the NamedSchema
      */

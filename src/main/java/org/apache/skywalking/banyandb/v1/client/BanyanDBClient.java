@@ -45,6 +45,7 @@ import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.ApiExceptions;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -98,12 +99,12 @@ public class BanyanDBClient implements Closeable {
      * gRPC blocking stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile StreamServiceGrpc.StreamServiceBlockingStub streamServiceBlockingStub;
+    volatile StreamServiceGrpc.StreamServiceFutureStub streamServiceBlockingStub;
     /**
      * gRPC blocking stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile MeasureServiceGrpc.MeasureServiceBlockingStub measureServiceBlockingStub;
+    volatile MeasureServiceGrpc.MeasureServiceFutureStub measureServiceBlockingStub;
     /**
      * The connection status.
      */
@@ -156,8 +157,8 @@ public class BanyanDBClient implements Closeable {
                 channel = nettyChannelBuilder.build();
                 measureServiceStub = MeasureServiceGrpc.newStub(channel);
                 streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
-                measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newFutureStub(channel);
+                measureServiceBlockingStub = MeasureServiceGrpc.newFutureStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -180,8 +181,8 @@ public class BanyanDBClient implements Closeable {
                 this.channel = channel;
                 measureServiceStub = MeasureServiceGrpc.newStub(channel);
                 streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(channel);
-                measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newFutureStub(channel);
+                measureServiceBlockingStub = MeasureServiceGrpc.newFutureStub(channel);
                 isConnected = true;
             }
         } finally {
@@ -260,9 +261,10 @@ public class BanyanDBClient implements Closeable {
     public StreamQueryResponse query(StreamQuery streamQuery) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        final BanyandbStream.QueryResponse response = this.streamServiceBlockingStub
-                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                .query(streamQuery.build());
+        final BanyandbStream.QueryResponse response = ApiExceptions.callAndTranslateApiException(
+                this.streamServiceBlockingStub
+                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                        .query(streamQuery.build()));
         return new StreamQueryResponse(response);
     }
 
@@ -275,9 +277,10 @@ public class BanyanDBClient implements Closeable {
     public MeasureQueryResponse query(MeasureQuery measureQuery) {
         checkState(this.streamServiceStub != null, "measure service is null");
 
-        final BanyandbMeasure.QueryResponse response = this.measureServiceBlockingStub
-                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                .query(measureQuery.build());
+        final BanyandbMeasure.QueryResponse response = ApiExceptions.callAndTranslateApiException(
+                this.measureServiceBlockingStub
+                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                        .query(measureQuery.build()));
         return new MeasureQueryResponse(response);
     }
 

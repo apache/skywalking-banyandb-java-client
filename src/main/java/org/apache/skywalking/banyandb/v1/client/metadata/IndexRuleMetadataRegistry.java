@@ -18,66 +18,56 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.common.base.Preconditions;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IndexRuleMetadataRegistry extends MetadataClient<BanyandbDatabase.IndexRule, IndexRule> {
-    private final IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceBlockingStub blockingStub;
-
+public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceFutureStub, BanyandbDatabase.IndexRule, IndexRule> {
     public IndexRuleMetadataRegistry(Channel channel) {
-        Preconditions.checkArgument(channel != null, "channel must not be null");
-        this.blockingStub = IndexRuleRegistryServiceGrpc.newBlockingStub(channel);
+        super(IndexRuleRegistryServiceGrpc.newFutureStub(channel));
     }
 
     @Override
     public void create(IndexRule payload) {
-        blockingStub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
+        execute(stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
                 .setIndexRule(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public void update(IndexRule payload) {
-        blockingStub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
+        execute(stub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
                 .setIndexRule(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public boolean delete(String group, String name) {
-        BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
+        BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = execute(stub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
                 .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
+                .build()));
         return resp != null && resp.getDeleted();
     }
 
     @Override
     public IndexRule get(String group, String name) {
-        BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
+        BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = execute(stub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
                 .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
-        if (resp == null) {
-            return null;
-        }
+                .build()));
 
         return IndexRule.fromProtobuf(resp.getIndexRule());
     }
 
     @Override
     public List<IndexRule> list(String group) {
-        BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
+        BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = execute(stub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
                 .setGroup(group)
-                .build());
-        if (resp == null) {
-            return Collections.emptyList();
-        }
+                .build()));
 
         return resp.getIndexRuleList().stream().map(IndexRule::fromProtobuf).collect(Collectors.toList());
     }

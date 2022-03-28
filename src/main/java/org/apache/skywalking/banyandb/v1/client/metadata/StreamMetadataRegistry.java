@@ -18,66 +18,61 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.common.base.Preconditions;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StreamMetadataRegistry extends MetadataClient<BanyandbDatabase.Stream, Stream> {
-    private final StreamRegistryServiceGrpc.StreamRegistryServiceBlockingStub blockingStub;
+public class StreamMetadataRegistry extends MetadataClient<StreamRegistryServiceGrpc.StreamRegistryServiceFutureStub,
+        BanyandbDatabase.Stream, Stream> {
 
     public StreamMetadataRegistry(Channel channel) {
-        Preconditions.checkArgument(channel != null, "channel must not be null");
-        this.blockingStub = StreamRegistryServiceGrpc.newBlockingStub(channel);
+        super(StreamRegistryServiceGrpc.newFutureStub(channel));
     }
 
     @Override
     public void create(Stream payload) {
-        blockingStub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
+        execute(stub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
                 .setStream(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public void update(Stream payload) {
-        blockingStub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
+        execute(stub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
                 .setStream(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public boolean delete(String group, String name) {
-        BanyandbDatabase.StreamRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
+        BanyandbDatabase.StreamRegistryServiceDeleteResponse resp = execute(
+                stub.delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
         return resp != null && resp.getDeleted();
     }
 
     @Override
     public Stream get(String group, String name) {
-        BanyandbDatabase.StreamRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.StreamRegistryServiceGetRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
-        if (resp == null) {
-            return null;
-        }
+        BanyandbDatabase.StreamRegistryServiceGetResponse resp = execute(
+                stub.get(BanyandbDatabase.StreamRegistryServiceGetRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
 
         return Stream.fromProtobuf(resp.getStream());
     }
 
     @Override
     public List<Stream> list(String group) {
-        BanyandbDatabase.StreamRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.StreamRegistryServiceListRequest.newBuilder()
-                .setGroup(group)
-                .build());
-        if (resp == null) {
-            return Collections.emptyList();
-        }
+        BanyandbDatabase.StreamRegistryServiceListResponse resp = execute(
+                stub.list(BanyandbDatabase.StreamRegistryServiceListRequest.newBuilder()
+                        .setGroup(group)
+                        .build()));
 
         return resp.getStreamList().stream().map(Stream::fromProtobuf).collect(Collectors.toList());
     }

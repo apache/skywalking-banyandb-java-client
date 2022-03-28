@@ -18,66 +18,61 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.common.base.Preconditions;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MeasureMetadataRegistry extends MetadataClient<BanyandbDatabase.Measure, Measure> {
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub blockingStub;
+public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServiceGrpc.MeasureRegistryServiceFutureStub,
+        BanyandbDatabase.Measure, Measure> {
 
     public MeasureMetadataRegistry(Channel channel) {
-        Preconditions.checkArgument(channel != null, "channel must not be null");
-        this.blockingStub = MeasureRegistryServiceGrpc.newBlockingStub(channel);
+        super(MeasureRegistryServiceGrpc.newFutureStub(channel));
     }
 
     @Override
     public void create(Measure payload) {
-        blockingStub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
+        execute(stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
                 .setMeasure(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public void update(Measure payload) {
-        blockingStub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
+        execute(stub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
                 .setMeasure(payload.serialize())
-                .build());
+                .build()));
     }
 
     @Override
     public boolean delete(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
+        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = execute(
+                stub.delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
         return resp != null && resp.getDeleted();
     }
 
     @Override
     public Measure get(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = blockingStub.get(BanyandbDatabase.MeasureRegistryServiceGetRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build());
-        if (resp == null) {
-            return null;
-        }
+        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = execute(
+                stub.get(BanyandbDatabase.MeasureRegistryServiceGetRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
 
         return Measure.fromProtobuf(resp.getMeasure());
     }
 
     @Override
     public List<Measure> list(String group) {
-        BanyandbDatabase.MeasureRegistryServiceListResponse resp = blockingStub.list(BanyandbDatabase.MeasureRegistryServiceListRequest.newBuilder()
-                .setGroup(group)
-                .build());
-        if (resp == null) {
-            return Collections.emptyList();
-        }
+        BanyandbDatabase.MeasureRegistryServiceListResponse resp = execute(
+                stub.list(BanyandbDatabase.MeasureRegistryServiceListRequest.newBuilder()
+                        .setGroup(group)
+                        .build()));
 
         return resp.getMeasureList().stream().map(Measure::fromProtobuf).collect(Collectors.toList());
     }
