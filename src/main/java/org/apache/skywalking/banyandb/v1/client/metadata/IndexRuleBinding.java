@@ -67,6 +67,10 @@ public abstract class IndexRuleBinding extends NamedSchema<BanyandbDatabase.Inde
                 ImmutableList.copyOf(rules), subject, beginAt, expireAt);
     }
 
+    public static String defaultBindingRule(String entityName) {
+        return entityName + "-index-rule-binding";
+    }
+
     @Override
     public BanyandbDatabase.IndexRuleBinding serialize() {
         BanyandbDatabase.IndexRuleBinding.Builder b = BanyandbDatabase.IndexRuleBinding.newBuilder()

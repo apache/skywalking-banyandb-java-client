@@ -296,32 +296,24 @@ public class BanyanDBClient implements Closeable {
      * Define a new stream
      *
      * @param stream the stream to be created
-     * @return a created stream in the BanyanDB
      */
-    public Stream define(Stream stream) {
+    public void define(Stream stream) {
         StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
         streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
-        Stream createdStream = streamRegistry.get(stream.group(), stream.name());
-
-        List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdStream.group(), createdStream.name() + "-index-rule-binding");
-        return MetadataCache.INSTANCE.register(createdStream.withIndexRules(indexRules));
+        MetadataCache.INSTANCE.register(stream);
     }
 
     /**
      * Define a new measure
      *
      * @param measure the measure to be created
-     * @return a created measure in the BanyanDB
      */
-    public Measure define(Measure measure) {
+    public void define(Measure measure) {
         MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
         measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
-        Measure createdMeasure = measureRegistry.get(measure.group(), measure.name());
-
-        List<IndexRule> indexRules = this.findIndexRulesByGroupAndBindingName(createdMeasure.group(), createdMeasure.name() + "-index-rule-binding");
-        return MetadataCache.INSTANCE.register(createdMeasure.withIndexRules(indexRules));
+        MetadataCache.INSTANCE.register(measure);
     }
 
     /**
@@ -342,7 +334,7 @@ public class BanyanDBClient implements Closeable {
 
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
         IndexRuleBinding binding = IndexRuleBinding.create(stream.group(),
-                stream.name() + "-index-rule-binding",
+                IndexRuleBinding.defaultBindingRule(stream.name()),
                 IndexRuleBinding.Subject.referToStream(stream.name()),
                 indexRuleNames);
         irbRegistry.create(binding);
@@ -367,7 +359,7 @@ public class BanyanDBClient implements Closeable {
 
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
         IndexRuleBinding binding = IndexRuleBinding.create(measure.group(),
-                measure.name() + "-index-rule-binding",
+                IndexRuleBinding.defaultBindingRule(measure.name()),
                 IndexRuleBinding.Subject.referToStream(measure.name()),
                 indexRuleNames);
         irbRegistry.create(binding);

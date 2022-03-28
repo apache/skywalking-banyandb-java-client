@@ -34,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -114,7 +115,14 @@ public class StreamMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
                         .build())
                 .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
                 .build();
-        Stream actualStream = this.client.define(expectedStream);
+        this.client.define(expectedStream);
+        Assert.assertTrue(streamRegistry.containsKey("sw"));
+        Stream actualStream = Stream.fromProtobuf(streamRegistry.get("service_cpm_minute")).withIndexRules(
+                indexRuleRegistry.values()
+                        .stream()
+                        .map(IndexRule::fromProtobuf)
+                        .collect(Collectors.toList())
+        );
         Assert.assertNotNull(actualStream);
         Assert.assertEquals(expectedStream, actualStream);
         Assert.assertNotNull(actualStream.updatedAt());
