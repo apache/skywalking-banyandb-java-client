@@ -34,7 +34,6 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -115,11 +114,7 @@ public class MeasureMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
                 .build();
         this.client.define(expectedMeasure);
         Assert.assertTrue(measureRegistry.containsKey("service_cpm_minute"));
-        Measure actualMeasure = Measure.fromProtobuf(measureRegistry.get("service_cpm_minute"))
-                .withIndexRules(indexRuleRegistry.values()
-                        .stream()
-                        .map(IndexRule::fromProtobuf)
-                        .collect(Collectors.toList()));
+        Measure actualMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
         Assert.assertNotNull(actualMeasure);
         Assert.assertEquals(expectedMeasure, actualMeasure);
         Assert.assertNotNull(actualMeasure.updatedAt());

@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -363,6 +364,36 @@ public class BanyanDBClient implements Closeable {
                 IndexRuleBinding.Subject.referToStream(measure.name()),
                 indexRuleNames);
         irbRegistry.create(binding);
+    }
+
+    /**
+     * Try to find the stream from the BanyanDB with given group and name.
+     *
+     * @param group group of the stream
+     * @param name  name of the stream
+     * @return Steam with index rules if found. Otherwise, null is returned.
+     */
+    public Stream findStream(String group, String name) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        Stream s = new StreamMetadataRegistry(checkNotNull(this.channel)).get(group, name);
+        return s.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
+    }
+
+    /**
+     * Try to find the measure from the BanyanDB with given group and name.
+     *
+     * @param group group of the measure
+     * @param name  name of the measure
+     * @return Measure with index rules if found. Otherwise, null is returned.
+     */
+    public Measure findMeasure(String group, String name) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        Measure m = new MeasureMetadataRegistry(checkNotNull(this.channel)).get(group, name);
+        return m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
     }
 
     private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) {
