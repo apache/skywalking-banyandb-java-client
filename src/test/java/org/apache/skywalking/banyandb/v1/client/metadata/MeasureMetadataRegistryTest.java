@@ -18,10 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.stub.StreamObserver;
-import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
-import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,73 +26,14 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
 public class MeasureMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
-    // play as an in-memory registry
-    private Map<String, BanyandbDatabase.Measure> measureRegistry;
-
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase measureRegistryServiceImpl =
-            mock(MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase.class, delegatesTo(
-                    new MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase() {
-                        @Override
-                        public void create(BanyandbDatabase.MeasureRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceCreateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceUpdateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbDatabase.Measure oldMeasure = measureRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceDeleteResponse.newBuilder()
-                                    .setDeleted(oldMeasure != null)
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void get(BanyandbDatabase.MeasureRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceGetResponse.newBuilder()
-                                    .setMeasure(measureRegistry.get(request.getMetadata().getName()))
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void list(BanyandbDatabase.MeasureRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceListResponse.newBuilder()
-                                    .addAllMeasure(measureRegistry.values())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
     @Before
     public void setUp() throws IOException {
-        measureRegistry = new HashMap<>();
-        this.setUp(measureRegistryServiceImpl);
+        this.setUp(bindMeasureRegistry());
     }
 
     @Test

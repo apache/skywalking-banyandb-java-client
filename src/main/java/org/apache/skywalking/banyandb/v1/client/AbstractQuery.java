@@ -18,8 +18,11 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,14 +51,17 @@ public abstract class AbstractQuery<T> {
      * The projections of query result.
      * These should have defined in the schema.
      */
-    protected final Set<String> projections;
+    protected final Set<String> tagProjections;
 
-    public AbstractQuery(String group, String name, TimestampRange timestampRange, Set<String> projections) {
+    protected final MetadataCache.EntityMetadata metadata;
+
+    public AbstractQuery(String group, String name, TimestampRange timestampRange, Set<String> tagProjections) {
         this.group = group;
         this.name = name;
         this.timestampRange = timestampRange;
         this.conditions = new ArrayList<>(10);
-        this.projections = projections;
+        this.tagProjections = tagProjections;
+        this.metadata = MetadataCache.INSTANCE.findMetadata(this.group, this.name);
     }
 
     /**
@@ -97,15 +103,27 @@ public abstract class AbstractQuery<T> {
         return criteriaList;
     }
 
-    protected BanyandbModel.TagProjection.Builder buildTagProjection(String tagFamilyName) {
-        return this.buildTagProjection(tagFamilyName, this.projections);
+    protected BanyandbModel.TagProjection buildTagProjections() {
+        return this.buildTagProjections(this.tagProjections);
     }
 
-    protected BanyandbModel.TagProjection.Builder buildTagProjection(String tagFamilyName, Iterable<String> tagProjections) {
-        return BanyandbModel.TagProjection.newBuilder()
-                .addTagFamilies(BanyandbModel.TagProjection.TagFamily.newBuilder()
-                        .setName(tagFamilyName)
-                        .addAllTags(tagProjections)
-                        .build());
+    protected BanyandbModel.TagProjection buildTagProjections(Iterable<String> tagProjections) {
+        final ListMultimap<String, String> projectionMap = ArrayListMultimap.create();
+        for (final String tagName : tagProjections) {
+            final MetadataCache.TagInfo tagInfo = this.metadata.findTagInfo(tagName);
+            if (tagInfo == null) {
+                throw new IllegalArgumentException("fail to find metadata " + tagName);
+            }
+            projectionMap.put(tagInfo.tagFamilyName, tagName);
+        }
+
+        final BanyandbModel.TagProjection.Builder b = BanyandbModel.TagProjection.newBuilder();
+        for (final String tagFamilyName : projectionMap.keySet()) {
+            b.addTagFamilies(BanyandbModel.TagProjection.TagFamily.newBuilder()
+                    .setName(tagFamilyName)
+                    .addAllTags(projectionMap.get(tagFamilyName))
+                    .build());
+        }
+        return b.build();
     }
 }

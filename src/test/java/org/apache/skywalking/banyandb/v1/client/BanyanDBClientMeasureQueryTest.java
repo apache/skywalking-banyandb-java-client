@@ -21,21 +21,17 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.protobuf.Timestamp;
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
-import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
-import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
+import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
+import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -57,31 +53,8 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class BanyanDBClientMeasureQueryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private final GroupRegistryServiceGrpc.GroupRegistryServiceImplBase groupRegistryServiceImpl =
-            mock(GroupRegistryServiceGrpc.GroupRegistryServiceImplBase.class, delegatesTo(
-                    new GroupRegistryServiceGrpc.GroupRegistryServiceImplBase() {
-                        @Override
-                        public void get(BanyandbDatabase.GroupRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.GroupRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.GroupRegistryServiceGetResponse.newBuilder()
-                                    .setGroup(BanyandbCommon.Group.newBuilder()
-                                            .setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_metrics").build())
-                                            .setCatalog(BanyandbCommon.Catalog.CATALOG_MEASURE)
-                                            .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
-                                                    .setShardNum(2)
-                                                    .setBlockNum(12)
-                                                    .setTtl("7d")
-                                                    .build())
-                                            .build())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
-    private final MeasureServiceGrpc.MeasureServiceImplBase serviceImpl =
+public class BanyanDBClientMeasureQueryTest extends BanyanDBMetadataRegistryTest {
+    private final MeasureServiceGrpc.MeasureServiceImplBase measureQueryService =
             mock(MeasureServiceGrpc.MeasureServiceImplBase.class, delegatesTo(
                     new MeasureServiceGrpc.MeasureServiceImplBase() {
                         @Override
@@ -91,31 +64,21 @@ public class BanyanDBClientMeasureQueryTest {
                         }
                     }));
 
-    private BanyanDBClient client;
-
     @Before
     public void setUp() throws IOException {
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
+        setUp(bindService(measureQueryService), bindMeasureRegistry());
 
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor()
-                .addService(serviceImpl)
-                .addService(groupRegistryServiceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-        client = new BanyanDBClient("127.0.0.1", server.getPort());
-
-        client.connect(channel);
-    }
-
-    @Test
-    public void testNonNull() {
-        Assert.assertNotNull(this.client);
+        Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .build();
+        client.define(m);
     }
 
     @Test
@@ -124,21 +87,21 @@ public class BanyanDBClientMeasureQueryTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        MeasureQuery query = new MeasureQuery("sw_metrics", "service_instance_cpm_day",
+        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
-                ImmutableSet.of("id", "scope", "service_id"),
+                ImmutableSet.of("id", "entity_id"),
                 ImmutableSet.of("total"));
-        query.maxBy("total", ImmutableSet.of("service_id"));
+        query.maxBy("total", ImmutableSet.of("entity_id"));
         // search with conditions
         query.appendCondition(PairQueryCondition.StringQueryCondition.eq("default", "service_id", "abc"));
         client.query(query);
 
-        verify(serviceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
+        verify(measureQueryService).query(requestCaptor.capture(), ArgumentMatchers.any());
 
         final BanyandbMeasure.QueryRequest request = requestCaptor.getValue();
         // assert metadata
-        Assert.assertEquals("service_instance_cpm_day", request.getMetadata().getName());
-        Assert.assertEquals("sw_metrics", request.getMetadata().getGroup());
+        Assert.assertEquals("service_cpm_minute", request.getMetadata().getName());
+        Assert.assertEquals("sw_metric", request.getMetadata().getGroup());
         // assert timeRange, both seconds and the nanos
         Assert.assertEquals(begin.toEpochMilli() / 1000, request.getTimeRange().getBegin().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(begin.toEpochMilli() % 1000), request.getTimeRange().getBegin().getNanos());
@@ -150,7 +113,7 @@ public class BanyanDBClientMeasureQueryTest {
         Assert.assertEquals(BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, request.getCriteria(0).getConditions(0).getOp());
         Assert.assertEquals(0L, request.getCriteria(0).getConditions(0).getValue().getInt().getValue());
         // assert projections
-        assertCollectionEqual(Lists.newArrayList("default:id", "default:scope", "default:service_id"),
+        assertCollectionEqual(Lists.newArrayList("default:id", "default:entity_id"),
                 parseProjectionList(request.getTagProjection()));
         assertCollectionEqual(Lists.newArrayList("total"),
                 request.getFieldProjection().getNamesList());
@@ -159,7 +122,6 @@ public class BanyanDBClientMeasureQueryTest {
     @Test
     public void testQuery_responseConversion() {
         final String elementId = "1231.dfd.123123ssf";
-        final String scope = "group1";
         final String serviceName = "service_name_a";
         final Instant now = Instant.now();
         final BanyandbMeasure.QueryResponse responseObj = BanyandbMeasure.QueryResponse.newBuilder()
@@ -174,11 +136,6 @@ public class BanyanDBClientMeasureQueryTest {
                                         .setKey("id")
                                         .setValue(BanyandbModel.TagValue.newBuilder()
                                                 .setId(BanyandbModel.ID.newBuilder().setValue(elementId).build()).build())
-                                        .build())
-                                .addTags(BanyandbModel.Tag.newBuilder()
-                                        .setKey("scope")
-                                        .setValue(BanyandbModel.TagValue.newBuilder()
-                                                .setStr(BanyandbModel.Str.newBuilder().setValue(scope).build()).build())
                                         .build())
                                 .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("service_name")
@@ -196,10 +153,9 @@ public class BanyanDBClientMeasureQueryTest {
         MeasureQueryResponse resp = new MeasureQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getDataPoints().size());
-        Assert.assertEquals(3, resp.getDataPoints().get(0).getTags().size());
+        Assert.assertEquals(2, resp.getDataPoints().get(0).getTags().size());
         Assert.assertEquals(elementId,
                 resp.getDataPoints().get(0).getTagValue("id"));
-        Assert.assertEquals(scope, resp.getDataPoints().get(0).getTagValue("scope"));
         Assert.assertEquals(serviceName, resp.getDataPoints().get(0).getTagValue("service_name"));
         Assert.assertEquals(10L,
                 (Number) resp.getDataPoints().get(0).getFieldValue("count"));

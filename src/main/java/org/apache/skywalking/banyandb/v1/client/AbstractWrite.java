@@ -25,6 +25,8 @@ import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
     /**
      * Group name of the current entity
@@ -59,8 +61,8 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     }
 
     public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
-        final int index = this.entityMetadata.findTagInfo(tagName);
-        this.tags[index] = tagValue;
+        final MetadataCache.TagInfo tagInfo = this.entityMetadata.findTagInfo(tagName);
+        this.tags[checkNotNull(tagInfo).getOffset()] = tagValue;
         return this;
     }
 

@@ -18,10 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.stub.StreamObserver;
-import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
-import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,73 +26,14 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
 public class StreamMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
-    // play as an in-memory registry
-    private Map<String, BanyandbDatabase.Stream> streamRegistry;
-
-    private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase streamRegistryServiceImpl =
-            mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
-                    new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
-                        @Override
-                        public void create(BanyandbDatabase.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void update(BanyandbDatabase.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbDatabase.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceDeleteResponse.newBuilder()
-                                    .setDeleted(oldStream != null)
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void get(BanyandbDatabase.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceGetResponse.newBuilder()
-                                    .setStream(streamRegistry.get(request.getMetadata().getName()))
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void list(BanyandbDatabase.StreamRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceListResponse.newBuilder()
-                                    .addAllStream(streamRegistry.values())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
     @Before
     public void setUp() throws IOException {
-        streamRegistry = new HashMap<>();
-        setUp(streamRegistryServiceImpl);
+        setUp(bindStreamRegistry());
     }
 
     @Test

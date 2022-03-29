@@ -23,14 +23,12 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
-import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,11 +36,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -68,64 +63,11 @@ public class BanyanDBClientStreamWriteTest extends BanyanDBMetadataRegistryTest 
                         }
                     }));
 
-    // play as an in-memory registry
-    private Map<String, BanyandbDatabase.Stream> streamRegistry;
-
-    private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase streamRegistryServiceImpl =
-            mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
-                    new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
-                        @Override
-                        public void create(BanyandbDatabase.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void update(BanyandbDatabase.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbDatabase.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbDatabase.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceDeleteResponse.newBuilder()
-                                    .setDeleted(oldStream != null)
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void get(BanyandbDatabase.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceGetResponse.newBuilder()
-                                    .setStream(streamRegistry.get(request.getMetadata().getName()))
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void list(BanyandbDatabase.StreamRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceListResponse.newBuilder()
-                                    .addAllStream(streamRegistry.values())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
     private StreamBulkWriteProcessor streamBulkWriteProcessor;
 
     @Before
     public void setUp() throws IOException {
-        streamRegistry = new HashMap<>();
-        setUp(groupRegistryServiceImpl, streamRegistryServiceImpl);
+        setUp(bindService(groupRegistryServiceImpl), bindStreamRegistry());
         streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
 
         Stream expectedStream = Stream.create("default", "sw")

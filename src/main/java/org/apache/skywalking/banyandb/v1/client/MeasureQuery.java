@@ -49,14 +49,14 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     public MeasureQuery maxBy(String field, Set<String> groupByKeys) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        Preconditions.checkArgument(this.projections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         this.aggregation = new Aggregation(field, Aggregation.Type.MAX, groupByKeys);
         return this;
     }
 
     public MeasureQuery minBy(String field, Set<String> groupByKeys) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        Preconditions.checkArgument(this.projections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.MIN, groupByKeys);
         return this;
@@ -64,7 +64,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     public MeasureQuery meanBy(String field, Set<String> groupByKeys) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        Preconditions.checkArgument(this.projections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.MEAN, groupByKeys);
         return this;
@@ -72,7 +72,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     public MeasureQuery countBy(String field, Set<String> groupByKeys) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        Preconditions.checkArgument(this.projections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.COUNT, groupByKeys);
         return this;
@@ -80,7 +80,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     public MeasureQuery sumBy(String field, Set<String> groupByKeys) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        Preconditions.checkArgument(this.projections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.COUNT, groupByKeys);
         return this;
@@ -95,14 +95,13 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         }
-        // set "default" tag projection
-        builder.setTagProjection(buildTagProjection("default"));
+        builder.setTagProjection(buildTagProjections());
         builder.setFieldProjection(BanyandbMeasure.QueryRequest.FieldProjection.newBuilder()
                 .addAllNames(fieldProjections)
                 .build());
         if (this.aggregation != null) {
             BanyandbMeasure.QueryRequest.GroupBy groupBy = BanyandbMeasure.QueryRequest.GroupBy.newBuilder()
-                    .setTagProjection(buildTagProjection("default", this.aggregation.groupByTagsProjection))
+                    .setTagProjection(buildTagProjections(this.aggregation.groupByTagsProjection))
                     .setFieldName(this.aggregation.fieldName)
                     .build();
             BanyandbMeasure.QueryRequest.Aggregation aggr = BanyandbMeasure.QueryRequest.Aggregation.newBuilder()

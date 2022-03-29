@@ -24,21 +24,16 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.Timestamp;
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
-import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
-import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
+import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -51,6 +46,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -60,29 +56,9 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class BanyanDBClientStreamQueryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private final GroupRegistryServiceGrpc.GroupRegistryServiceImplBase groupRegistryServiceImpl =
-            mock(GroupRegistryServiceGrpc.GroupRegistryServiceImplBase.class, delegatesTo(
-                    new GroupRegistryServiceGrpc.GroupRegistryServiceImplBase() {
-                        @Override
-                        public void get(BanyandbDatabase.GroupRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.GroupRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbDatabase.GroupRegistryServiceGetResponse.newBuilder()
-                                    .setGroup(BanyandbCommon.Group.newBuilder()
-                                            .setMetadata(BanyandbCommon.Metadata.newBuilder().setName("default").build())
-                                            .setCatalog(BanyandbCommon.Catalog.CATALOG_STREAM)
-                                            .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
-                                                    .setShardNum(2)
-                                                    .build())
-                                            .build())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
-    private final StreamServiceGrpc.StreamServiceImplBase serviceImpl =
+public class BanyanDBClientStreamQueryTest extends BanyanDBMetadataRegistryTest {
+    // query service
+    private final StreamServiceGrpc.StreamServiceImplBase streamQueryServiceImpl =
             mock(StreamServiceGrpc.StreamServiceImplBase.class, delegatesTo(
                     new StreamServiceGrpc.StreamServiceImplBase() {
                         @Override
@@ -92,31 +68,27 @@ public class BanyanDBClientStreamQueryTest {
                         }
                     }));
 
-    private BanyanDBClient client;
-
     @Before
     public void setUp() throws IOException {
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
+        this.streamRegistry = new HashMap<>();
+        setUp(bindStreamRegistry(), bindService(streamQueryServiceImpl));
 
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor()
-                .addService(serviceImpl)
-                .addService(groupRegistryServiceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-        client = new BanyanDBClient("127.0.0.1", server.getPort());
-
-        client.connect(channel);
-    }
-
-    @Test
-    public void testNonNull() {
-        Assert.assertNotNull(this.client);
+        Stream expectedStream = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("start_time"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("duration"))
+                        .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .build();
+        this.client.define(expectedStream);
     }
 
     @Test
@@ -133,7 +105,7 @@ public class BanyanDBClientStreamQueryTest {
         query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
         client.query(query);
 
-        verify(serviceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
+        verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
 
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
@@ -182,7 +154,7 @@ public class BanyanDBClientStreamQueryTest {
 
         client.query(query);
 
-        verify(serviceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
+        verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
         Assert.assertEquals("sw", request.getMetadata().getName());
@@ -213,13 +185,12 @@ public class BanyanDBClientStreamQueryTest {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
         String traceId = "1111.222.333";
 
-        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id"));
+        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
         query.appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "trace_id", traceId));
-        query.setDataProjections(ImmutableSet.of("data_binary"));
 
         client.query(query);
 
-        verify(serviceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
+        verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
         Assert.assertEquals("sw", request.getMetadata().getName());

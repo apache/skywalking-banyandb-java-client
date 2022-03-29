@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import java.util.Collections;
 import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
@@ -43,17 +42,11 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
      * One order condition is supported and optional.
      */
     private OrderBy orderBy;
-    /**
-     * Whether to fetch unindexed fields from the "data" tag family for the query
-     */
-    private Set<String> dataProjections;
 
     public StreamQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> projections) {
         super(group, name, timestampRange, projections);
         this.offset = 0;
         this.limit = 20;
-        // by default, we don't need projection for data tag family
-        this.dataProjections = Collections.emptySet();
     }
 
     public StreamQuery(final String group, final String name, final Set<String> projections) {
@@ -72,15 +65,7 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         }
-        // set "searchable" projection
-        BanyandbModel.TagProjection.Builder projectionBuilder = buildTagProjection("searchable");
-        if (!this.dataProjections.isEmpty()) {
-            // add "data" tag projection
-            projectionBuilder.addTagFamilies(
-                    buildTagProjection("data", this.dataProjections).getTagFamilies(0)
-            );
-        }
-        builder.setProjection(projectionBuilder.build());
+        builder.setProjection(buildTagProjections());
         // set conditions grouped by tagFamilyName
         builder.addAllCriteria(buildCriteria());
         builder.setOffset(offset);

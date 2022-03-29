@@ -56,13 +56,14 @@ public enum MetadataCache {
     static EntityMetadata parse(Stream s) {
         int totalTags = 0;
         final int[] tagFamilyCapacity = new int[s.tagFamilies().size()];
-        Map<String, Integer> tagInfo = new HashMap<>();
+        Map<String, TagInfo> tagInfo = new HashMap<>();
         int k = 0;
         for (int i = 0; i < s.tagFamilies().size(); i++) {
+            final String tagFamilyName = s.tagFamilies().get(i).tagFamilyName();
             tagFamilyCapacity[i] = s.tagFamilies().get(i).tagSpecs().size();
             totalTags += tagFamilyCapacity[i];
             for (int j = 0; j < tagFamilyCapacity[i]; j++) {
-                tagInfo.put(s.tagFamilies().get(i).tagSpecs().get(j).getTagName(), k++);
+                tagInfo.put(s.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
             }
         }
         return new EntityMetadata(totalTags, 0, tagFamilyCapacity,
@@ -73,13 +74,14 @@ public enum MetadataCache {
     static EntityMetadata parse(Measure m) {
         int totalTags = 0;
         final int[] tagFamilyCapacity = new int[m.tagFamilies().size()];
-        final Map<String, Integer> tagOffset = new HashMap<>();
+        final Map<String, TagInfo> tagOffset = new HashMap<>();
         int k = 0;
         for (int i = 0; i < m.tagFamilies().size(); i++) {
+            final String tagFamilyName = m.tagFamilies().get(i).tagFamilyName();
             tagFamilyCapacity[i] = m.tagFamilies().get(i).tagSpecs().size();
             totalTags += tagFamilyCapacity[i];
             for (int j = 0; j < tagFamilyCapacity[i]; j++) {
-                tagOffset.put(m.tagFamilies().get(i).tagSpecs().get(j).getTagName(), k++);
+                tagOffset.put(m.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
             }
         }
         final Map<String, Integer> fieldOffset = new HashMap<>();
@@ -99,16 +101,23 @@ public enum MetadataCache {
 
         private final int[] tagFamilyCapacity;
 
-        private final Map<String, Integer> tagOffset;
+        private final Map<String, TagInfo> tagOffset;
 
         private final Map<String, Integer> fieldOffset;
 
-        public int findTagInfo(String name) {
+        public TagInfo findTagInfo(String name) {
             return this.tagOffset.get(name);
         }
 
         public int findFieldInfo(String name) {
             return this.fieldOffset.get(name);
         }
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public static class TagInfo {
+        public final String tagFamilyName;
+        public final int offset;
     }
 }
