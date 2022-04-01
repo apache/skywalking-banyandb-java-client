@@ -28,7 +28,6 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
@@ -56,7 +55,7 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class BanyanDBClientStreamQueryTest extends BanyanDBMetadataRegistryTest {
+public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
     // query service
     private final StreamServiceGrpc.StreamServiceImplBase streamQueryServiceImpl =
             mock(StreamServiceGrpc.StreamServiceImplBase.class, delegatesTo(

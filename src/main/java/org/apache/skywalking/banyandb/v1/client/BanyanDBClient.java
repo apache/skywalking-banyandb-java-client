@@ -23,10 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.NameResolverRegistry;
-import io.grpc.internal.DnsNameResolverProvider;
-import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -34,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
@@ -46,6 +41,10 @@ import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.ApiExceptions;
+import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelFactory;
+import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
+import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManagerSettings;
+import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -68,14 +67,6 @@ import static com.google.common.base.Preconditions.checkState;
 @Slf4j
 public class BanyanDBClient implements Closeable {
     /**
-     * The hostname of BanyanDB server.
-     */
-    private final String host;
-    /**
-     * The port of BanyanDB server.
-     */
-    private final int port;
-    /**
      * Options for server connection.
      */
     @Getter(value = AccessLevel.PACKAGE)
@@ -89,30 +80,22 @@ public class BanyanDBClient implements Closeable {
      * gRPC client stub
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile StreamServiceGrpc.StreamServiceStub streamServiceStub;
+    final StreamServiceGrpc.StreamServiceStub streamServiceStub;
     /**
      * gRPC client stub
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
+    final MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
     /**
-     * gRPC blocking stub.
+     * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile StreamServiceGrpc.StreamServiceFutureStub streamServiceBlockingStub;
+    final StreamServiceGrpc.StreamServiceFutureStub streamServiceFutureStub;
     /**
-     * gRPC blocking stub.
+     * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    volatile MeasureServiceGrpc.MeasureServiceFutureStub measureServiceBlockingStub;
-    /**
-     * The connection status.
-     */
-    private volatile boolean isConnected = false;
-    /**
-     * A lock to control the race condition in establishing and disconnecting network connection.
-     */
-    private volatile ReentrantLock connectionEstablishLock;
+    final MeasureServiceGrpc.MeasureServiceFutureStub measureServiceFutureStub;
 
     /**
      * Create a BanyanDB client instance with a default options.
@@ -120,74 +103,34 @@ public class BanyanDBClient implements Closeable {
      * @param host IP or domain name
      * @param port Server port
      */
-    public BanyanDBClient(String host, int port) {
+    public BanyanDBClient(String host, int port) throws IOException {
         this(host, port, new Options());
     }
 
     /**
-     * Create a BanyanDB client instance with custom options
+     * Create a BanyanDB client instance with a customized options.
      *
      * @param host    IP or domain name
      * @param port    Server port
-     * @param options for database connection
+     * @param options customized options
+     * @throws IOException
      */
-    public BanyanDBClient(final String host,
-                          final int port,
-                          final Options options) {
-        this.host = host;
-        this.port = port;
+    public BanyanDBClient(String host, int port, Options options) throws IOException {
+        this(options, options.buildChannelManagerSettings(), new DefaultChannelFactory(host, port, options));
+    }
+
+    private BanyanDBClient(final Options options, final ChannelManagerSettings channelManagerSettings, final ChannelFactory channelFactory) throws IOException {
         this.options = options;
-        this.connectionEstablishLock = new ReentrantLock();
-
-        NameResolverRegistry.getDefaultRegistry().register(new DnsNameResolverProvider());
+        this.channel = ChannelManager.create(channelManagerSettings, channelFactory);
+        streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
+        measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
+        streamServiceStub = StreamServiceGrpc.newStub(this.channel);
+        measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
     }
 
-    /**
-     * Connect to the server.
-     *
-     * @throws RuntimeException if server is not reachable.
-     */
-    public void connect() {
-        connectionEstablishLock.lock();
-        try {
-            if (!isConnected) {
-                final ManagedChannelBuilder<?> nettyChannelBuilder = NettyChannelBuilder.forAddress(host, port).usePlaintext();
-                nettyChannelBuilder.maxInboundMessageSize(options.getMaxInboundMessageSize());
-
-                channel = nettyChannelBuilder.build();
-                measureServiceStub = MeasureServiceGrpc.newStub(channel);
-                streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newFutureStub(channel);
-                measureServiceBlockingStub = MeasureServiceGrpc.newFutureStub(channel);
-                isConnected = true;
-            }
-        } finally {
-            connectionEstablishLock.unlock();
-        }
-    }
-
-    /**
-     * Connect to the mock server.
-     * Created for testing purpose.
-     *
-     * @param channel the channel used for communication.
-     *                For tests, it is normally an in-process channel.
-     */
     @VisibleForTesting
-    public void connect(Channel channel) {
-        connectionEstablishLock.lock();
-        try {
-            if (!isConnected) {
-                this.channel = channel;
-                measureServiceStub = MeasureServiceGrpc.newStub(channel);
-                streamServiceStub = StreamServiceGrpc.newStub(channel);
-                streamServiceBlockingStub = StreamServiceGrpc.newFutureStub(channel);
-                measureServiceBlockingStub = MeasureServiceGrpc.newFutureStub(channel);
-                isConnected = true;
-            }
-        } finally {
-            connectionEstablishLock.unlock();
-        }
+    BanyanDBClient(ChannelFactory channelFactory) throws IOException {
+        this(new Options(), new Options().buildChannelManagerSettings(), channelFactory);
     }
 
     /**
@@ -200,6 +143,7 @@ public class BanyanDBClient implements Closeable {
 
         final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
                 = this.streamServiceStub
+                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                 .write(
                         new StreamObserver<BanyandbStream.WriteResponse>() {
                             @Override
@@ -262,7 +206,7 @@ public class BanyanDBClient implements Closeable {
         checkState(this.streamServiceStub != null, "stream service is null");
 
         final BanyandbStream.QueryResponse response = ApiExceptions.callAndTranslateApiException(
-                this.streamServiceBlockingStub
+                this.streamServiceFutureStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(streamQuery.build()));
         return new StreamQueryResponse(response);
@@ -278,7 +222,7 @@ public class BanyanDBClient implements Closeable {
         checkState(this.streamServiceStub != null, "measure service is null");
 
         final BanyandbMeasure.QueryResponse response = ApiExceptions.callAndTranslateApiException(
-                this.measureServiceBlockingStub
+                this.measureServiceFutureStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(measureQuery.build()));
         return new MeasureQueryResponse(response);
@@ -417,23 +361,16 @@ public class BanyanDBClient implements Closeable {
 
     @Override
     public void close() throws IOException {
-        connectionEstablishLock.lock();
         if (!(this.channel instanceof ManagedChannel)) {
             return;
         }
         final ManagedChannel managedChannel = (ManagedChannel) this.channel;
         try {
-            if (isConnected) {
-                managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-                isConnected = false;
-            }
+            managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
             log.warn("fail to wait for channel termination, shutdown now!", interruptedException);
             managedChannel.shutdownNow();
-            isConnected = false;
-        } finally {
-            connectionEstablishLock.unlock();
         }
     }
 }

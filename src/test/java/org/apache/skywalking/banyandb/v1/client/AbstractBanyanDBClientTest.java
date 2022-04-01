@@ -16,13 +16,14 @@
  *
  */
 
-package org.apache.skywalking.banyandb.v1.client.metadata;
+package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.internal.AbstractServerImplBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import io.grpc.util.MutableHandlerRegistry;
@@ -31,7 +32,6 @@ import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServic
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Rule;
 
@@ -43,7 +43,7 @@ import java.util.Map;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
-public class BanyanDBMetadataRegistryTest {
+public class AbstractBanyanDBClientTest {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
@@ -261,6 +261,10 @@ public class BanyanDBMetadataRegistryTest {
 
     protected void setUp(SetupFunction... setUpFunctions) throws IOException {
         indexRuleRegistry = new HashMap<>();
+        serviceRegistry.addService(indexRuleServiceImpl);
+
+        indexRuleBindingRegistry = new HashMap<>();
+        serviceRegistry.addService(indexRuleBindingServiceImpl);
         indexRuleBindingRegistry = new HashMap<>();
 
         // Generate a unique in-process server name.
@@ -269,11 +273,9 @@ public class BanyanDBMetadataRegistryTest {
         // Create a server, add service, start, and register for automatic graceful shutdown.
         InProcessServerBuilder serverBuilder = InProcessServerBuilder
                 .forName(serverName).directExecutor()
-                .fallbackHandlerRegistry(serviceRegistry)
-                .addService(indexRuleBindingServiceImpl)
-                .addService(indexRuleServiceImpl);
+                .fallbackHandlerRegistry(serviceRegistry);
         for (final SetupFunction func : setUpFunctions) {
-            func.apply();
+            func.apply(serverBuilder);
         }
         final Server s = serverBuilder.build();
         grpcCleanup.register(s.start());
@@ -282,28 +284,27 @@ public class BanyanDBMetadataRegistryTest {
         this.channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        client = new BanyanDBClient("127.0.0.1", s.getPort());
-        client.connect(channel);
+        client = new BanyanDBClient(() -> this.channel);
     }
 
     protected interface SetupFunction {
-        void apply();
+        void apply(AbstractServerImplBuilder<?> builder);
     }
 
     protected SetupFunction bindStreamRegistry() {
-        return () -> {
-            BanyanDBMetadataRegistryTest.this.streamRegistry = new HashMap<>();
+        return b -> {
+            AbstractBanyanDBClientTest.this.streamRegistry = new HashMap<>();
             serviceRegistry.addService(streamRegistryServiceImpl);
         };
     }
 
     protected SetupFunction bindService(final BindableService bindableService) {
-        return () -> serviceRegistry.addService(bindableService);
+        return b -> serviceRegistry.addService(bindableService);
     }
 
     protected SetupFunction bindMeasureRegistry() {
-        return () -> {
-            BanyanDBMetadataRegistryTest.this.measureRegistry = new HashMap<>();
+        return b -> {
+            AbstractBanyanDBClientTest.this.measureRegistry = new HashMap<>();
             serviceRegistry.addService(measureRegistryServiceImpl);
         };
     }

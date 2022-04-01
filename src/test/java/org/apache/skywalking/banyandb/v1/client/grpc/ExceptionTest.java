@@ -18,22 +18,15 @@
 
 package org.apache.skywalking.banyandb.v1.client.grpc;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
 import io.grpc.Status;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import io.grpc.util.MutableHandlerRegistry;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
+import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -41,34 +34,10 @@ import java.io.IOException;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
-public class ExceptionTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    protected final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
-
-    protected BanyanDBClient client;
-
-    protected ManagedChannel channel;
-
+public class ExceptionTest extends AbstractBanyanDBClientTest {
     @Before
     public void setUp() throws IOException {
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
-
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        InProcessServerBuilder serverBuilder = InProcessServerBuilder
-                .forName(serverName).directExecutor()
-                .fallbackHandlerRegistry(serviceRegistry);
-        final Server s = serverBuilder.build();
-        grpcCleanup.register(s.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        this.channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        client = new BanyanDBClient("127.0.0.1", s.getPort());
-        client.connect(channel);
+        super.setUp();
     }
 
     @Test

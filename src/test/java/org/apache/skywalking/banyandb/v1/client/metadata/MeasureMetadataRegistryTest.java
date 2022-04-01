@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +31,7 @@ import java.util.List;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class MeasureMetadataRegistryTest extends BanyanDBMetadataRegistryTest {
+public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
     @Before
     public void setUp() throws IOException {
         this.setUp(bindMeasureRegistry());

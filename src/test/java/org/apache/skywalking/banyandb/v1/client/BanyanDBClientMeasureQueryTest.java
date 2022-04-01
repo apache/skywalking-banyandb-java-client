@@ -25,7 +25,6 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
-import org.apache.skywalking.banyandb.v1.client.metadata.BanyanDBMetadataRegistryTest;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
@@ -53,7 +52,7 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class BanyanDBClientMeasureQueryTest extends BanyanDBMetadataRegistryTest {
+public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
     private final MeasureServiceGrpc.MeasureServiceImplBase measureQueryService =
             mock(MeasureServiceGrpc.MeasureServiceImplBase.class, delegatesTo(
                     new MeasureServiceGrpc.MeasureServiceImplBase() {
