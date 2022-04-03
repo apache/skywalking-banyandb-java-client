@@ -166,7 +166,7 @@ public class BanyanDBClient implements Closeable {
     }
 
     @VisibleForTesting
-    void connect(Channel channel) throws IOException {
+    void connect(Channel channel) {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
