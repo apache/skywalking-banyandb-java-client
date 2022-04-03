@@ -60,8 +60,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * BanyanDBClient represents a client instance interacting with BanyanDB server. This is built on the top of BanyanDB v1
- * gRPC APIs.
+ * BanyanDBClient represents a client instance interacting with BanyanDB server.
+ * This is built on the top of BanyanDB v1 gRPC APIs.
+ *
+ * <pre>{@code
+ * // use `default` group
+ * client = new BanyanDBClient("127.0.0.1", 17912);
+ * // to send any request, a connection to the server must be estabilished
+ * client.connect();
+ * }</pre>
  */
 @Slf4j
 public class BanyanDBClient implements Closeable {

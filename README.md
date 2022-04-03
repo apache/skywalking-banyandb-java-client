@@ -19,8 +19,8 @@ Create a `BanyanDBClient` with host, port and then use `connect()` to establish 
 ```java
 // use `default` group
 client = new BanyanDBClient("127.0.0.1", 17912);
-// establish a connection
-clinet.connect();
+// to send any request, a connection to the server must be estabilished
+client.connect();
 ```
 
 Besides, you may pass a customized options while building a `BanyanDBClient`. Supported
