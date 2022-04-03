@@ -28,6 +28,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
@@ -68,7 +69,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                     }));
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, BanyanDBApiException {
         this.streamRegistry = new HashMap<>();
         setUp(bindStreamRegistry(), bindService(streamQueryServiceImpl));
 
@@ -91,7 +92,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testQuery_tableScan() {
+    public void testQuery_tableScan() throws BanyanDBApiException {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
 
         Instant end = Instant.now();
@@ -129,7 +130,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testQuery_indexScan() {
+    public void testQuery_indexScan() throws BanyanDBApiException {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
         Instant begin = Instant.now().minus(5, ChronoUnit.MINUTES);
         Instant end = Instant.now();
@@ -180,7 +181,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testQuery_TraceIDFetch() {
+    public void testQuery_TraceIDFetch() throws BanyanDBApiException {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
         String traceId = "1111.222.333";
 
@@ -202,7 +203,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testQuery_responseConversion() {
+    public void testQuery_responseConversion() throws BanyanDBApiException {
         final byte[] binaryData = new byte[]{13};
         final String elementId = "1231.dfd.123123ssf";
         final String traceId = "trace_id-xxfff.111323";

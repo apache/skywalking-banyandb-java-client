@@ -23,34 +23,37 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StreamMetadataRegistry extends MetadataClient<StreamRegistryServiceGrpc.StreamRegistryServiceFutureStub,
+public class StreamMetadataRegistry extends MetadataClient<StreamRegistryServiceGrpc.StreamRegistryServiceBlockingStub,
         BanyandbDatabase.Stream, Stream> {
 
     public StreamMetadataRegistry(Channel channel) {
-        super(StreamRegistryServiceGrpc.newFutureStub(channel));
+        super(StreamRegistryServiceGrpc.newBlockingStub(channel));
     }
 
     @Override
-    public void create(Stream payload) {
-        execute(stub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
-                .setStream(payload.serialize())
-                .build()));
+    public void create(Stream payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
+                        .setStream(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public void update(Stream payload) {
-        execute(stub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
-                .setStream(payload.serialize())
-                .build()));
+    public void update(Stream payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
+                        .setStream(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public boolean delete(String group, String name) {
-        BanyandbDatabase.StreamRegistryServiceDeleteResponse resp = execute(
+    public boolean delete(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.StreamRegistryServiceDeleteResponse resp = execute(() ->
                 stub.delete(BanyandbDatabase.StreamRegistryServiceDeleteRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
@@ -58,8 +61,8 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     }
 
     @Override
-    public Stream get(String group, String name) {
-        BanyandbDatabase.StreamRegistryServiceGetResponse resp = execute(
+    public Stream get(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.StreamRegistryServiceGetResponse resp = execute(() ->
                 stub.get(BanyandbDatabase.StreamRegistryServiceGetRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
@@ -68,8 +71,8 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     }
 
     @Override
-    public List<Stream> list(String group) {
-        BanyandbDatabase.StreamRegistryServiceListResponse resp = execute(
+    public List<Stream> list(String group) throws BanyanDBApiException {
+        BanyandbDatabase.StreamRegistryServiceListResponse resp = execute(() ->
                 stub.list(BanyandbDatabase.StreamRegistryServiceListRequest.newBuilder()
                         .setGroup(group)
                         .build()));

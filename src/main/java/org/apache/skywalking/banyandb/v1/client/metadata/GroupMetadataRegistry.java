@@ -23,34 +23,35 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGrpc.GroupRegistryServiceFutureStub,
+public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGrpc.GroupRegistryServiceBlockingStub,
         BanyandbCommon.Group, Group> {
 
     public GroupMetadataRegistry(Channel channel) {
-        super(GroupRegistryServiceGrpc.newFutureStub(channel));
+        super(GroupRegistryServiceGrpc.newBlockingStub(channel));
     }
 
     @Override
-    public void create(Group payload) {
-        execute(stub.create(BanyandbDatabase.GroupRegistryServiceCreateRequest.newBuilder()
+    public void create(Group payload) throws BanyanDBApiException {
+        execute(() -> stub.create(BanyandbDatabase.GroupRegistryServiceCreateRequest.newBuilder()
                 .setGroup(payload.serialize())
                 .build()));
     }
 
     @Override
-    public void update(Group payload) {
-        execute(stub.update(BanyandbDatabase.GroupRegistryServiceUpdateRequest.newBuilder()
+    public void update(Group payload) throws BanyanDBApiException {
+        execute(() -> stub.update(BanyandbDatabase.GroupRegistryServiceUpdateRequest.newBuilder()
                 .setGroup(payload.serialize())
                 .build()));
     }
 
     @Override
-    public boolean delete(String group, String name) {
-        BanyandbDatabase.GroupRegistryServiceDeleteResponse resp = execute(
+    public boolean delete(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.GroupRegistryServiceDeleteResponse resp = execute(() ->
                 stub.delete(BanyandbDatabase.GroupRegistryServiceDeleteRequest.newBuilder()
                         .setGroup(name)
                         .build()));
@@ -58,8 +59,8 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     }
 
     @Override
-    public Group get(String group, String name) {
-        BanyandbDatabase.GroupRegistryServiceGetResponse resp = execute(
+    public Group get(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.GroupRegistryServiceGetResponse resp = execute(() ->
                 stub.get(BanyandbDatabase.GroupRegistryServiceGetRequest.newBuilder()
                         .setGroup(name)
                         .build()));
@@ -68,9 +69,10 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     }
 
     @Override
-    public List<Group> list(String group) {
-        BanyandbDatabase.GroupRegistryServiceListResponse resp = execute(stub.list(BanyandbDatabase.GroupRegistryServiceListRequest.newBuilder()
-                .build()));
+    public List<Group> list(String group) throws BanyanDBApiException {
+        BanyandbDatabase.GroupRegistryServiceListResponse resp = execute(() ->
+                stub.list(BanyandbDatabase.GroupRegistryServiceListRequest.newBuilder()
+                        .build()));
 
         return resp.getGroupList().stream().map(Group::fromProtobuf).collect(Collectors.toList());
     }

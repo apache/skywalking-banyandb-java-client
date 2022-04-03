@@ -44,6 +44,7 @@ import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.ApiExceptions;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -104,12 +105,12 @@ public class BanyanDBClient implements Closeable {
      * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    private StreamServiceGrpc.StreamServiceFutureStub streamServiceFutureStub;
+    private StreamServiceGrpc.StreamServiceBlockingStub streamServiceBlockingStub;
     /**
      * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    private MeasureServiceGrpc.MeasureServiceFutureStub measureServiceFutureStub;
+    private MeasureServiceGrpc.MeasureServiceBlockingStub measureServiceBlockingStub;
     /**
      * The connection status.
      */
@@ -154,8 +155,8 @@ public class BanyanDBClient implements Closeable {
             if (!isConnected) {
                 this.channel = ChannelManager.create(this.options.buildChannelManagerSettings(),
                         new DefaultChannelFactory(this.host, this.port, this.options));
-                streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
-                measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
+                measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);
                 measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
                 isConnected = true;
@@ -171,8 +172,8 @@ public class BanyanDBClient implements Closeable {
         try {
             if (!isConnected) {
                 this.channel = channel;
-                streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
-                measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
+                streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
+                measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);
                 measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
                 isConnected = true;
@@ -251,11 +252,11 @@ public class BanyanDBClient implements Closeable {
      * @param streamQuery condition for query
      * @return hint streams.
      */
-    public StreamQueryResponse query(StreamQuery streamQuery) {
+    public StreamQueryResponse query(StreamQuery streamQuery) throws BanyanDBApiException {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        final BanyandbStream.QueryResponse response = ApiExceptions.callAndTranslateApiException(
-                this.streamServiceFutureStub
+        final BanyandbStream.QueryResponse response = ApiExceptions.callAndTranslateApiException(() ->
+                this.streamServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(streamQuery.build()));
         return new StreamQueryResponse(response);
@@ -267,11 +268,11 @@ public class BanyanDBClient implements Closeable {
      * @param measureQuery condition for query
      * @return hint measures.
      */
-    public MeasureQueryResponse query(MeasureQuery measureQuery) {
+    public MeasureQueryResponse query(MeasureQuery measureQuery) throws BanyanDBApiException {
         checkState(this.streamServiceStub != null, "measure service is null");
 
-        final BanyandbMeasure.QueryResponse response = ApiExceptions.callAndTranslateApiException(
-                this.measureServiceFutureStub
+        final BanyandbMeasure.QueryResponse response = ApiExceptions.callAndTranslateApiException(() ->
+                this.measureServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(measureQuery.build()));
         return new MeasureQueryResponse(response);
@@ -283,7 +284,7 @@ public class BanyanDBClient implements Closeable {
      * @param group the group to be created
      * @return a grouped client
      */
-    public Group define(Group group) {
+    public Group define(Group group) throws BanyanDBApiException {
         GroupMetadataRegistry registry = new GroupMetadataRegistry(checkNotNull(this.channel));
         registry.create(group);
         return registry.get(null, group.name());
@@ -294,7 +295,7 @@ public class BanyanDBClient implements Closeable {
      *
      * @param stream the stream to be created
      */
-    public void define(Stream stream) {
+    public void define(Stream stream) throws BanyanDBApiException {
         StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
         streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
@@ -306,7 +307,7 @@ public class BanyanDBClient implements Closeable {
      *
      * @param measure the measure to be created
      */
-    public void define(Measure measure) {
+    public void define(Measure measure) throws BanyanDBApiException {
         MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
         measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
@@ -319,7 +320,7 @@ public class BanyanDBClient implements Closeable {
      * @param stream     the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    private void defineIndexRules(Stream stream, List<IndexRule> indexRules) {
+    private void defineIndexRules(Stream stream, List<IndexRule> indexRules) throws BanyanDBApiException {
         Preconditions.checkArgument(stream != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
@@ -344,7 +345,7 @@ public class BanyanDBClient implements Closeable {
      * @param measure    the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    private void defineIndexRules(Measure measure, List<IndexRule> indexRules) {
+    private void defineIndexRules(Measure measure, List<IndexRule> indexRules) throws BanyanDBApiException {
         Preconditions.checkArgument(measure != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
@@ -369,7 +370,7 @@ public class BanyanDBClient implements Closeable {
      * @param name  name of the stream
      * @return Steam with index rules if found. Otherwise, null is returned.
      */
-    public Stream findStream(String group, String name) {
+    public Stream findStream(String group, String name) throws BanyanDBApiException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
@@ -384,7 +385,7 @@ public class BanyanDBClient implements Closeable {
      * @param name  name of the measure
      * @return Measure with index rules if found. Otherwise, null is returned.
      */
-    public Measure findMeasure(String group, String name) {
+    public Measure findMeasure(String group, String name) throws BanyanDBApiException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
@@ -392,7 +393,7 @@ public class BanyanDBClient implements Closeable {
         return m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
     }
 
-    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) {
+    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws BanyanDBApiException {
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
 
         IndexRuleBinding irb = irbRegistry.get(group, bindingName);

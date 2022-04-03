@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_create() {
+    public void testIndexRuleBindingRegistry_create() throws BanyanDBApiException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -57,7 +58,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndGet() {
+    public void testIndexRuleBindingRegistry_createAndGet() throws BanyanDBApiException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -74,7 +75,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndList() {
+    public void testIndexRuleBindingRegistry_createAndList() throws BanyanDBApiException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -91,7 +92,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndDelete() {
+    public void testIndexRuleBindingRegistry_createAndDelete() throws BanyanDBApiException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",

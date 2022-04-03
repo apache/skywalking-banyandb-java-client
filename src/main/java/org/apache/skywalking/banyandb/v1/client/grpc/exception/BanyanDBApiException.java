@@ -26,7 +26,7 @@ import lombok.Getter;
  * BanyanDBApiException represents an exception thrown during a gRPC call.
  */
 @Getter
-public class BanyanDBApiException extends RuntimeException {
+public class BanyanDBApiException extends Exception {
     private final Status.Code status;
     private final boolean retryable;
 

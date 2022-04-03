@@ -25,6 +25,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
@@ -64,7 +65,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                     }));
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, BanyanDBApiException {
         setUp(bindService(measureQueryService), bindMeasureRegistry());
 
         Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
@@ -81,7 +82,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testQuery_tableScan() {
+    public void testQuery_tableScan() throws BanyanDBApiException {
         ArgumentCaptor<BanyandbMeasure.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbMeasure.QueryRequest.class);
 
         Instant end = Instant.now();

@@ -23,51 +23,58 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceFutureStub, BanyandbDatabase.IndexRule, IndexRule> {
+public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceBlockingStub,
+        BanyandbDatabase.IndexRule, IndexRule> {
     public IndexRuleMetadataRegistry(Channel channel) {
-        super(IndexRuleRegistryServiceGrpc.newFutureStub(channel));
+        super(IndexRuleRegistryServiceGrpc.newBlockingStub(channel));
     }
 
     @Override
-    public void create(IndexRule payload) {
-        execute(stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
-                .setIndexRule(payload.serialize())
-                .build()));
+    public void create(IndexRule payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
+                        .setIndexRule(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public void update(IndexRule payload) {
-        execute(stub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
-                .setIndexRule(payload.serialize())
-                .build()));
+    public void update(IndexRule payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
+                        .setIndexRule(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public boolean delete(String group, String name) {
-        BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = execute(stub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build()));
+    public boolean delete(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = execute(() ->
+                stub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
         return resp != null && resp.getDeleted();
     }
 
     @Override
-    public IndexRule get(String group, String name) {
-        BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = execute(stub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
-                .build()));
+    public IndexRule get(String group, String name) throws BanyanDBApiException {
+        BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = execute(() ->
+                stub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
 
         return IndexRule.fromProtobuf(resp.getIndexRule());
     }
 
     @Override
-    public List<IndexRule> list(String group) {
-        BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = execute(stub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
-                .setGroup(group)
-                .build()));
+    public List<IndexRule> list(String group) throws BanyanDBApiException {
+        BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = execute(() ->
+                stub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
+                        .setGroup(group)
+                        .build()));
 
         return resp.getIndexRuleList().stream().map(IndexRule::fromProtobuf).collect(Collectors.toList());
     }

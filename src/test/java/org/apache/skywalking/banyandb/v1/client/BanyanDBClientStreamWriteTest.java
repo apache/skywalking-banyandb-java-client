@@ -25,6 +25,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
@@ -65,7 +66,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
     private StreamBulkWriteProcessor streamBulkWriteProcessor;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, BanyanDBApiException {
         setUp(bindService(groupRegistryServiceImpl), bindStreamRegistry());
         streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
 

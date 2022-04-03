@@ -19,13 +19,11 @@
 package org.apache.skywalking.banyandb.v1.client.grpc;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBGrpcApiExceptionFactory;
 
-import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 public class ApiExceptions {
     private ApiExceptions() {
@@ -39,18 +37,16 @@ public class ApiExceptions {
     /**
      * call the underlying operation and get response from the future.
      *
-     * @param future a gRPC future
-     * @param <RESP> a generic type of user-defined gRPC response
+     * @param respSupplier a supplier which returns response
+     * @param <RESP>       a generic type of user-defined gRPC response
      * @return response in the type of  defined in the gRPC protocol
-     * @throws BanyanDBApiException                             if the execution of the future itself thrown an exception
-     * @throws java.util.concurrent.CancellationException       if the future is got cancelled
-     * @throws com.google.common.util.concurrent.ExecutionError if java.lang.Error is thrown during the execution
+     * @throws BanyanDBApiException if the execution of the future itself thrown an exception
      */
-    public static <RESP> RESP callAndTranslateApiException(Future<RESP> future) {
+    public static <RESP> RESP callAndTranslateApiException(Supplier<RESP> respSupplier) throws BanyanDBApiException {
         try {
-            return Futures.getUnchecked(future);
-        } catch (UncheckedExecutionException exception) {
-            throw EXCEPTION_FACTORY.createException(exception.getCause());
+            return respSupplier.get();
+        } catch (Exception exception) {
+            throw EXCEPTION_FACTORY.createException(exception);
         }
     }
 }

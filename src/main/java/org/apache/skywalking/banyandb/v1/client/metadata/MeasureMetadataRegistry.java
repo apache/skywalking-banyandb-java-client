@@ -23,34 +23,37 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServiceGrpc.MeasureRegistryServiceFutureStub,
+public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub,
         BanyandbDatabase.Measure, Measure> {
 
     public MeasureMetadataRegistry(Channel channel) {
-        super(MeasureRegistryServiceGrpc.newFutureStub(channel));
+        super(MeasureRegistryServiceGrpc.newBlockingStub(channel));
     }
 
     @Override
-    public void create(Measure payload) {
-        execute(stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
-                .setMeasure(payload.serialize())
-                .build()));
+    public void create(final Measure payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
+                        .setMeasure(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public void update(Measure payload) {
-        execute(stub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
-                .setMeasure(payload.serialize())
-                .build()));
+    public void update(final Measure payload) throws BanyanDBApiException {
+        execute(() ->
+                stub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
+                        .setMeasure(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public boolean delete(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = execute(
+    public boolean delete(final String group, final String name) throws BanyanDBApiException {
+        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = execute(() ->
                 stub.delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
@@ -58,8 +61,8 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     }
 
     @Override
-    public Measure get(String group, String name) {
-        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = execute(
+    public Measure get(final String group, final String name) throws BanyanDBApiException {
+        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = execute(() ->
                 stub.get(BanyandbDatabase.MeasureRegistryServiceGetRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
@@ -68,8 +71,8 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     }
 
     @Override
-    public List<Measure> list(String group) {
-        BanyandbDatabase.MeasureRegistryServiceListResponse resp = execute(
+    public List<Measure> list(final String group) throws BanyanDBApiException {
+        BanyandbDatabase.MeasureRegistryServiceListResponse resp = execute(() ->
                 stub.list(BanyandbDatabase.MeasureRegistryServiceListRequest.newBuilder()
                         .setGroup(group)
                         .build()));
