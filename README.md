@@ -19,7 +19,24 @@ Create a `BanyanDBClient` with host, port and then use `connect()` to establish 
 ```java
 // use `default` group
 client = new BanyanDBClient("127.0.0.1", 17912);
+// establish a connection
+clinet.connect();
 ```
+
+Besides, you may pass a customized options while building a `BanyanDBClient`. Supported
+options are listed below,
+
+
+| Option                     | Description                                                          | Default                  |
+|----------------------------|----------------------------------------------------------------------|--------------------------|
+| maxInboundMessageSize      | Max inbound message size                                             | 1024 * 1024 * 50 (~50MB) |
+| deadline                   | Threshold of gRPC blocking query, unit is second                     | 30 (seconds)             |
+| refreshInterval            | Refresh interval for the gRPC channel, unit is second                | 30 (seconds)             |
+| forceReconnectionThreshold | Threshold of force gRPC reconnection if network issue is encountered | 1                        |
+| forceTLS                   | Force use TLS for gRPC                                               | false                    |
+| sslTrustCAPath             | SSL: Trusted CA Path                                                 |                          |
+| sslCertChainPath           | SSL: Cert Chain Path                                                 |                          |
+| sslKeyPath                 | SSL: Cert Key Path                                                   |                          |
 
 ## Schema Management
 

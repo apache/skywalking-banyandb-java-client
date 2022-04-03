@@ -42,7 +42,7 @@ public class Options {
      */
     private long refreshInterval = 30;
     /**
-     * Threshold of force gRPC connection if network issue is encountered
+     * Threshold of force gRPC reconnection if network issue is encountered
      */
     private long forceReconnectionThreshold = 1;
     /**

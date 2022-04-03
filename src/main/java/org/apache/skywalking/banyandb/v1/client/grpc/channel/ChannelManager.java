@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client.grpc.channel;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -54,7 +55,8 @@ public class ChannelManager extends ManagedChannel {
     private final ChannelManagerSettings settings;
     private final ChannelFactory channelFactory;
     private final ScheduledExecutorService executor;
-    private final AtomicReference<Entry> entryRef = new AtomicReference<>();
+    @VisibleForTesting
+    final AtomicReference<Entry> entryRef = new AtomicReference<>();
     private final String authority;
 
     public static ChannelManager create(ChannelManagerSettings settings, ChannelFactory channelFactory)
@@ -88,11 +90,14 @@ public class ChannelManager extends ManagedChannel {
         }
     }
 
-    private void refresh() throws IOException {
+    void refresh() throws IOException {
         Entry entry = entryRef.get();
         if (entry.needReconnect) {
             if (entry.isConnected(entry.reconnectCount.incrementAndGet() > this.settings.forceReconnectionThreshold())) {
                 // Reconnect to the same server is automatically done by GRPC
+                // clear the flags
+                entry.reset();
+            } else {
                 Entry replacedEntry = entryRef.getAndSet(new Entry(this.channelFactory.create()));
                 replacedEntry.shutdown();
             }
@@ -156,12 +161,12 @@ public class ChannelManager extends ManagedChannel {
     }
 
     @RequiredArgsConstructor
-    private static class Entry {
-        private final ManagedChannel channel;
+    static class Entry {
+        final ManagedChannel channel;
 
-        private final AtomicInteger reconnectCount = new AtomicInteger(0);
+        final AtomicInteger reconnectCount = new AtomicInteger(0);
 
-        private volatile boolean needReconnect = false;
+        volatile boolean needReconnect = false;
 
         boolean isConnected(boolean requestConnection) {
             return this.channel.getState(requestConnection) == ConnectivityState.READY;
@@ -169,6 +174,11 @@ public class ChannelManager extends ManagedChannel {
 
         void shutdown() {
             this.channel.shutdown();
+        }
+
+        void reset() {
+            needReconnect = false;
+            reconnectCount.set(0);
         }
     }
 

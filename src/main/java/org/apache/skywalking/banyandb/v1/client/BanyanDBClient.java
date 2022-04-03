@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import io.grpc.stub.StreamObserver;
@@ -41,9 +42,7 @@ import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.ApiExceptions;
-import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
-import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManagerSettings;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
@@ -67,6 +66,14 @@ import static com.google.common.base.Preconditions.checkState;
 @Slf4j
 public class BanyanDBClient implements Closeable {
     /**
+     * The hostname of BanyanDB server.
+     */
+    private final String host;
+    /**
+     * The port of BanyanDB server.
+     */
+    private final int port;
+    /**
      * Options for server connection.
      */
     @Getter(value = AccessLevel.PACKAGE)
@@ -80,22 +87,30 @@ public class BanyanDBClient implements Closeable {
      * gRPC client stub
      */
     @Getter(value = AccessLevel.PACKAGE)
-    final StreamServiceGrpc.StreamServiceStub streamServiceStub;
+    private StreamServiceGrpc.StreamServiceStub streamServiceStub;
     /**
      * gRPC client stub
      */
     @Getter(value = AccessLevel.PACKAGE)
-    final MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
+    private MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
     /**
      * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    final StreamServiceGrpc.StreamServiceFutureStub streamServiceFutureStub;
+    private StreamServiceGrpc.StreamServiceFutureStub streamServiceFutureStub;
     /**
      * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
-    final MeasureServiceGrpc.MeasureServiceFutureStub measureServiceFutureStub;
+    private MeasureServiceGrpc.MeasureServiceFutureStub measureServiceFutureStub;
+    /**
+     * The connection status.
+     */
+    private volatile boolean isConnected = false;
+    /**
+     * A lock to control the race condition in establishing and disconnecting network connection.
+     */
+    private final ReentrantLock connectionEstablishLock;
 
     /**
      * Create a BanyanDB client instance with a default options.
@@ -113,24 +128,51 @@ public class BanyanDBClient implements Closeable {
      * @param host    IP or domain name
      * @param port    Server port
      * @param options customized options
-     * @throws IOException
      */
-    public BanyanDBClient(String host, int port, Options options) throws IOException {
-        this(options, options.buildChannelManagerSettings(), new DefaultChannelFactory(host, port, options));
+    public BanyanDBClient(String host, int port, Options options) {
+        this.host = host;
+        this.port = port;
+        this.options = options;
+        this.connectionEstablishLock = new ReentrantLock();
     }
 
-    private BanyanDBClient(final Options options, final ChannelManagerSettings channelManagerSettings, final ChannelFactory channelFactory) throws IOException {
-        this.options = options;
-        this.channel = ChannelManager.create(channelManagerSettings, channelFactory);
-        streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
-        measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
-        streamServiceStub = StreamServiceGrpc.newStub(this.channel);
-        measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
+    /**
+     * Construct a connection to the server.
+     *
+     * @throws IOException thrown if fail to create a connection
+     */
+    public void connect() throws IOException {
+        connectionEstablishLock.lock();
+        try {
+            if (!isConnected) {
+                this.channel = ChannelManager.create(this.options.buildChannelManagerSettings(),
+                        new DefaultChannelFactory(this.host, this.port, this.options));
+                streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
+                measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
+                streamServiceStub = StreamServiceGrpc.newStub(this.channel);
+                measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
+                isConnected = true;
+            }
+        } finally {
+            connectionEstablishLock.unlock();
+        }
     }
 
     @VisibleForTesting
-    BanyanDBClient(ChannelFactory channelFactory) throws IOException {
-        this(new Options(), new Options().buildChannelManagerSettings(), channelFactory);
+    void connect(Channel channel) throws IOException {
+        connectionEstablishLock.lock();
+        try {
+            if (!isConnected) {
+                this.channel = channel;
+                streamServiceFutureStub = StreamServiceGrpc.newFutureStub(this.channel);
+                measureServiceFutureStub = MeasureServiceGrpc.newFutureStub(this.channel);
+                streamServiceStub = StreamServiceGrpc.newStub(this.channel);
+                measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
+                isConnected = true;
+            }
+        } finally {
+            connectionEstablishLock.unlock();
+        }
     }
 
     /**
@@ -361,16 +403,23 @@ public class BanyanDBClient implements Closeable {
 
     @Override
     public void close() throws IOException {
+        connectionEstablishLock.lock();
         if (!(this.channel instanceof ManagedChannel)) {
             return;
         }
         final ManagedChannel managedChannel = (ManagedChannel) this.channel;
         try {
-            managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+            if (isConnected) {
+                managedChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+                isConnected = false;
+            }
         } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
             log.warn("fail to wait for channel termination, shutdown now!", interruptedException);
             managedChannel.shutdownNow();
+            isConnected = false;
+        } finally {
+            connectionEstablishLock.unlock();
         }
     }
 }
