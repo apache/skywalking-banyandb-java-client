@@ -33,7 +33,8 @@ public class BanyanDBClientTestCI {
     @Rule
     public GenericContainer<?> banyanDB = new GenericContainer<>(
             DockerImageName.parse(parseImageName()))
-            .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-data")
+            .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-stream-data",
+                    "--measure-root-path", "/tmp/banyand-measure-data")
             .withExposedPorts(BANYANDB_PORT)
             .waitingFor(
                     Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
@@ -45,6 +46,12 @@ public class BanyanDBClientTestCI {
         log.info("create BanyanDB client and try to connect");
         client = new BanyanDBClient(banyanDB.getHost(), banyanDB.getMappedPort(BANYANDB_PORT));
         client.connect();
+    }
+
+    protected void closeClient() throws IOException {
+        if (this.client != null) {
+            this.client.close();
+        }
     }
 
     static String parseImageName() {

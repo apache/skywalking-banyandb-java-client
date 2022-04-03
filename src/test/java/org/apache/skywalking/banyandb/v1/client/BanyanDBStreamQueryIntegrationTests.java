@@ -26,6 +26,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 
 public class BanyanDBStreamQueryIntegrationTests extends BanyanDBClientTestCI {
+    private StreamBulkWriteProcessor processor;
 
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
@@ -69,13 +71,19 @@ public class BanyanDBStreamQueryIntegrationTests extends BanyanDBClientTestCI {
                 .build();
         this.client.define(expectedStream);
         Assert.assertNotNull(expectedStream);
+        processor = client.buildStreamWriteProcessor(1000, 1, 1);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        if (processor != null) {
+            this.processor.close();
+        }
+        this.closeClient();
     }
 
     @Test
     public void testStreamQuery_TraceID() throws BanyanDBException {
-        final StreamBulkWriteProcessor streamBulkWriteProcessor =
-                client.buildStreamWriteProcessor(1000, 1, 1);
-
         // try to write a trace
         String segmentId = "1231.dfd.123123ssf";
         String traceId = "trace_id-xxfff.111323";
@@ -109,7 +117,7 @@ public class BanyanDBStreamQueryIntegrationTests extends BanyanDBClientTestCI {
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
-        streamBulkWriteProcessor.add(streamWrite);
+        processor.add(streamWrite);
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
         query.appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "trace_id", traceId));
