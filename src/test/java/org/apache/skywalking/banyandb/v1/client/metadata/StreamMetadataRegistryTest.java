@@ -19,7 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testStreamRegistry_createAndGet() throws BanyanDBApiException {
+    public void testStreamRegistry_createAndGet() throws BanyanDBException {
         Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")
@@ -62,7 +62,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testStreamRegistry_createAndList() throws BanyanDBApiException {
+    public void testStreamRegistry_createAndList() throws BanyanDBException {
         Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")
@@ -82,7 +82,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testStreamRegistry_createAndDelete() throws BanyanDBApiException {
+    public void testStreamRegistry_createAndDelete() throws BanyanDBException {
         Stream expectedStream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")
                 .addTagFamily(TagFamilySpec.create("data")

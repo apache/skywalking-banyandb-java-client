@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class AbortedException extends BanyanDBApiException {
+public class AbortedException extends BanyanDBException {
     public AbortedException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

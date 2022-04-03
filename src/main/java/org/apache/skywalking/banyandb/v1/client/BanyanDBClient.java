@@ -41,10 +41,10 @@ import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.grpc.ApiExceptions;
+import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -126,7 +126,7 @@ public class BanyanDBClient implements Closeable {
      * @param host IP or domain name
      * @param port Server port
      */
-    public BanyanDBClient(String host, int port) throws IOException {
+    public BanyanDBClient(String host, int port) {
         this(host, port, new Options());
     }
 
@@ -252,10 +252,10 @@ public class BanyanDBClient implements Closeable {
      * @param streamQuery condition for query
      * @return hint streams.
      */
-    public StreamQueryResponse query(StreamQuery streamQuery) throws BanyanDBApiException {
+    public StreamQueryResponse query(StreamQuery streamQuery) throws BanyanDBException {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        final BanyandbStream.QueryResponse response = ApiExceptions.callAndTranslateApiException(() ->
+        final BanyandbStream.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.streamServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(streamQuery.build()));
@@ -268,10 +268,10 @@ public class BanyanDBClient implements Closeable {
      * @param measureQuery condition for query
      * @return hint measures.
      */
-    public MeasureQueryResponse query(MeasureQuery measureQuery) throws BanyanDBApiException {
+    public MeasureQueryResponse query(MeasureQuery measureQuery) throws BanyanDBException {
         checkState(this.streamServiceStub != null, "measure service is null");
 
-        final BanyandbMeasure.QueryResponse response = ApiExceptions.callAndTranslateApiException(() ->
+        final BanyandbMeasure.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.measureServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                         .query(measureQuery.build()));
@@ -284,7 +284,7 @@ public class BanyanDBClient implements Closeable {
      * @param group the group to be created
      * @return a grouped client
      */
-    public Group define(Group group) throws BanyanDBApiException {
+    public Group define(Group group) throws BanyanDBException {
         GroupMetadataRegistry registry = new GroupMetadataRegistry(checkNotNull(this.channel));
         registry.create(group);
         return registry.get(null, group.name());
@@ -295,7 +295,7 @@ public class BanyanDBClient implements Closeable {
      *
      * @param stream the stream to be created
      */
-    public void define(Stream stream) throws BanyanDBApiException {
+    public void define(Stream stream) throws BanyanDBException {
         StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
         streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
@@ -307,7 +307,7 @@ public class BanyanDBClient implements Closeable {
      *
      * @param measure the measure to be created
      */
-    public void define(Measure measure) throws BanyanDBApiException {
+    public void define(Measure measure) throws BanyanDBException {
         MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
         measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
@@ -320,7 +320,7 @@ public class BanyanDBClient implements Closeable {
      * @param stream     the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    private void defineIndexRules(Stream stream, List<IndexRule> indexRules) throws BanyanDBApiException {
+    private void defineIndexRules(Stream stream, List<IndexRule> indexRules) throws BanyanDBException {
         Preconditions.checkArgument(stream != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
@@ -345,7 +345,7 @@ public class BanyanDBClient implements Closeable {
      * @param measure    the subject of index rule binding
      * @param indexRules rules to be bounded
      */
-    private void defineIndexRules(Measure measure, List<IndexRule> indexRules) throws BanyanDBApiException {
+    private void defineIndexRules(Measure measure, List<IndexRule> indexRules) throws BanyanDBException {
         Preconditions.checkArgument(measure != null, "measure cannot be null");
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
@@ -370,7 +370,7 @@ public class BanyanDBClient implements Closeable {
      * @param name  name of the stream
      * @return Steam with index rules if found. Otherwise, null is returned.
      */
-    public Stream findStream(String group, String name) throws BanyanDBApiException {
+    public Stream findStream(String group, String name) throws BanyanDBException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
@@ -385,7 +385,7 @@ public class BanyanDBClient implements Closeable {
      * @param name  name of the measure
      * @return Measure with index rules if found. Otherwise, null is returned.
      */
-    public Measure findMeasure(String group, String name) throws BanyanDBApiException {
+    public Measure findMeasure(String group, String name) throws BanyanDBException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
@@ -393,7 +393,7 @@ public class BanyanDBClient implements Closeable {
         return m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
     }
 
-    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws BanyanDBApiException {
+    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws BanyanDBException {
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
 
         IndexRuleBinding irb = irbRegistry.get(group, bindingName);

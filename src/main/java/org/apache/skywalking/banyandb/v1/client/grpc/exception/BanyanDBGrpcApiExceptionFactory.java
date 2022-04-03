@@ -32,15 +32,15 @@ public class BanyanDBGrpcApiExceptionFactory {
         this.retryableCodes = ImmutableSet.copyOf(retryCodes);
     }
 
-    public BanyanDBApiException createException(Throwable throwable) {
+    public BanyanDBException createException(Throwable throwable) {
         if (throwable instanceof StatusException) {
             StatusException e = (StatusException) throwable;
             return create(throwable, e.getStatus().getCode());
         } else if (throwable instanceof StatusRuntimeException) {
             StatusRuntimeException e = (StatusRuntimeException) throwable;
             return create(throwable, e.getStatus().getCode());
-        } else if (throwable instanceof BanyanDBApiException) {
-            return (BanyanDBApiException) throwable;
+        } else if (throwable instanceof BanyanDBException) {
+            return (BanyanDBException) throwable;
         } else {
             // Do not retry on unknown throwable, even when UNKNOWN is in retryableCodes
             return BanyanDBApiExceptionFactory.createException(
@@ -48,7 +48,7 @@ public class BanyanDBGrpcApiExceptionFactory {
         }
     }
 
-    private BanyanDBApiException create(Throwable throwable, Status.Code statusCode) {
+    private BanyanDBException create(Throwable throwable, Status.Code statusCode) {
         boolean retryable = retryableCodes.contains(statusCode);
         return BanyanDBApiExceptionFactory.createException(throwable, statusCode, retryable);
     }

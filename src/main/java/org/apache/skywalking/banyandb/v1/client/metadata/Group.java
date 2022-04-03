@@ -54,7 +54,7 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
     public BanyandbCommon.Group serialize() {
         return BanyandbCommon.Group.newBuilder()
                 // use name as the group
-                .setMetadata(this.buildMetadata())
+                .setMetadata(this.buildMetadata().toBuilder())
                 .setCatalog(catalog().getCatalog())
                 .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
                         .setShardNum(shardNum())

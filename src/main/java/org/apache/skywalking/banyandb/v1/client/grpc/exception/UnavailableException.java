@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class UnavailableException extends BanyanDBApiException {
+public class UnavailableException extends BanyanDBException {
     public UnavailableException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

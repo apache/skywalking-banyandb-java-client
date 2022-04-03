@@ -31,7 +31,7 @@ import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -142,7 +142,7 @@ public class ChannelManagerTest {
         try {
             new IndexRuleMetadataRegistry(manager).get("default", "sw");
             Assert.fail();
-        } catch (BanyanDBApiException ex) {
+        } catch (BanyanDBException ex) {
             Assert.assertEquals(ex.getStatus(), Status.Code.UNAVAILABLE);
         }
 

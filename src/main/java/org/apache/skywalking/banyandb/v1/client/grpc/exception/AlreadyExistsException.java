@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class AlreadyExistsException extends BanyanDBApiException {
+public class AlreadyExistsException extends BanyanDBException {
     public AlreadyExistsException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

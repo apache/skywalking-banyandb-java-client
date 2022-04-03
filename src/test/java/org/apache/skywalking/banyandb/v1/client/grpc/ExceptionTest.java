@@ -23,7 +23,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.junit.Assert;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class ExceptionTest extends AbstractBanyanDBClientTest {
         try {
             new IndexRuleMetadataRegistry(this.channel).get("group", "trace_id");
             Assert.fail();
-        } catch (BanyanDBApiException ex) {
+        } catch (BanyanDBException ex) {
             Assert.assertEquals(Status.Code.INVALID_ARGUMENT, ex.getStatus());
             Assert.assertTrue(ex.getMessage().contains("invalid arg"));
         }

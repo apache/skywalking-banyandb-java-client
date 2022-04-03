@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class DataLossException extends BanyanDBApiException {
+public class DataLossException extends BanyanDBException {
     public DataLossException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

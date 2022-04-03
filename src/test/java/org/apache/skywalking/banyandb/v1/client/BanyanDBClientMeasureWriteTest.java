@@ -21,7 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
@@ -43,7 +43,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
     private MeasureBulkWriteProcessor measureBulkWriteProcessor;
 
     @Before
-    public void setUp() throws IOException, BanyanDBApiException {
+    public void setUp() throws IOException, BanyanDBException {
         measureRegistry = new HashMap<>();
         setUp(bindMeasureRegistry());
 

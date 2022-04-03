@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class NotFoundException extends BanyanDBApiException {
+public class NotFoundException extends BanyanDBException {
     public NotFoundException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

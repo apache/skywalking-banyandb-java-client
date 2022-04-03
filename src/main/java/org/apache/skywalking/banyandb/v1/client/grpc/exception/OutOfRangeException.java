@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class OutOfRangeException extends BanyanDBApiException {
+public class OutOfRangeException extends BanyanDBException {
     public OutOfRangeException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

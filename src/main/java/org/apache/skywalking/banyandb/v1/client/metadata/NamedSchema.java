@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import com.google.common.base.Strings;
 import com.google.protobuf.GeneratedMessageV3;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.v1.client.util.IgnoreHashEquals;
@@ -53,6 +54,10 @@ public abstract class NamedSchema<P extends GeneratedMessageV3> {
     public abstract P serialize();
 
     protected BanyandbCommon.Metadata buildMetadata() {
-        return BanyandbCommon.Metadata.newBuilder().setName(name()).setGroup(group()).build();
+        if (Strings.isNullOrEmpty(group())) {
+            return BanyandbCommon.Metadata.newBuilder().setName(name()).build();
+        } else {
+            return BanyandbCommon.Metadata.newBuilder().setName(name()).setGroup(group()).build();
+        }
     }
 }

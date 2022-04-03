@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class PermissionDeniedException extends BanyanDBApiException {
+public class PermissionDeniedException extends BanyanDBException {
     public PermissionDeniedException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

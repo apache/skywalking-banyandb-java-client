@@ -19,7 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_create() throws BanyanDBApiException {
+    public void testIndexRuleBindingRegistry_create() throws BanyanDBException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -58,7 +58,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndGet() throws BanyanDBApiException {
+    public void testIndexRuleBindingRegistry_createAndGet() throws BanyanDBException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -75,7 +75,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndList() throws BanyanDBApiException {
+    public void testIndexRuleBindingRegistry_createAndList() throws BanyanDBException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",
@@ -92,7 +92,7 @@ public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClient
     }
 
     @Test
-    public void testIndexRuleBindingRegistry_createAndDelete() throws BanyanDBApiException {
+    public void testIndexRuleBindingRegistry_createAndDelete() throws BanyanDBException {
         IndexRuleBinding indexRuleBinding = IndexRuleBinding.create(
                 "default",
                 "sw-index-rule-binding",

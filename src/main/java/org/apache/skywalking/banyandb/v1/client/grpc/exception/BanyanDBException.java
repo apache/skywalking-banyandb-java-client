@@ -23,20 +23,20 @@ import io.grpc.Status;
 import lombok.Getter;
 
 /**
- * BanyanDBApiException represents an exception thrown during a gRPC call.
+ * BanyanDBException represents an exception thrown during a gRPC call.
  */
 @Getter
-public class BanyanDBApiException extends Exception {
+public class BanyanDBException extends Exception {
     private final Status.Code status;
     private final boolean retryable;
 
-    public BanyanDBApiException(Throwable cause, Status.Code status, boolean retryable) {
+    public BanyanDBException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause);
         this.status = Preconditions.checkNotNull(status);
         this.retryable = retryable;
     }
 
-    public BanyanDBApiException(String message, Throwable cause, Status.Code status, boolean retryable) {
+    public BanyanDBException(String message, Throwable cause, Status.Code status, boolean retryable) {
         super(message, cause);
         this.status = Preconditions.checkNotNull(status);
         this.retryable = retryable;

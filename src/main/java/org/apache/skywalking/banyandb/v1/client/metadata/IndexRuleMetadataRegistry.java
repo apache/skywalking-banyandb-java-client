@@ -23,7 +23,7 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,7 +35,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public void create(IndexRule payload) throws BanyanDBApiException {
+    public void create(IndexRule payload) throws BanyanDBException {
         execute(() ->
                 stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
                         .setIndexRule(payload.serialize())
@@ -43,7 +43,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public void update(IndexRule payload) throws BanyanDBApiException {
+    public void update(IndexRule payload) throws BanyanDBException {
         execute(() ->
                 stub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
                         .setIndexRule(payload.serialize())
@@ -51,7 +51,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public boolean delete(String group, String name) throws BanyanDBApiException {
+    public boolean delete(String group, String name) throws BanyanDBException {
         BanyandbDatabase.IndexRuleRegistryServiceDeleteResponse resp = execute(() ->
                 stub.delete(BanyandbDatabase.IndexRuleRegistryServiceDeleteRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
@@ -60,7 +60,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public IndexRule get(String group, String name) throws BanyanDBApiException {
+    public IndexRule get(String group, String name) throws BanyanDBException {
         BanyandbDatabase.IndexRuleRegistryServiceGetResponse resp = execute(() ->
                 stub.get(BanyandbDatabase.IndexRuleRegistryServiceGetRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
@@ -70,7 +70,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public List<IndexRule> list(String group) throws BanyanDBApiException {
+    public List<IndexRule> list(String group) throws BanyanDBException {
         BanyandbDatabase.IndexRuleRegistryServiceListResponse resp = execute(() ->
                 stub.list(BanyandbDatabase.IndexRuleRegistryServiceListRequest.newBuilder()
                         .setGroup(group)

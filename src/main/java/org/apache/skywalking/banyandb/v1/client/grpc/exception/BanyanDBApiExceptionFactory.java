@@ -24,7 +24,7 @@ class BanyanDBApiExceptionFactory {
     private BanyanDBApiExceptionFactory() {
     }
 
-    public static BanyanDBApiException createException(Throwable cause, Status.Code statusCode, boolean retryable) {
+    public static BanyanDBException createException(Throwable cause, Status.Code statusCode, boolean retryable) {
         switch (statusCode) {
             case CANCELLED:
                 return new CancelledException(cause, statusCode, retryable);

@@ -19,7 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testMeasureRegistry_createAndGet() throws BanyanDBApiException {
+    public void testMeasureRegistry_createAndGet() throws BanyanDBException {
         Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
@@ -60,7 +60,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testMeasureRegistry_createAndList() throws BanyanDBApiException {
+    public void testMeasureRegistry_createAndList() throws BanyanDBException {
         Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
@@ -79,7 +79,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testMeasureRegistry_createAndDelete() throws BanyanDBApiException {
+    public void testMeasureRegistry_createAndDelete() throws BanyanDBException {
         Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")

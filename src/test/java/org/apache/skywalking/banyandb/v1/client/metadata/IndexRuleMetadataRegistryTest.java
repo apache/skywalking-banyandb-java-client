@@ -19,7 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,14 +42,14 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testIndexRuleRegistry_create() throws BanyanDBApiException {
+    public void testIndexRuleRegistry_create() throws BanyanDBException {
         IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.registry.create(indexRule);
         Assert.assertEquals(indexRuleRegistry.size(), 1);
     }
 
     @Test
-    public void testIndexRuleRegistry_createAndGet() throws BanyanDBApiException {
+    public void testIndexRuleRegistry_createAndGet() throws BanyanDBException {
         IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.registry.create(indexRule);
         IndexRule getIndexRule = this.registry.get("default", "db.instance");
@@ -59,7 +59,7 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testIndexRuleRegistry_createAndList() throws BanyanDBApiException {
+    public void testIndexRuleRegistry_createAndList() throws BanyanDBException {
         IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.registry.create(indexRule);
         List<IndexRule> listIndexRule = this.registry.list("default");
@@ -69,7 +69,7 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testIndexRuleRegistry_createAndDelete() throws BanyanDBApiException {
+    public void testIndexRuleRegistry_createAndDelete() throws BanyanDBException {
         IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
         this.registry.create(indexRule);
         boolean deleted = this.registry.delete("default", "db.instance");

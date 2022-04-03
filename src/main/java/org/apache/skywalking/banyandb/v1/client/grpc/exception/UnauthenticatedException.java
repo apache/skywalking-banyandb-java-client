@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class UnauthenticatedException extends BanyanDBApiException {
+public class UnauthenticatedException extends BanyanDBException {
     public UnauthenticatedException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

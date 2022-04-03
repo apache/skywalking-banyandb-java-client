@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class ResourceExhaustedException extends BanyanDBApiException {
+public class ResourceExhaustedException extends BanyanDBException {
     public ResourceExhaustedException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

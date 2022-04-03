@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class CancelledException extends BanyanDBApiException {
+public class CancelledException extends BanyanDBException {
     public CancelledException(Throwable cause, Status.Code statusCode, boolean retryable) {
         super(cause, statusCode, retryable);
     }

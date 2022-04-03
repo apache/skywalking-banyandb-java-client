@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class InvalidArgumentException extends BanyanDBApiException {
+public class InvalidArgumentException extends BanyanDBException {
     public InvalidArgumentException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

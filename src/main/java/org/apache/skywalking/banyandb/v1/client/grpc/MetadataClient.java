@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc;
 
 import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.stub.AbstractBlockingStub;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.NamedSchema;
 
 import java.util.List;
@@ -43,17 +43,17 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * Create a schema
      *
      * @param payload the schema to be created
-     * @throws BanyanDBApiException a wrapped exception to the underlying gRPC calls
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract void create(S payload) throws BanyanDBApiException;
+    public abstract void create(S payload) throws BanyanDBException;
 
     /**
      * Update the schema
      *
      * @param payload the schema which will be updated with the given name and group
-     * @throws BanyanDBApiException a wrapped exception to the underlying gRPC calls
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract void update(S payload) throws BanyanDBApiException;
+    public abstract void update(S payload) throws BanyanDBException;
 
     /**
      * Delete a schema
@@ -61,9 +61,9 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @param group the group of the schema to be removed
      * @param name  the name of the schema to be removed
      * @return whether this schema is deleted
-     * @throws BanyanDBApiException a wrapped exception to the underlying gRPC calls
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract boolean delete(String group, String name) throws BanyanDBApiException;
+    public abstract boolean delete(String group, String name) throws BanyanDBException;
 
     /**
      * Get a schema with name
@@ -71,19 +71,19 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @param group the group of the schema to be found
      * @param name  the name of the schema to be found
      * @return the schema, null if not found
-     * @throws BanyanDBApiException a wrapped exception to the underlying gRPC calls
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract S get(String group, String name) throws BanyanDBApiException;
+    public abstract S get(String group, String name) throws BanyanDBException;
 
     /**
      * List all schemas with the same group name
      *
      * @return a list of schemas found
-     * @throws BanyanDBApiException a wrapped exception to the underlying gRPC calls
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract List<S> list(String group) throws BanyanDBApiException;
+    public abstract List<S> list(String group) throws BanyanDBException;
 
-    protected <REQ, RESP> RESP execute(Supplier<RESP> supplier) throws BanyanDBApiException {
-        return ApiExceptions.callAndTranslateApiException(supplier);
+    protected <REQ, RESP> RESP execute(Supplier<RESP> supplier) throws BanyanDBException {
+        return HandleExceptionsWith.callAndTranslateApiException(supplier);
     }
 }

@@ -20,13 +20,13 @@ package org.apache.skywalking.banyandb.v1.client.grpc;
 
 import com.google.common.collect.Sets;
 import io.grpc.Status;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBApiException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBGrpcApiExceptionFactory;
 
 import java.util.function.Supplier;
 
-public class ApiExceptions {
-    private ApiExceptions() {
+public class HandleExceptionsWith {
+    private HandleExceptionsWith() {
     }
 
     private static final BanyanDBGrpcApiExceptionFactory EXCEPTION_FACTORY = new BanyanDBGrpcApiExceptionFactory(
@@ -40,9 +40,9 @@ public class ApiExceptions {
      * @param respSupplier a supplier which returns response
      * @param <RESP>       a generic type of user-defined gRPC response
      * @return response in the type of  defined in the gRPC protocol
-     * @throws BanyanDBApiException if the execution of the future itself thrown an exception
+     * @throws BanyanDBException if the execution of the future itself thrown an exception
      */
-    public static <RESP> RESP callAndTranslateApiException(Supplier<RESP> respSupplier) throws BanyanDBApiException {
+    public static <RESP> RESP callAndTranslateApiException(Supplier<RESP> respSupplier) throws BanyanDBException {
         try {
             return respSupplier.get();
         } catch (Exception exception) {

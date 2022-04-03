@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class DeadlineExceededException extends BanyanDBApiException {
+public class DeadlineExceededException extends BanyanDBException {
     public DeadlineExceededException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }

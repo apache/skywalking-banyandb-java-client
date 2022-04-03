@@ -24,6 +24,9 @@ on:
   schedule:
     - cron: '0 18 * * *'  # TimeZone: UTC 0
 
+env:
+  BANYANDB_IMAGE: ghcr.io/apache/skywalking-banyandb:3c8d1623e2b4267e491b0c70afd7d13ab451e1df
+
 jobs:
   check-license-header:
     name: Check License Header

@@ -20,7 +20,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
 import io.grpc.Status;
 
-public class FailedPreconditionException extends BanyanDBApiException {
+public class FailedPreconditionException extends BanyanDBException {
     public FailedPreconditionException(Throwable cause, Status.Code status, boolean retryable) {
         super(cause, status, retryable);
     }
