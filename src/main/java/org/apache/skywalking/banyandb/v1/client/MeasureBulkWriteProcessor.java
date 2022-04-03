@@ -22,6 +22,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.GRPCStreamServiceStatus;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -50,7 +51,8 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
     }
 
     @Override
-    protected StreamObserver<BanyandbMeasure.WriteRequest> buildStreamObserver(MeasureServiceGrpc.MeasureServiceStub stub) {
+    protected StreamObserver<BanyandbMeasure.WriteRequest> buildStreamObserver(MeasureServiceGrpc.MeasureServiceStub stub,
+                                                                               GRPCStreamServiceStatus status) {
         return stub.write(new StreamObserver<BanyandbMeasure.WriteResponse>() {
             @Override
             public void onNext(BanyandbMeasure.WriteResponse writeResponse) {
@@ -59,12 +61,13 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
 
             @Override
             public void onError(Throwable t) {
+                status.finished();
                 log.error("Error occurs in flushing measures", t);
             }
 
             @Override
             public void onCompleted() {
-
+                status.finished();
             }
         });
     }

@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import io.grpc.stub.AbstractAsyncStub;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.v1.client.grpc.GRPCStreamServiceStatus;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,18 +57,23 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
 
     @Override
     protected void flush(List data) {
+        final GRPCStreamServiceStatus status = new GRPCStreamServiceStatus(false);
         final StreamObserver<REQ> writeRequestStreamObserver
-                = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS));
+                = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS), status);
 
         try {
             data.forEach(write -> {
                 REQ request = ((AbstractWrite<REQ>) write).build();
                 writeRequestStreamObserver.onNext(request);
             });
+        } catch (Throwable t) {
+            log.error("Transform and send request to BanyanDB fail.", t);
         } finally {
             writeRequestStreamObserver.onCompleted();
         }
+
+        status.wait4Finish();
     }
 
-    protected abstract StreamObserver<REQ> buildStreamObserver(STUB stub);
+    protected abstract StreamObserver<REQ> buildStreamObserver(STUB stub, GRPCStreamServiceStatus status);
 }
