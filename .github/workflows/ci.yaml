@@ -25,7 +25,7 @@ on:
     - cron: '0 18 * * *'  # TimeZone: UTC 0
 
 env:
-  BANYANDB_IMAGE: docker pull ghcr.io/apache/skywalking-banyandb:697582da5f3467341e31ad75aef61b4f8017edbb
+  BANYANDB_IMAGE: ghcr.io/apache/skywalking-banyandb:d061ab4abe0232c868f60cd3f311877b5a3703ac
 
 jobs:
   check-license-header:

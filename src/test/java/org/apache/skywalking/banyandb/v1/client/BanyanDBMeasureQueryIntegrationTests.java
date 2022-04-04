@@ -48,7 +48,7 @@ public class BanyanDBMeasureQueryIntegrationTests extends BanyanDBClientTestCI {
                 Group.create("sw_metric", Catalog.MEASURE, 2, 12, Duration.ofDays(7))
         );
         Assert.assertNotNull(expectedGroup);
-        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
                         .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
@@ -75,7 +75,7 @@ public class BanyanDBMeasureQueryIntegrationTests extends BanyanDBClientTestCI {
     public void testMeasureQuery() throws BanyanDBException {
         // try to write a metrics
         Instant now = Instant.now();
-        Instant begin = now.minus(61, ChronoUnit.MINUTES);
+        Instant begin = now.minus(15, ChronoUnit.MINUTES);
 
         MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
         measureWrite.tag("id", TagAndValue.idTagValue("1"))
@@ -86,7 +86,7 @@ public class BanyanDBMeasureQueryIntegrationTests extends BanyanDBClientTestCI {
         processor.add(measureWrite);
 
         MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute",
-                new TimestampRange(begin.plus(1, ChronoUnit.MINUTES).toEpochMilli(), now.toEpochMilli()),
+                new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()),
                 ImmutableSet.of("id", "entity_id"), // tags
                 ImmutableSet.of("total")); // fields
         client.query(query);

@@ -27,17 +27,18 @@ import java.util.regex.Pattern;
 @EqualsAndHashCode
 public class Duration {
     private static final Pattern DURATION_PATTERN =
-            Pattern.compile("(((?<year>[0-9]+)y)?((?<week>[0-9]+)w)?((?<day>[0-9]+)d)?((?<hour>[0-9]+)h)?|0)");
-    private static final long HOURS_PER_DAY = 24;
-    private static final long HOURS_PER_WEEK = HOURS_PER_DAY * 7;
-    private static final long HOURS_PER_YEAR = HOURS_PER_DAY * 365;
+            Pattern.compile("(((?<year>[0-9]+)y)?((?<week>[0-9]+)w)?((?<day>[0-9]+)d)?((?<hour>[0-9]+)h)?((?<minute>[0-9]+)m)?|0)");
+    private static final long MINUTES_PER_HOUR = 60;
+    private static final long MINUTES_PER_DAY = MINUTES_PER_HOUR * 24;
+    private static final long MINUTES_PER_WEEK = MINUTES_PER_DAY * 7;
+    private static final long MINUTES_PER_YEAR = MINUTES_PER_DAY * 365;
 
     @EqualsAndHashCode.Exclude
     private volatile String text;
-    private final long hours;
+    private final long minutes;
 
-    private Duration(long hours) {
-        this.hours = hours;
+    private Duration(long minutes) {
+        this.minutes = minutes;
     }
 
     public String format() {
@@ -46,31 +47,36 @@ public class Duration {
         }
 
         final StringBuilder builder = new StringBuilder();
-        long hours = this.hours;
-        if (hours >= HOURS_PER_YEAR) {
-            long years = hours / HOURS_PER_YEAR;
+        long minutes = this.minutes;
+        if (minutes >= MINUTES_PER_YEAR) {
+            long years = minutes / MINUTES_PER_YEAR;
             builder.append(years).append("y");
-            hours = hours % HOURS_PER_YEAR;
+            minutes = minutes % MINUTES_PER_YEAR;
         }
-        if (hours >= HOURS_PER_WEEK) {
-            long weeks = hours / HOURS_PER_WEEK;
+        if (minutes >= MINUTES_PER_WEEK) {
+            long weeks = minutes / MINUTES_PER_WEEK;
             builder.append(weeks).append("w");
-            hours = hours % HOURS_PER_WEEK;
+            minutes = minutes % MINUTES_PER_WEEK;
         }
-        if (hours >= HOURS_PER_DAY) {
-            long weeks = hours / HOURS_PER_DAY;
+        if (minutes >= MINUTES_PER_DAY) {
+            long weeks = minutes / MINUTES_PER_DAY;
             builder.append(weeks).append("d");
-            hours = hours % HOURS_PER_DAY;
+            minutes = minutes % MINUTES_PER_DAY;
         }
-        if (hours > 0) {
-            builder.append(hours).append("h");
+        if (minutes >= MINUTES_PER_HOUR) {
+            long weeks = minutes / MINUTES_PER_HOUR;
+            builder.append(weeks).append("h");
+            minutes = minutes % MINUTES_PER_HOUR;
+        }
+        if (minutes > 0) {
+            builder.append(minutes).append("m");
         }
         this.text = builder.toString();
         return this.text;
     }
 
     public Duration add(Duration duration) {
-        return new Duration(this.hours + duration.hours);
+        return new Duration(this.minutes + duration.minutes);
     }
 
     public static Duration parse(String text) {
@@ -84,36 +90,44 @@ public class Duration {
         long total = 0;
         final String years = matcher.group("year");
         if (!Strings.isNullOrEmpty(years)) {
-            total += Long.parseLong(years) * HOURS_PER_YEAR;
+            total += Long.parseLong(years) * MINUTES_PER_YEAR;
         }
         final String weeks = matcher.group("week");
         if (!Strings.isNullOrEmpty(weeks)) {
-            total += Long.parseLong(weeks) * HOURS_PER_WEEK;
+            total += Long.parseLong(weeks) * MINUTES_PER_WEEK;
         }
         final String days = matcher.group("day");
         if (!Strings.isNullOrEmpty(days)) {
-            total += Long.parseLong(days) * HOURS_PER_DAY;
+            total += Long.parseLong(days) * MINUTES_PER_DAY;
         }
         final String hours = matcher.group("hour");
         if (!Strings.isNullOrEmpty(hours)) {
-            total += Long.parseLong(hours);
+            total += Long.parseLong(hours) * MINUTES_PER_HOUR;
+        }
+        final String minutes = matcher.group("minute");
+        if (!Strings.isNullOrEmpty(minutes)) {
+            total += Long.parseLong(minutes);
         }
         return new Duration(total);
     }
 
+    public static Duration ofMinutes(long minutes) {
+        return new Duration(minutes);
+    }
+
     public static Duration ofHours(long hours) {
-        return new Duration(hours);
+        return new Duration(hours * MINUTES_PER_HOUR);
     }
 
     public static Duration ofDays(long days) {
-        return ofHours(days * HOURS_PER_DAY);
+        return ofHours(days * MINUTES_PER_DAY);
     }
 
     public static Duration ofWeeks(long weeks) {
-        return ofHours(weeks * HOURS_PER_WEEK);
+        return ofHours(weeks * MINUTES_PER_WEEK);
     }
 
     public static Duration ofYears(long years) {
-        return ofHours(years * HOURS_PER_YEAR);
+        return ofHours(years * MINUTES_PER_YEAR);
     }
 }
