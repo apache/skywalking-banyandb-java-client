@@ -118,7 +118,7 @@ public enum MetadataCache {
     @RequiredArgsConstructor
     @Getter
     public static class TagInfo {
-        public final String tagFamilyName;
-        public final int offset;
+        private final String tagFamilyName;
+        private final int offset;
     }
 }

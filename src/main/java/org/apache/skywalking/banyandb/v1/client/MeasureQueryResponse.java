@@ -34,7 +34,9 @@ public class MeasureQueryResponse {
     MeasureQueryResponse(BanyandbMeasure.QueryResponse response) {
         final List<BanyandbMeasure.DataPoint> dataPointList = response.getDataPointsList();
         this.dataPoints = new ArrayList<>(dataPointList.size());
-        dataPointList.forEach(dataPoint -> dataPoints.add(DataPoint.create(dataPoint)));
+        for (final BanyandbMeasure.DataPoint dp : dataPointList) {
+            dataPoints.add(DataPoint.create(dp));
+        }
     }
 
     /**

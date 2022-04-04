@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.protobuf.Timestamp;
-import lombok.Data;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
@@ -49,7 +48,7 @@ public class RowEntity {
      * (in the format of Java Types converted from gRPC Types).
      * The family name is thus ignored, since the name should be globally unique for a schema.
      */
-    protected final Map<TagKey, Object> tags;
+    protected final Map<String, Object> tags;
 
     public static RowEntity create(BanyandbStream.Element element) {
         final RowEntity rowEntity = new RowEntity(element.getTimestamp(), element.getTagFamiliesList());
@@ -61,24 +60,17 @@ public class RowEntity {
         timestamp = ts.getSeconds() * 1000 + ts.getNanos() / 1_000_000;
         this.tags = new HashMap<>();
         for (final BanyandbModel.TagFamily tagFamily : tagFamilyList) {
-            final String tagFamilyName = tagFamily.getName();
             for (final BanyandbModel.Tag tag : tagFamily.getTagsList()) {
                 final Object val = convertToJavaType(tag.getValue());
                 if (val != null) {
-                    this.tags.put(new TagKey(tagFamilyName, tag.getKey()), val);
+                    this.tags.put(tag.getKey(), val);
                 }
             }
         }
     }
 
-    public <T> T getTagValue(String tagFamilyName, String tagName) {
-        return (T) this.tags.get(new TagKey(tagFamilyName, tagName));
-    }
-
-    @Data
-    protected static class TagKey {
-        private final String tagFamilyName;
-        private final String tagName;
+    public <T> T getTagValue(String tagName) {
+        return (T) this.tags.get(tagName);
     }
 
     private Object convertToJavaType(BanyandbModel.TagValue tagValue) {

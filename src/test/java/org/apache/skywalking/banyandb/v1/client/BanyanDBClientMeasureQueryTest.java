@@ -122,7 +122,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
     @Test
     public void testQuery_responseConversion() {
         final String elementId = "1231.dfd.123123ssf";
-        final String serviceName = "service_name_a";
+        final String entityIDValue = "entity_id_a";
         final Instant now = Instant.now();
         final BanyandbMeasure.QueryResponse responseObj = BanyandbMeasure.QueryResponse.newBuilder()
                 .addDataPoints(BanyandbMeasure.DataPoint.newBuilder()
@@ -138,13 +138,13 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                                                 .setId(BanyandbModel.ID.newBuilder().setValue(elementId).build()).build())
                                         .build())
                                 .addTags(BanyandbModel.Tag.newBuilder()
-                                        .setKey("service_name")
+                                        .setKey("entity_id")
                                         .setValue(BanyandbModel.TagValue.newBuilder()
-                                                .setStr(BanyandbModel.Str.newBuilder().setValue(serviceName).build()).build())
+                                                .setStr(BanyandbModel.Str.newBuilder().setValue(entityIDValue).build()).build())
                                         .build())
                                 .build())
                         .addFields(BanyandbMeasure.DataPoint.Field.newBuilder()
-                                .setName("count")
+                                .setName("total")
                                 .setValue(BanyandbModel.FieldValue.newBuilder().setInt(
                                         BanyandbModel.Int.newBuilder().setValue(10L).build()).build()
                                 ).build())
@@ -156,9 +156,9 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(2, resp.getDataPoints().get(0).getTags().size());
         Assert.assertEquals(elementId,
                 resp.getDataPoints().get(0).getTagValue("id"));
-        Assert.assertEquals(serviceName, resp.getDataPoints().get(0).getTagValue("service_name"));
+        Assert.assertEquals(entityIDValue, resp.getDataPoints().get(0).getTagValue("entity_id"));
         Assert.assertEquals(10L,
-                (Number) resp.getDataPoints().get(0).getFieldValue("count"));
+                (Number) resp.getDataPoints().get(0).getFieldValue("total"));
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {

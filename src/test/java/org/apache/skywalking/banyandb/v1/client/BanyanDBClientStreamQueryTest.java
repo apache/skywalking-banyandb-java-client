@@ -249,12 +249,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(1, resp.getElements().size());
         Assert.assertEquals(3, resp.getElements().get(0).getTags().size());
         Assert.assertEquals(traceId,
-                resp.getElements().get(0).getTagValue("searchable", "trace_id"));
+                resp.getElements().get(0).getTagValue("trace_id"));
         Assert.assertEquals(duration,
-                (Number) resp.getElements().get(0).getTagValue("searchable", "duration"));
-        Assert.assertNull(resp.getElements().get(0).getTagValue("searchable", "mq.broker"));
+                (Number) resp.getElements().get(0).getTagValue("duration"));
+        Assert.assertNull(resp.getElements().get(0).getTagValue("mq.broker"));
         Assert.assertArrayEquals(binaryData,
-                resp.getElements().get(0).getTagValue("data", "data_binary"));
+                resp.getElements().get(0).getTagValue("data_binary"));
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {

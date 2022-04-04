@@ -50,10 +50,6 @@ public class DataPoint extends RowEntity {
         return (T) this.fields.get(fieldName);
     }
 
-    public <T> T getTagValue(String tagName) {
-        return this.getTagValue("default", tagName);
-    }
-
     private Object convertToJavaType(BanyandbModel.FieldValue fieldValue) {
         switch (fieldValue.getValueCase()) {
             case INT:

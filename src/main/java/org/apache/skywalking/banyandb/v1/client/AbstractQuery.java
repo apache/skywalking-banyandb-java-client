@@ -20,6 +20,8 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import lombok.AccessLevel;
+import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
@@ -57,6 +59,7 @@ public abstract class AbstractQuery<T> {
      */
     protected final Set<String> tagProjections;
 
+    @Getter(AccessLevel.PACKAGE)
     protected final MetadataCache.EntityMetadata metadata;
 
     public AbstractQuery(String group, String name, TimestampRange timestampRange, Set<String> tagProjections) {
@@ -126,7 +129,7 @@ public abstract class AbstractQuery<T> {
             if (!tagInfo.isPresent()) {
                 throw InvalidReferenceException.fromInvalidTag(tagName);
             }
-            projectionMap.put(tagInfo.get().tagFamilyName, tagName);
+            projectionMap.put(tagInfo.get().getTagFamilyName(), tagName);
         }
 
         final BanyandbModel.TagProjection.Builder b = BanyandbModel.TagProjection.newBuilder();

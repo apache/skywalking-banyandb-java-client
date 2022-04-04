@@ -126,8 +126,8 @@ public class BanyanDBStreamQueryIntegrationTests extends BanyanDBClientTestCI {
             StreamQueryResponse resp = client.query(query);
             Assert.assertNotNull(resp);
             Assert.assertEquals(resp.size(), 1);
-            Assert.assertEquals(latency, (Number) resp.getElements().get(0).getTagValue("searchable", "duration"));
-            Assert.assertEquals(traceId, resp.getElements().get(0).getTagValue("searchable", "trace_id"));
+            Assert.assertEquals(latency, (Number) resp.getElements().get(0).getTagValue("duration"));
+            Assert.assertEquals(traceId, resp.getElements().get(0).getTagValue("trace_id"));
         });
     }
 }
