@@ -32,7 +32,7 @@ public class BanyanDBClientTestCI {
     private static final int BANYANDB_PORT = 17912;
     @Rule
     public GenericContainer<?> banyanDB = new GenericContainer<>(
-            DockerImageName.parse(parseImageName()))
+            DockerImageName.parse("ghcr.io/apache/skywalking-banyandb:d061ab4abe0232c868f60cd3f311877b5a3703ac"))
             .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-stream-data",
                     "--measure-root-path", "/tmp/banyand-measure-data")
             .withExposedPorts(BANYANDB_PORT)
@@ -52,13 +52,5 @@ public class BanyanDBClientTestCI {
         if (this.client != null) {
             this.client.close();
         }
-    }
-
-    static String parseImageName() {
-        String image = System.getenv("BANYANDB_IMAGE");
-        if (Strings.isNullOrEmpty(image)) {
-            image = "skywalking-banyandb:latest";
-        }
-        return image;
     }
 }
