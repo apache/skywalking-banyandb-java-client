@@ -19,7 +19,6 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.junit.Rule;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
