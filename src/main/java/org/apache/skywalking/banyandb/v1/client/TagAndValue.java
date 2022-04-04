@@ -29,12 +29,10 @@ import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
  */
 @EqualsAndHashCode(callSuper = true)
 public abstract class TagAndValue<T> extends Value<T> {
-    protected final String tagFamilyName;
     protected final String tagName;
 
-    protected TagAndValue(String tagFamilyName, String tagName, T value) {
+    protected TagAndValue(String tagName, T value) {
         super(value);
-        this.tagFamilyName = tagFamilyName;
         this.tagName = tagName;
     }
 
@@ -46,71 +44,64 @@ public abstract class TagAndValue<T> extends Value<T> {
     }
 
     /**
-     * @return tag family name
-     */
-    public String getTagFamilyName() {
-        return this.tagFamilyName;
-    }
-
-    /**
      * @return true if value is null;
      */
     public boolean isNull() {
         return this.value == null;
     }
 
-    static TagAndValue<?> build(String tagFamilyName, BanyandbModel.Tag tag) {
+    static TagAndValue<?> build(BanyandbModel.Tag tag) {
         switch (tag.getValue().getValueCase()) {
             case INT:
-                return new LongTagPair(tagFamilyName, tag.getKey(), tag.getValue().getInt().getValue());
+                return new LongTagPair(tag.getKey(), tag.getValue().getInt().getValue());
             case STR:
-                return new StringTagPair(tagFamilyName, tag.getKey(), tag.getValue().getStr().getValue());
+                return new StringTagPair(tag.getKey(), tag.getValue().getStr().getValue());
             case INT_ARRAY:
-                return new LongArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getIntArray().getValueList());
+                return new LongArrayTagPair(tag.getKey(), tag.getValue().getIntArray().getValueList());
             case STR_ARRAY:
-                return new StringArrayTagPair(tagFamilyName, tag.getKey(), tag.getValue().getStrArray().getValueList());
+                return new StringArrayTagPair(tag.getKey(), tag.getValue().getStrArray().getValueList());
             case BINARY_DATA:
-                return new BinaryTagPair(tagFamilyName, tag.getKey(), tag.getValue().getBinaryData());
+                return new BinaryTagPair(tag.getKey(), tag.getValue().getBinaryData());
             case NULL:
-                return new NullTagPair(tagFamilyName, tag.getKey());
+                return new NullTagPair(tag.getKey());
             default:
                 throw new IllegalArgumentException("Unrecognized NullType");
         }
     }
 
     public static class StringTagPair extends TagAndValue<String> {
-        StringTagPair(final String tagFamilyName, final String tagName, final String value) {
-            super(tagFamilyName, tagName, value);
+        StringTagPair(final String tagName, final String value) {
+            super(tagName, value);
         }
     }
 
     public static class StringArrayTagPair extends TagAndValue<List<String>> {
-        StringArrayTagPair(final String tagFamilyName, final String tagName, final List<String> value) {
-            super(tagFamilyName, tagName, value);
+        StringArrayTagPair(final String tagName, final List<String> value) {
+            super(tagName, value);
         }
     }
 
     public static class LongTagPair extends TagAndValue<Long> {
-        LongTagPair(final String tagFamilyName, final String tagName, final Long value) {
-            super(tagFamilyName, tagName, value);
+        LongTagPair(final String tagName, final Long value) {
+            super(tagName, value);
         }
     }
 
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
-        LongArrayTagPair(final String tagFamilyName, final String tagName, final List<Long> value) {
-            super(tagFamilyName, tagName, value);
+        LongArrayTagPair(final String tagName, final List<Long> value) {
+            super(tagName, value);
         }
     }
 
     public static class BinaryTagPair extends TagAndValue<ByteString> {
-        public BinaryTagPair(String tagFamilyName, String fieldName, ByteString byteString) {
-            super(tagFamilyName, fieldName, byteString);
+        public BinaryTagPair(String fieldName, ByteString byteString) {
+            super(fieldName, byteString);
         }
     }
 
     public static class NullTagPair extends TagAndValue<Void> {
-        NullTagPair(final String tagFamilyName, final String tagName) {
-            super(tagFamilyName, tagName, null);
+        NullTagPair(final String tagName) {
+            super(tagName, null);
         }
 
         @Override

@@ -22,11 +22,15 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceException;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -76,8 +80,9 @@ public abstract class AbstractQuery<T> {
 
     /**
      * @return QueryRequest for gRPC level query.
+     * @throws BanyanDBException thrown from entity build, e.g. invalid reference to non-exist fields or tags.
      */
-    abstract T build();
+    abstract T build() throws BanyanDBException;
 
     protected BanyandbCommon.Metadata buildMetadata() {
         return BanyandbCommon.Metadata.newBuilder()
@@ -86,11 +91,18 @@ public abstract class AbstractQuery<T> {
                 .build();
     }
 
-    protected List<BanyandbModel.Criteria> buildCriteria() {
+    protected List<BanyandbModel.Criteria> buildCriteria() throws BanyanDBException {
         List<BanyandbModel.Criteria> criteriaList = new ArrayList<>();
         // set conditions grouped by tagFamilyName
-        Map<String, List<PairQueryCondition<?>>> groupedConditions = conditions.stream()
-                .collect(Collectors.groupingBy(TagAndValue::getTagFamilyName));
+        Map<String, List<PairQueryCondition<?>>> groupedConditions = new HashMap<>();
+        for (final PairQueryCondition<?> condition : conditions) {
+            String tagFamilyName = metadata.findTagInfo(condition.getTagName()).orElseThrow(() ->
+                    InvalidReferenceException.fromInvalidTag(condition.getTagName())
+            ).getTagFamilyName();
+            List<PairQueryCondition<?>> conditionList = groupedConditions.computeIfAbsent(tagFamilyName, key -> new ArrayList<>());
+            conditionList.add(condition);
+        }
+
         for (final Map.Entry<String, List<PairQueryCondition<?>>> tagFamily : groupedConditions.entrySet()) {
             final List<BanyandbModel.Condition> conditionList = tagFamily.getValue().stream().map(PairQueryCondition::build)
                     .collect(Collectors.toList());
@@ -103,18 +115,18 @@ public abstract class AbstractQuery<T> {
         return criteriaList;
     }
 
-    protected BanyandbModel.TagProjection buildTagProjections() {
+    protected BanyandbModel.TagProjection buildTagProjections() throws BanyanDBException {
         return this.buildTagProjections(this.tagProjections);
     }
 
-    protected BanyandbModel.TagProjection buildTagProjections(Iterable<String> tagProjections) {
+    protected BanyandbModel.TagProjection buildTagProjections(Iterable<String> tagProjections) throws BanyanDBException {
         final ListMultimap<String, String> projectionMap = ArrayListMultimap.create();
         for (final String tagName : tagProjections) {
-            final MetadataCache.TagInfo tagInfo = this.metadata.findTagInfo(tagName);
-            if (tagInfo == null) {
-                throw new IllegalArgumentException("fail to find metadata " + tagName);
+            final Optional<MetadataCache.TagInfo> tagInfo = this.metadata.findTagInfo(tagName);
+            if (!tagInfo.isPresent()) {
+                throw InvalidReferenceException.fromInvalidTag(tagName);
             }
-            projectionMap.put(tagInfo.tagFamilyName, tagName);
+            projectionMap.put(tagInfo.get().tagFamilyName, tagName);
         }
 
         final BanyandbModel.TagProjection.Builder b = BanyandbModel.TagProjection.newBuilder();

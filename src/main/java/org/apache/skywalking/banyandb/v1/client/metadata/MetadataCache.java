@@ -25,6 +25,7 @@ import org.apache.skywalking.banyandb.v1.client.util.CopyOnWriteMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public enum MetadataCache {
     INSTANCE;
@@ -105,8 +106,8 @@ public enum MetadataCache {
 
         private final Map<String, Integer> fieldOffset;
 
-        public TagInfo findTagInfo(String name) {
-            return this.tagOffset.get(name);
+        public Optional<TagInfo> findTagInfo(String name) {
+            return Optional.ofNullable(this.tagOffset.get(name));
         }
 
         public int findFieldInfo(String name) {

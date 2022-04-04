@@ -24,7 +24,6 @@ import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException
 import org.apache.skywalking.banyandb.v1.client.metadata.NamedSchema;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * abstract metadata client which defines CRUD operations for a specific kind of schema.
@@ -83,7 +82,7 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      */
     public abstract List<S> list(String group) throws BanyanDBException;
 
-    protected <REQ, RESP> RESP execute(Supplier<RESP> supplier) throws BanyanDBException {
+    protected <REQ, RESP, E extends BanyanDBException> RESP execute(HandleExceptionsWith.SupplierWithIO<RESP, E> supplier) throws BanyanDBException {
         return HandleExceptionsWith.callAndTranslateApiException(supplier);
     }
 }

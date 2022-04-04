@@ -23,8 +23,6 @@ import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBGrpcApiExceptionFactory;
 
-import java.util.function.Supplier;
-
 public class HandleExceptionsWith {
     private HandleExceptionsWith() {
     }
@@ -42,11 +40,16 @@ public class HandleExceptionsWith {
      * @return response in the type of  defined in the gRPC protocol
      * @throws BanyanDBException if the execution of the future itself thrown an exception
      */
-    public static <RESP> RESP callAndTranslateApiException(Supplier<RESP> respSupplier) throws BanyanDBException {
+    public static <RESP, E extends BanyanDBException> RESP callAndTranslateApiException(SupplierWithIO<RESP, E> respSupplier) throws BanyanDBException {
         try {
             return respSupplier.get();
         } catch (Exception exception) {
             throw EXCEPTION_FACTORY.createException(exception);
         }
+    }
+
+    @FunctionalInterface
+    public interface SupplierWithIO<T, E extends Throwable> {
+        T get() throws E;
     }
 }

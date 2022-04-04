@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.Set;
 
@@ -89,7 +90,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     /**
      * @return QueryRequest for gRPC level query.
      */
-    BanyandbMeasure.QueryRequest build() {
+    BanyandbMeasure.QueryRequest build() throws BanyanDBException {
         final BanyandbMeasure.QueryRequest.Builder builder = BanyandbMeasure.QueryRequest.newBuilder();
         builder.setMetadata(buildMetadata());
         if (timestampRange != null) {

@@ -93,7 +93,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                 ImmutableSet.of("total"));
         query.maxBy("total", ImmutableSet.of("entity_id"));
         // search with conditions
-        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("default", "service_id", "abc"));
+        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("entity_id", "abc"));
         client.query(query);
 
         verify(measureQueryService).query(requestCaptor.capture(), ArgumentMatchers.any());

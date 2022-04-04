@@ -24,6 +24,7 @@ import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 import java.util.Deque;
@@ -46,7 +47,7 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
     }
 
     @Override
-    public StreamWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
+    public StreamWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
         return (StreamWrite) super.tag(tagName, tagValue);
     }
 

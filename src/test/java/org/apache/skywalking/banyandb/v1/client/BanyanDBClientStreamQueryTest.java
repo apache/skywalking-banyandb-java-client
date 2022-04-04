@@ -83,6 +83,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("endpoint_id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("start_time"))
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("duration"))
                         .build())
@@ -101,7 +102,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for all states
-        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("searchable", "state", 0L));
+        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("state", 0L));
         query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
         client.query(query);
 
@@ -144,12 +145,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for the successful states
-        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("searchable", "state", 1L))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "service_id", serviceId))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "service_instance_id", serviceInstanceId))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "endpoint_id", endpointId))
-                .appendCondition(PairQueryCondition.LongQueryCondition.ge("searchable", "duration", minDuration))
-                .appendCondition(PairQueryCondition.LongQueryCondition.le("searchable", "duration", maxDuration))
+        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("state", 1L))
+                .appendCondition(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
+                .appendCondition(PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId))
+                .appendCondition(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
+                .appendCondition(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
+                .appendCondition(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
                 .setOrderBy(new StreamQuery.OrderBy("start_time", StreamQuery.OrderBy.Type.ASC));
 
         client.query(query);
@@ -171,12 +172,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"), parseProjectionList(request.getProjection()));
         // assert fields
         assertCollectionEqual(request.getCriteria(0).getConditionsList(), ImmutableList.of(
-                PairQueryCondition.LongQueryCondition.ge("searchable", "duration", minDuration).build(), // 1 -> duration >= minDuration
-                PairQueryCondition.LongQueryCondition.le("searchable", "duration", maxDuration).build(), // 2 -> duration <= maxDuration
-                PairQueryCondition.StringQueryCondition.eq("searchable", "service_id", serviceId).build(), // 3 -> service_id
-                PairQueryCondition.StringQueryCondition.eq("searchable", "service_instance_id", serviceInstanceId).build(), // 4 -> service_instance_id
-                PairQueryCondition.StringQueryCondition.eq("searchable", "endpoint_id", endpointId).build(), // 5 -> endpoint_id
-                PairQueryCondition.LongQueryCondition.eq("searchable", "state", 1L).build() // 7 -> state
+                PairQueryCondition.LongQueryCondition.ge("duration", minDuration).build(), // 1 -> duration >= minDuration
+                PairQueryCondition.LongQueryCondition.le("duration", maxDuration).build(), // 2 -> duration <= maxDuration
+                PairQueryCondition.StringQueryCondition.eq("service_id", serviceId).build(), // 3 -> service_id
+                PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId).build(), // 4 -> service_instance_id
+                PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId).build(), // 5 -> endpoint_id
+                PairQueryCondition.LongQueryCondition.eq("state", 1L).build() // 7 -> state
         ));
     }
 
@@ -186,7 +187,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         String traceId = "1111.222.333";
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
-        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("searchable", "trace_id", traceId));
+        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         client.query(query);
 
@@ -198,7 +199,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(1, request.getCriteria(0).getConditionsCount());
         // assert fields
         assertCollectionEqual(request.getCriteria(0).getConditionsList(), ImmutableList.of(
-                PairQueryCondition.StringQueryCondition.eq("searchable", "trace_id", traceId).build()
+                PairQueryCondition.StringQueryCondition.eq("trace_id", traceId).build()
         ));
     }
 

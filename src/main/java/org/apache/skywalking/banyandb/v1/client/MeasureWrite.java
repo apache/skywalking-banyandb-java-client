@@ -22,6 +22,7 @@ import com.google.protobuf.Timestamp;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 import java.util.Deque;
@@ -46,7 +47,7 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
     }
 
     @Override
-    public MeasureWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
+    public MeasureWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
         return (MeasureWrite) super.tag(tagName, tagValue);
     }
 

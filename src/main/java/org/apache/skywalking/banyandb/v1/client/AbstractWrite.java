@@ -22,10 +22,12 @@ import com.google.protobuf.Timestamp;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceException;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.Optional;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
     /**
@@ -60,9 +62,12 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         this.tags = new Object[this.entityMetadata.getTotalTags()];
     }
 
-    public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) {
-        final MetadataCache.TagInfo tagInfo = this.entityMetadata.findTagInfo(tagName);
-        this.tags[checkNotNull(tagInfo).getOffset()] = tagValue;
+    public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
+        final Optional<MetadataCache.TagInfo> tagInfo = this.entityMetadata.findTagInfo(tagName);
+        if (!tagInfo.isPresent()) {
+            throw InvalidReferenceException.fromInvalidTag(tagName);
+        }
+        this.tags[tagInfo.get().getOffset()] = tagValue;
         return this;
     }
 

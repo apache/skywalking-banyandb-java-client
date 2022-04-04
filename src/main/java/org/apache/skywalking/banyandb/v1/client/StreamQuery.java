@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 /**
  * StreamQuery is the high-level query API for the stream model.
@@ -59,7 +60,7 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     }
 
     @Override
-    BanyandbStream.QueryRequest build() {
+    BanyandbStream.QueryRequest build() throws BanyanDBException {
         final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder()
                 .setMetadata(buildMetadata());
         if (timestampRange != null) {
