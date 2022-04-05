@@ -25,43 +25,32 @@ import java.util.List;
 /**
  * PairQuery represents a query condition, including tag name, operator, and value(s);
  */
-public abstract class PairQueryCondition<T> extends TagAndValue<T> {
+public abstract class PairQueryCondition<T> {
     protected final BanyandbModel.Condition.BinaryOp op;
+    private final TagAndValue<T> tagAndValue;
 
-    private PairQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, T value) {
-        super(tagName, value);
+    private PairQueryCondition(BanyandbModel.Condition.BinaryOp op, TagAndValue<T> tagAndValue) {
         this.op = op;
+        this.tagAndValue = tagAndValue;
     }
 
     BanyandbModel.Condition build() {
         return BanyandbModel.Condition.newBuilder()
-                .setName(this.tagName)
+                .setName(this.tagAndValue.getTagName())
                 .setOp(this.op)
-                .setValue(buildTypedPair()).build();
+                .setValue(this.tagAndValue.buildTypedTagValue()).build();
     }
 
-    /**
-     * The various implementations should build different TypedPair
-     *
-     * @return typedPair to be included
-     */
-    protected abstract BanyandbModel.TagValue buildTypedPair();
+    public String getTagName() {
+        return this.tagAndValue.getTagName();
+    }
 
     /**
      * LongQueryCondition represents `tag(Long) $op value` condition.
      */
     public static class LongQueryCondition extends PairQueryCondition<Long> {
         private LongQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, Long value) {
-            super(tagName, op, value);
-        }
-
-        @Override
-        protected BanyandbModel.TagValue buildTypedPair() {
-            return BanyandbModel.TagValue.newBuilder()
-                    .setInt(BanyandbModel.Int
-                            .newBuilder()
-                            .setValue(value).build())
-                    .build();
+            super(op, new TagAndValue.LongTagPair(tagName, value));
         }
 
         /**
@@ -142,16 +131,7 @@ public abstract class PairQueryCondition<T> extends TagAndValue<T> {
      */
     public static class StringQueryCondition extends PairQueryCondition<String> {
         private StringQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, String value) {
-            super(tagName, op, value);
-        }
-
-        @Override
-        protected BanyandbModel.TagValue buildTypedPair() {
-            return BanyandbModel.TagValue.newBuilder()
-                    .setStr(BanyandbModel.Str
-                            .newBuilder()
-                            .setValue(value).build())
-                    .build();
+            super(op, new TagAndValue.StringTagPair(tagName, value));
         }
 
         /**
@@ -184,16 +164,7 @@ public abstract class PairQueryCondition<T> extends TagAndValue<T> {
      */
     public static class StringArrayQueryCondition extends PairQueryCondition<List<String>> {
         private StringArrayQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, List<String> value) {
-            super(tagName, op, value);
-        }
-
-        @Override
-        protected BanyandbModel.TagValue buildTypedPair() {
-            return BanyandbModel.TagValue.newBuilder()
-                    .setStrArray(BanyandbModel.StrArray
-                            .newBuilder()
-                            .addAllValue(value).build())
-                    .build();
+            super(op, new TagAndValue.StringArrayTagPair(tagName, value));
         }
 
         /**
@@ -250,16 +221,7 @@ public abstract class PairQueryCondition<T> extends TagAndValue<T> {
      */
     public static class LongArrayQueryCondition extends PairQueryCondition<List<Long>> {
         private LongArrayQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, List<Long> value) {
-            super(tagName, op, value);
-        }
-
-        @Override
-        protected BanyandbModel.TagValue buildTypedPair() {
-            return BanyandbModel.TagValue.newBuilder()
-                    .setIntArray(BanyandbModel.IntArray
-                            .newBuilder()
-                            .addAllValue(value).build())
-                    .build();
+            super(op, new TagAndValue.LongArrayTagPair(tagName, value));
         }
 
         /**

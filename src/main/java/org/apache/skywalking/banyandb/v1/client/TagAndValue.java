@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import java.util.List;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.NullValue;
 import lombok.EqualsAndHashCode;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
@@ -50,7 +51,21 @@ public abstract class TagAndValue<T> extends Value<T> {
         return this.value == null;
     }
 
-    static TagAndValue<?> build(BanyandbModel.Tag tag) {
+    /**
+     * TagValue is referenced from various derived data structs.
+     *
+     * @return TagValue to be included
+     */
+    protected abstract BanyandbModel.TagValue buildTypedTagValue();
+
+    public BanyandbModel.Tag build() {
+        return BanyandbModel.Tag.newBuilder()
+                .setKey(this.tagName)
+                .setValue(buildTypedTagValue())
+                .build();
+    }
+
+    static TagAndValue<?> fromProtobuf(BanyandbModel.Tag tag) {
         switch (tag.getValue().getValueCase()) {
             case INT:
                 return new LongTagPair(tag.getKey(), tag.getValue().getInt().getValue());
@@ -73,11 +88,29 @@ public abstract class TagAndValue<T> extends Value<T> {
         StringTagPair(final String tagName, final String value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setStr(BanyandbModel.Str
+                            .newBuilder()
+                            .setValue(value).build())
+                    .build();
+        }
     }
 
     public static class StringArrayTagPair extends TagAndValue<List<String>> {
         StringArrayTagPair(final String tagName, final List<String> value) {
             super(tagName, value);
+        }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setStrArray(BanyandbModel.StrArray
+                            .newBuilder()
+                            .addAllValue(value).build())
+                    .build();
         }
     }
 
@@ -85,11 +118,29 @@ public abstract class TagAndValue<T> extends Value<T> {
         LongTagPair(final String tagName, final Long value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setInt(BanyandbModel.Int
+                            .newBuilder()
+                            .setValue(value).build())
+                    .build();
+        }
     }
 
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
         LongArrayTagPair(final String tagName, final List<Long> value) {
             super(tagName, value);
+        }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setIntArray(BanyandbModel.IntArray
+                            .newBuilder()
+                            .addAllValue(value).build())
+                    .build();
         }
     }
 
@@ -97,11 +148,25 @@ public abstract class TagAndValue<T> extends Value<T> {
         public BinaryTagPair(String fieldName, ByteString byteString) {
             super(fieldName, byteString);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setBinaryData(this.value)
+                    .build();
+        }
     }
 
     public static class NullTagPair extends TagAndValue<Void> {
         NullTagPair(final String tagName) {
             super(tagName, null);
+        }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setNull(NullValue.NULL_VALUE)
+                    .build();
         }
 
         @Override
