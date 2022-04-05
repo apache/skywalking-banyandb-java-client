@@ -18,14 +18,14 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Map;
 
+import com.google.protobuf.Timestamp;
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
  * RowEntity represents an entity of BanyanDB entity.
@@ -36,29 +36,61 @@ public class RowEntity {
      * identity of the entity.
      * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking.
      */
-    private final String id;
+    protected String id;
 
     /**
      * timestamp of the entity in the timeunit of milliseconds.
      */
-    private final long timestamp;
+    protected final long timestamp;
 
     /**
-     * fields are indexed-fields that are searchable in BanyanBD
+     * tags is a map maintaining the relation between tag name and its value,
+     * (in the format of Java Types converted from gRPC Types).
+     * The family name is thus ignored, since the name should be globally unique for a schema.
      */
-    private final List<List<TagAndValue<?>>> tagFamilies;
+    protected final Map<String, Object> tags;
 
-    RowEntity(BanyandbStream.Element element) {
-        id = element.getElementId();
-        timestamp = element.getTimestamp().getSeconds() * 1000 + element.getTimestamp().getNanos() / 1_000_000;
-        final int tagFamilyCount = element.getTagFamiliesCount();
-        this.tagFamilies = new ArrayList<>(tagFamilyCount);
-        for (int i = 0; i < tagFamilyCount; i++) {
-            Banyandb.TagFamily tagFamily = element.getTagFamilies(i);
-            List<TagAndValue<?>> tagAndValuesInTagFamily = tagFamily.getTagsList().stream()
-                    .map((Function<Banyandb.Tag, TagAndValue<?>>) tag -> TagAndValue.build(tagFamily.getName(), tag))
-                    .collect(Collectors.toList());
-            this.tagFamilies.add(tagAndValuesInTagFamily);
+    public static RowEntity create(BanyandbStream.Element element) {
+        final RowEntity rowEntity = new RowEntity(element.getTimestamp(), element.getTagFamiliesList());
+        rowEntity.id = element.getElementId();
+        return rowEntity;
+    }
+
+    protected RowEntity(Timestamp ts, List<BanyandbModel.TagFamily> tagFamilyList) {
+        timestamp = ts.getSeconds() * 1000 + ts.getNanos() / 1_000_000;
+        this.tags = new HashMap<>();
+        for (final BanyandbModel.TagFamily tagFamily : tagFamilyList) {
+            for (final BanyandbModel.Tag tag : tagFamily.getTagsList()) {
+                final Object val = convertToJavaType(tag.getValue());
+                if (val != null) {
+                    this.tags.put(tag.getKey(), val);
+                }
+            }
+        }
+    }
+
+    public <T> T getTagValue(String tagName) {
+        return (T) this.tags.get(tagName);
+    }
+
+    private Object convertToJavaType(BanyandbModel.TagValue tagValue) {
+        switch (tagValue.getValueCase()) {
+            case INT:
+                return tagValue.getInt().getValue();
+            case STR:
+                return tagValue.getStr().getValue();
+            case NULL:
+                return null;
+            case INT_ARRAY:
+                return tagValue.getIntArray().getValueList();
+            case STR_ARRAY:
+                return tagValue.getStrArray().getValueList();
+            case BINARY_DATA:
+                return tagValue.getBinaryData().toByteArray();
+            case ID:
+                return tagValue.getId().getValue();
+            default:
+                throw new IllegalStateException("illegal type of TagValue");
         }
     }
 }

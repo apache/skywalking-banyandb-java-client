@@ -14,90 +14,89 @@ The client implement for SkyWalking BanyanDB in Java.
 
 ## Create a client
 
-Create a `BanyanDBClient` with host, port and a user-specified group and then establish a connection.
+Create a `BanyanDBClient` with host, port and then use `connect()` to establish a connection.
 
 ```java
 // use `default` group
-client = new BanyanDBClient("127.0.0.1", 17912, "default");
+client = new BanyanDBClient("127.0.0.1", 17912);
 // to send any request, a connection to the server must be estabilished
-client.connect(channel);
+client.connect();
 ```
+
+Besides, you may pass a customized options while building a `BanyanDBClient`. Supported
+options are listed below,
+
+
+| Option                     | Description                                                          | Default                  |
+|----------------------------|----------------------------------------------------------------------|--------------------------|
+| maxInboundMessageSize      | Max inbound message size                                             | 1024 * 1024 * 50 (~50MB) |
+| deadline                   | Threshold of gRPC blocking query, unit is second                     | 30 (seconds)             |
+| refreshInterval            | Refresh interval for the gRPC channel, unit is second                | 30 (seconds)             |
+| forceReconnectionThreshold | Threshold of force gRPC reconnection if network issue is encountered | 1                        |
+| forceTLS                   | Force use TLS for gRPC                                               | false                    |
+| sslTrustCAPath             | SSL: Trusted CA Path                                                 |                          |
+| sslCertChainPath           | SSL: Cert Chain Path                                                 |                          |
+| sslKeyPath                 | SSL: Cert Key Path                                                   |                          |
 
 ## Schema Management
 
-### Stream
+### Stream and index rules
 
-Then we may define a stream with customized configurations,
+Then we may define a stream with customized configurations. The following example uses `SegmentRecord` in SkyWalking OAP
+as an illustration,
 
 ```java
-// build a stream "sw" with 2 shards and ttl equals to 30 days
-Stream s = new Stream("sw", 2, Duration.ofDays(30));
-s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-// TagFamily - tagFamily1
-TagFamilySpec tf1 = new TagFamilySpec("tagFamily1"); // tagFamily1 as the name of the tag family
-tf1.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-s.addTagFamilySpec(tf1);
-// TagFamily - tagFamily2
-TagFamilySpec tf2 = new TagFamilySpec("tagFamily2");
-tf2.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-s.addTagFamilySpec(tf2);
-// create with the stream schema, client is the BanyanDBClient created above
-s = client.define(s);
+// build a stream default(group)/sw(name) with 2 shards and ttl equals to 30 days
+Stream s = Stream.create("default", "sw")
+        // set entities
+        .setEntityRelativeTags("service_id", "service_instance_id", "is_error")
+        // add a tag family "data"
+        .addTagFamily(TagFamilySpec.create("data")
+            .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+            .build())
+        // add a tag family "searchable"
+        .addTagFamily(TagFamilySpec.create("searchable")
+            // create a string tag "trace_id"
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+            .addTagSpec(TagFamilySpec.TagSpec.newIntTag("is_error"))
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+            .build())
+        .build();
+client.define(s);
 ```
 
 For the last line in the code block, a simple API (i.e. `BanyanDBClient.define(Stream)`) is used to define the schema of `Stream`.
 The same works for `Measure` which will be demonstrated later.
 
-### IndexRules
-
-For better search performance, index rules are necessary for `Stream` and `Measure`. You have to
-specify a full list of index rules that would be bounded to the target `Stream` and `Measure`.
-
-```java
-// create IndexRule with inverted index type and save it to series store
-IndexRule indexRule = new IndexRule("db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
-// tag name specifies the indexed tag
-indexRule.addTag("db.instance");
-// create the index rule "db.instance"
-client.defineIndexRules(stream, indexRule);
-```
-
-For convenience, `BanyanDBClient.defineIndexRule` supports binding multiple index rules with a single call.
-Internally, an `IndexRuleBinding` is created automatically for users, which will be active between `beginAt` and `expireAt`.
-With this shorthand API, the indexRuleBinding object will be active from the time it is created to the far future (i.e. `2099-01-01 00:00:00.000 UTC`).
-
-### Measure
+### Measure and index rules
 
 `Measure` can also be defined directly with `BanyanDBClient`,
 
 ```java
-// create a measure registry
-// create a new measure schema with 2 shards and ttl 30 days.
-Measure m = new Measure("measure-example", 2, Duration.ofDays(30));
-// set entity
-m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-// TagFamily - tagFamilyName
-TagFamilySpec tf = new TagFamilySpec("tagFamilyName");
-tf.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-    .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-    .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-s.addTagFamilySpec(tf);
-// set interval rules for different scopes
-m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "day", "1d"));
-m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "hour", "1h"));
-m.addIntervalRule(Measure.IntervalRule.matchStringLabel("scope", "minute", "1m"));
-// add field spec
-// compressMethod and encodingMethod can be specified
-m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
+// create a new measure schema with an additional interval
+// the interval is used to specify how frequently to send a data point
+Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+        // set entity
+        .setEntityRelativeTags("entity_id")
+        // define a tag family "default"
+        .addTagFamily(TagFamilySpec.create("default")
+            .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+            .build())
+        // define field specs
+        // compressMethod and encodingMethod can be specified
+        .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+        .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+        .build();
 // define a measure, as we've mentioned above
-m = client.define(m);
+client.define(m);
 ```
 
 For more APIs usage, refer to test cases and API docs.
 
 ## Query
+
+### Stream
 
 Construct a `StreamQuery` instance with given time-range and other conditions.
 
@@ -110,18 +109,18 @@ For example,
 Instant end = Instant.now();
 Instant begin = end.minus(15, ChronoUnit.MINUTES);
 // with stream schema, group=default, name=sw
-StreamQuery query = new StreamQuery("sw",
+StreamQuery query = new StreamQuery("default", "sw",
         new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
         // projection tags which are indexed
-        Arrays.asList("state", "start_time", "duration", "trace_id"));
+        ImmutableSet.of("state", "start_time", "duration", "trace_id"));
 // search for all states
 query.appendCondition(PairQueryCondition.LongQueryCondition.eq("searchable", "state" , 0L));
 // set order by condition
 query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
 // set projection for un-indexed tags
-query.setDataProjections(ImmutableList.of("data_binary"));
+query.setDataProjections(ImmutableSet.of("data_binary"));
 // send the query request
-client.queryStreams(query);
+client.query(query);
 ```
 
 After response is returned, `elements` can be fetched,
@@ -131,13 +130,43 @@ StreamQueryResponse resp = client.queryStreams(query);
 List<RowEntity> entities = resp.getElements();
 ```
 
-where `RowEntity` contains `elementId`, `timestamp` and tag families requested.
+Every item `RowEntity` in the list contains `elementId`, `timestamp` and tag families requested.
 
 The `StreamQueryResponse`, `RowEntity`, `TagFamily` and `Tag` (i.e. `TagAndValue`) forms a hierarchical structure, where
 the order of the tag families and containing tags, i.e. indexes of these objects in the List, follow the order specified 
 in the projection condition we've used in the request.
 
+### Measure
+
+For `Measure`, it is similar to the `Stream`,
+
+```java
+// [begin, end) = [ now - 15min, now )
+Instant end = Instant.now();
+Instant begin = end.minus(15, ChronoUnit.MINUTES);
+// with stream schema, group=sw_metrics, name=service_instance_cpm_day
+MeasureQuery query = new MeasureQuery("sw_metrics", "service_instance_cpm_day",
+    new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+    ImmutableSet.of("id", "scope", "service_id"),
+    ImmutableSet.of("total"));
+// query max "total" with group by tag "service_id"
+query.maxBy("total", ImmutableSet.of("service_id"));
+// use conditions
+query.appendCondition(PairQueryCondition.StringQueryCondition.eq("default", "service_id", "abc"));
+// send the query request
+client.query(query);
+```
+
+After response is returned, `dataPoints` can be extracted,
+
+```java
+MeasureQueryResponse resp = client.query(query);
+List<DataPoint> dataPointList = resp.getDataPoints();
+```
+
 ## Write
+
+### Stream
 
 Since grpc bidi streaming is used for write protocol, build a `StreamBulkWriteProcessor` which would handle back-pressure for you.
 Adjust `maxBulkSize`, `flushInterval` and `concurrency` of the consumer in different scenarios to meet requirements.
@@ -155,29 +184,45 @@ the order of tags must exactly be the same with that defined in the schema.
 And the non-existing tags must be fulfilled (with NullValue) instead of compacting all non-null tag values.
 
 ```java
-StreamWrite streamWrite = StreamWrite.builder()
-    .elementId(segmentId)
-    // write binary data to "data" tag family
-    .dataTag(Tag.binaryField(byteData))
-    .timestamp(now.toEpochMilli())
-    .name("sw")
-    // write indexed tags to "searchable" tag family
-    .tag(Tag.stringField(traceId))
-    .tag(Tag.stringField(serviceId))
-    .tag(Tag.stringField(serviceInstanceId))
-    .tag(Tag.stringField(endpointId))
-    .tag(Tag.longField(latency))
-    .tag(Tag.longField(state))
-    .tag(Tag.stringField(httpStatusCode))
-    .tag(Tag.nullField())
-    .tag(Tag.stringField(dbType))
-    .tag(Tag.stringField(dbInstance))
-    .tag(Tag.stringField(broker))
-    .tag(Tag.stringField(topic))
-    .tag(Tag.stringField(queue))
-    .build();
+StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+    .tag("data_binary", Value.binaryTagValue(byteData))
+    .tag("trace_id", Value.stringTagValue(traceId)) // 0
+    .tag("state", Value.longTagValue(state)) // 1
+    .tag("service_id", Value.stringTagValue(serviceId)) // 2
+    .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
+    .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
+    .tag("duration", Value.longTagValue(latency)) // 5
+    .tag("http.method", Value.stringTagValue(null)) // 6
+    .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
+    .tag("db.type", Value.stringTagValue(dbType)) // 8
+    .tag("db.instance", Value.stringTagValue(dbInstance)) // 9
+    .tag("mq.broker", Value.stringTagValue(broker)) // 10
+    .tag("mq.topic", Value.stringTagValue(topic)) // 11
+    .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
 streamBulkWriteProcessor.add(streamWrite);
+```
+
+### Measure
+
+The writing procedure for `Measure` is similar to the above described process and leverages the bidirectional streaming of gRPC,
+
+```java
+// build a MeasureBulkWriteProcessor from client
+MeasureBulkWriteProcessor bulkWriteProcessor = client.buildMeasureWriteProcessor(maxBulkSize, flushInterval, concurrency);
+```
+
+A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then build the `MeasureWrite` object and send with bulk processor,
+
+```java
+Instant now = Instant.now();
+MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
+    measureWrite.tag("id", TagAndValue.idTagValue("1"))
+    .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
+    .field("total", TagAndValue.longFieldValue(100))
+    .field("value", TagAndValue.longFieldValue(1));
+
+measureBulkWriteProcessor.add(measureWrite);
 ```
 
 # Compiling project

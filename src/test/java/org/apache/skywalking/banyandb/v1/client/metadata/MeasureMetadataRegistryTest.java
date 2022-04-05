@@ -18,191 +18,81 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.MeasureRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
+import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class MeasureMetadataRegistryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private MeasureMetadataRegistry client;
-
-    // play as an in-memory registry
-    private Map<String, BanyandbMetadata.Measure> measureRegistry;
-
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase serviceImpl =
-            mock(MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase.class, delegatesTo(
-                    new MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase() {
-                        @Override
-                        public void create(BanyandbMetadata.MeasureRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.MeasureRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.Measure s = request.getMeasure().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.MeasureRegistryServiceCreateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void update(BanyandbMetadata.MeasureRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.MeasureRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.Measure s = request.getMeasure().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.MeasureRegistryServiceUpdateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void delete(BanyandbMetadata.MeasureRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.MeasureRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.Measure oldMeasure = measureRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.MeasureRegistryServiceDeleteResponse.newBuilder()
-                                    .setDeleted(oldMeasure != null)
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void get(BanyandbMetadata.MeasureRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.MeasureRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.MeasureRegistryServiceGetResponse.newBuilder()
-                                    .setMeasure(measureRegistry.get(request.getMetadata().getName()))
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void list(BanyandbMetadata.MeasureRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.MeasureRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.MeasureRegistryServiceListResponse.newBuilder()
-                                    .addAllMeasure(measureRegistry.values())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
+public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
     @Before
     public void setUp() throws IOException {
-        measureRegistry = new HashMap<>();
-
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
-
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor().addService(serviceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        this.client = new MeasureMetadataRegistry("default", channel);
+        this.setUp(bindMeasureRegistry());
     }
 
     @Test
-    public void testMeasureRegistry_create() {
-        Measure s = new Measure("sw", 2, Duration.ofDays(30));
-        this.client.create(s);
-        Assert.assertEquals(measureRegistry.size(), 1);
+    public void testMeasureRegistry_createAndGet() throws BanyanDBException {
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .build();
+        this.client.define(expectedMeasure);
+        Assert.assertTrue(measureRegistry.containsKey("service_cpm_minute"));
+        Measure actualMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
+        Assert.assertNotNull(actualMeasure);
+        Assert.assertEquals(expectedMeasure, actualMeasure);
+        Assert.assertNotNull(actualMeasure.updatedAt());
     }
 
     @Test
-    public void testMeasureRegistry_createAndGet() {
-        Measure m = new Measure("sw", 2, Duration.ofDays(30));
-        m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        m.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        m.addTagFamilySpec(searchableFamily);
-        // interval rule
-        m.addIntervalRule(Measure.IntervalRule.matchStringLabel("interval", "day", "1d"));
-        m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"));
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
-        this.client.create(m);
-        Measure getMeasure = this.client.get("sw");
-        Assert.assertNotNull(getMeasure);
-        Assert.assertEquals(m, getMeasure);
-        Assert.assertNotNull(getMeasure.getUpdatedAt());
+    public void testMeasureRegistry_createAndList() throws BanyanDBException {
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .build();
+        this.client.define(expectedMeasure);
+        List<Measure> actualMeasures = new MeasureMetadataRegistry(this.channel).list("sw_metric");
+        Assert.assertNotNull(actualMeasures);
+        Assert.assertEquals(1, actualMeasures.size());
     }
 
     @Test
-    public void testMeasureRegistry_createAndList() {
-        Measure m = new Measure("sw", 2, Duration.ofDays(30));
-        m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        m.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        m.addTagFamilySpec(searchableFamily);
-        // interval rule
-        m.addIntervalRule(Measure.IntervalRule.matchStringLabel("interval", "day", "1d"));
-        m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"));
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
-        this.client.create(m);
-        List<Measure> listMeasure = this.client.list();
-        Assert.assertNotNull(listMeasure);
-        Assert.assertEquals(1, listMeasure.size());
-        Assert.assertEquals(listMeasure.get(0), m);
-    }
-
-    @Test
-    public void testMeasureRegistry_createAndDelete() {
-        Measure m = new Measure("sw", 2, Duration.ofDays(30));
-        m.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        m.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        m.addTagFamilySpec(searchableFamily);
-        // interval rule
-        m.addIntervalRule(Measure.IntervalRule.matchStringLabel("interval", "day", "1d"));
-        m.addIntervalRule(Measure.IntervalRule.matchNumericLabel("interval", 3600L, "1h"));
-        // field spec
-        m.addFieldSpec(Measure.FieldSpec.newIntField("tps").compressWithZSTD().encodeWithGorilla().build());
-        this.client.create(m);
-        boolean deleted = this.client.delete("sw");
+    public void testMeasureRegistry_createAndDelete() throws BanyanDBException {
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
+                .setEntityRelativeTags("entity_id")
+                .addTagFamily(TagFamilySpec.create("default")
+                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("scope"))
+                        .build())
+                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .build();
+        this.client.define(expectedMeasure);
+        boolean deleted = new MeasureMetadataRegistry(this.channel).delete("sw_metric", "service_cpm_minute");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, measureRegistry.size());
     }

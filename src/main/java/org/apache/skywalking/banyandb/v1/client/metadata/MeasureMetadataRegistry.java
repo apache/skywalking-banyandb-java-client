@@ -18,67 +18,64 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.common.base.Preconditions;
 import io.grpc.Channel;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.MeasureRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MeasureMetadataRegistry extends MetadataClient<BanyandbMetadata.Measure, Measure> {
-    private final MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub blockingStub;
+public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub,
+        BanyandbDatabase.Measure, Measure> {
 
-    public MeasureMetadataRegistry(String group, Channel channel) {
-        super(group);
-        Preconditions.checkArgument(channel != null, "channel must not be null");
-        this.blockingStub = MeasureRegistryServiceGrpc.newBlockingStub(channel);
+    public MeasureMetadataRegistry(Channel channel) {
+        super(MeasureRegistryServiceGrpc.newBlockingStub(channel));
     }
 
     @Override
-    public void create(Measure payload) {
-        blockingStub.create(BanyandbMetadata.MeasureRegistryServiceCreateRequest.newBuilder()
-                .setMeasure(payload.serialize(this.group))
-                .build());
+    public void create(final Measure payload) throws BanyanDBException {
+        execute(() ->
+                stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
+                        .setMeasure(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public void update(Measure payload) {
-        blockingStub.update(BanyandbMetadata.MeasureRegistryServiceUpdateRequest.newBuilder()
-                .setMeasure(payload.serialize(this.group))
-                .build());
+    public void update(final Measure payload) throws BanyanDBException {
+        execute(() ->
+                stub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
+                        .setMeasure(payload.serialize())
+                        .build()));
     }
 
     @Override
-    public boolean delete(String name) {
-        BanyandbMetadata.MeasureRegistryServiceDeleteResponse resp = blockingStub.delete(BanyandbMetadata.MeasureRegistryServiceDeleteRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
-                .build());
+    public boolean delete(final String group, final String name) throws BanyanDBException {
+        BanyandbDatabase.MeasureRegistryServiceDeleteResponse resp = execute(() ->
+                stub.delete(BanyandbDatabase.MeasureRegistryServiceDeleteRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
         return resp != null && resp.getDeleted();
     }
 
     @Override
-    public Measure get(String name) {
-        BanyandbMetadata.MeasureRegistryServiceGetResponse resp = blockingStub.get(BanyandbMetadata.MeasureRegistryServiceGetRequest.newBuilder()
-                .setMetadata(Banyandb.Metadata.newBuilder().setGroup(this.group).setName(name).build())
-                .build());
-        if (resp == null) {
-            return null;
-        }
+    public Measure get(final String group, final String name) throws BanyanDBException {
+        BanyandbDatabase.MeasureRegistryServiceGetResponse resp = execute(() ->
+                stub.get(BanyandbDatabase.MeasureRegistryServiceGetRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
 
         return Measure.fromProtobuf(resp.getMeasure());
     }
 
     @Override
-    public List<Measure> list() {
-        BanyandbMetadata.MeasureRegistryServiceListResponse resp = blockingStub.list(BanyandbMetadata.MeasureRegistryServiceListRequest.newBuilder()
-                .setGroup(this.group)
-                .build());
-        if (resp == null) {
-            return Collections.emptyList();
-        }
+    public List<Measure> list(final String group) throws BanyanDBException {
+        BanyandbDatabase.MeasureRegistryServiceListResponse resp = execute(() ->
+                stub.list(BanyandbDatabase.MeasureRegistryServiceListRequest.newBuilder()
+                        .setGroup(group)
+                        .build()));
 
         return resp.getMeasureList().stream().map(Measure::fromProtobuf).collect(Collectors.toList());
     }

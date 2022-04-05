@@ -18,39 +18,19 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.v1.Banyandb;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 /**
  * StreamQuery is the high-level query API for the stream model.
  */
 @Setter
-public class StreamQuery {
-    /**
-     * Owner name current entity
-     */
-    private final String name;
-    /**
-     * The time range for query.
-     */
-    private final TimestampRange timestampRange;
-    /**
-     * The projections of query result.
-     * These should have defined in the schema and must be `searchable`.
-     */
-    private final List<String> projections;
-    /**
-     * Query conditions.
-     */
-    private final List<PairQueryCondition<?>> conditions;
+public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     /**
      * The starting row id of the query. Default value is 0.
      */
@@ -63,74 +43,32 @@ public class StreamQuery {
      * One order condition is supported and optional.
      */
     private OrderBy orderBy;
-    /**
-     * Whether to fetch unindexed fields from the "data" tag family for the query
-     */
-    private List<String> dataProjections;
 
-    public StreamQuery(final String name, final TimestampRange timestampRange, final List<String> projections) {
-        this.name = name;
-        this.timestampRange = timestampRange;
-        this.projections = projections;
-        this.conditions = new ArrayList<>(10);
+    public StreamQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> projections) {
+        super(group, name, timestampRange, projections);
         this.offset = 0;
         this.limit = 20;
-        // by default, we don't need projection for data tag family
-        this.dataProjections = Collections.emptyList();
     }
 
-    public StreamQuery(final String name, final List<String> projections) {
-        this(name, null, projections);
+    public StreamQuery(final String group, final String name, final Set<String> projections) {
+        this(group, name, null, projections);
     }
 
-    /**
-     * Fluent API for appending query condition
-     *
-     * @param condition the query condition to be appended
-     */
+    @Override
     public StreamQuery appendCondition(PairQueryCondition<?> condition) {
-        this.conditions.add(condition);
-        return this;
+        return (StreamQuery) super.appendCondition(condition);
     }
 
-    /**
-     * @param group The instance name.
-     * @return QueryRequest for gRPC level query.
-     */
-    BanyandbStream.QueryRequest build(String group) {
-        final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder();
-        builder.setMetadata(Banyandb.Metadata.newBuilder()
-                .setGroup(group)
-                .setName(name)
-                .build());
+    @Override
+    BanyandbStream.QueryRequest build() throws BanyanDBException {
+        final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder()
+                .setMetadata(buildMetadata());
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         }
-        // set projection
-        Banyandb.Projection.Builder projectionBuilder = Banyandb.Projection.newBuilder()
-                .addTagFamilies(Banyandb.Projection.TagFamily.newBuilder()
-                        .setName("searchable")
-                        .addAllTags(this.projections)
-                        .build());
-        if (!this.dataProjections.isEmpty()) {
-            projectionBuilder.addTagFamilies(Banyandb.Projection.TagFamily.newBuilder()
-                    .setName("data")
-                    .addAllTags(this.dataProjections)
-                    .build());
-        }
-        builder.setProjection(projectionBuilder);
+        builder.setProjection(buildTagProjections());
         // set conditions grouped by tagFamilyName
-        Map<String, List<PairQueryCondition<?>>> groupedConditions = conditions.stream()
-                .collect(Collectors.groupingBy(TagAndValue::getTagFamilyName));
-        for (final Map.Entry<String, List<PairQueryCondition<?>>> tagFamily : groupedConditions.entrySet()) {
-            final List<Banyandb.Condition> conditionList = tagFamily.getValue().stream().map(PairQueryCondition::build)
-                    .collect(Collectors.toList());
-            BanyandbStream.QueryRequest.Criteria criteria = BanyandbStream.QueryRequest.Criteria
-                    .newBuilder()
-                    .setTagFamilyName(tagFamily.getKey())
-                    .addAllConditions(conditionList).build();
-            builder.addCriteria(criteria);
-        }
+        builder.addAllCriteria(buildCriteria());
         builder.setOffset(offset);
         builder.setLimit(limit);
         if (orderBy != null) {
@@ -150,11 +88,11 @@ public class StreamQuery {
          */
         private final Type type;
 
-        private Banyandb.QueryOrder build() {
-            final Banyandb.QueryOrder.Builder builder = Banyandb.QueryOrder.newBuilder();
+        private BanyandbModel.QueryOrder build() {
+            final BanyandbModel.QueryOrder.Builder builder = BanyandbModel.QueryOrder.newBuilder();
             builder.setIndexRuleName(indexRuleName);
             builder.setSort(
-                    Type.DESC.equals(type) ? Banyandb.QueryOrder.Sort.SORT_DESC : Banyandb.QueryOrder.Sort.SORT_ASC);
+                    Type.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
             return builder.build();
         }
 

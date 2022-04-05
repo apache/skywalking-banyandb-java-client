@@ -18,93 +18,95 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@EqualsAndHashCode
-public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpec> {
+@AutoValue
+public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.TagFamilySpec> {
     /**
      * name of the tag family
      */
-    private final String tagFamilyName;
+    abstract String tagFamilyName();
 
     /**
      * TagSpec(s) contained in this family
      */
-    private final List<TagSpec> tagSpecs;
+    abstract ImmutableList<TagSpec> tagSpecs();
 
-    public TagFamilySpec(String tagFamilyName) {
-        this(tagFamilyName, new ArrayList<>(5));
+    public static TagFamilySpec.Builder create(String tagFamilyName) {
+        return new AutoValue_TagFamilySpec.Builder().setTagFamilyName(tagFamilyName);
     }
 
-    public TagFamilySpec(String tagFamilyName, List<TagSpec> specs) {
-        Preconditions.checkArgument(specs != null, "spec must not be null");
-        this.tagFamilyName = tagFamilyName;
-        this.tagSpecs = specs;
+    @AutoValue.Builder
+    public abstract static class Builder {
+        abstract Builder setTagFamilyName(String tagFamilyName);
+
+        abstract ImmutableList.Builder<TagSpec> tagSpecsBuilder();
+
+        public final Builder addTagSpec(TagSpec tagSpec) {
+            tagSpecsBuilder().add(tagSpec);
+            return this;
+        }
+
+        public abstract TagFamilySpec build();
     }
 
-    /**
-     * Add a tag spec to this family
-     *
-     * @param tagSpec the tag spec to be appended
-     */
-    public TagFamilySpec addTagSpec(TagSpec tagSpec) {
-        this.tagSpecs.add(tagSpec);
-        return this;
-    }
-
-    public BanyandbMetadata.TagFamilySpec serialize() {
-        List<BanyandbMetadata.TagSpec> metadataTagSpecs = new ArrayList<>(this.tagSpecs.size());
-        for (final TagSpec spec : this.tagSpecs) {
+    public BanyandbDatabase.TagFamilySpec serialize() {
+        List<BanyandbDatabase.TagSpec> metadataTagSpecs = new ArrayList<>(this.tagSpecs().size());
+        for (final TagSpec spec : this.tagSpecs()) {
             metadataTagSpecs.add(spec.serialize());
         }
-        return BanyandbMetadata.TagFamilySpec.newBuilder()
-                .setName(this.tagFamilyName)
+        return BanyandbDatabase.TagFamilySpec.newBuilder()
+                .setName(tagFamilyName())
                 .addAllTags(metadataTagSpecs)
                 .build();
     }
 
-    static TagFamilySpec fromProtobuf(BanyandbMetadata.TagFamilySpec pb) {
-        final TagFamilySpec tagFamilySpec = new TagFamilySpec(pb.getName());
+    public static TagFamilySpec fromProtobuf(BanyandbDatabase.TagFamilySpec pb) {
+        final TagFamilySpec.Builder builder = TagFamilySpec.create(pb.getName());
         for (int j = 0; j < pb.getTagsCount(); j++) {
-            final BanyandbMetadata.TagSpec ts = pb.getTags(j);
+            final BanyandbDatabase.TagSpec ts = pb.getTags(j);
             final String tagName = ts.getName();
             switch (ts.getType()) {
                 case TAG_TYPE_INT:
-                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntTag(tagName));
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newIntTag(tagName));
                     break;
                 case TAG_TYPE_STRING:
-                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringTag(tagName));
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newStringTag(tagName));
                     break;
                 case TAG_TYPE_INT_ARRAY:
-                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newIntArrayTag(tagName));
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newIntArrayTag(tagName));
                     break;
                 case TAG_TYPE_STRING_ARRAY:
-                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newStringArrayTag(tagName));
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newStringArrayTag(tagName));
                     break;
                 case TAG_TYPE_DATA_BINARY:
-                    tagFamilySpec.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
+                    break;
+                case TAG_TYPE_ID:
+                    builder.addTagSpec(TagFamilySpec.TagSpec.newIDTag(tagName));
                     break;
                 default:
                     throw new IllegalStateException("unrecognized tag type");
             }
         }
 
-        return tagFamilySpec;
+        return builder.build();
     }
 
     @Getter
     @EqualsAndHashCode
-    public static class TagSpec implements Serializable<BanyandbMetadata.TagSpec> {
+    public static class TagSpec implements Serializable<BanyandbDatabase.TagSpec> {
         /**
          * name of the tag
          */
@@ -170,9 +172,19 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
             return new TagSpec(name, TagType.BINARY);
         }
 
+        /**
+         * create a ID tag spec
+         *
+         * @param name the name of the tag
+         * @return a binary array tag spec
+         */
+        public static TagSpec newIDTag(final String name) {
+            return new TagSpec(name, TagType.ID);
+        }
+
         @Override
-        public BanyandbMetadata.TagSpec serialize() {
-            return BanyandbMetadata.TagSpec.newBuilder()
+        public BanyandbDatabase.TagSpec serialize() {
+            return BanyandbDatabase.TagSpec.newBuilder()
                     .setName(this.tagName)
                     .setType(this.tagType.getTagType())
                     .build();
@@ -180,14 +192,15 @@ public class TagFamilySpec implements Serializable<BanyandbMetadata.TagFamilySpe
 
         @RequiredArgsConstructor
         public enum TagType {
-            INT(BanyandbMetadata.TagType.TAG_TYPE_INT),
-            STRING(BanyandbMetadata.TagType.TAG_TYPE_STRING),
-            INT_ARRAY(BanyandbMetadata.TagType.TAG_TYPE_INT_ARRAY),
-            STRING_ARRAY(BanyandbMetadata.TagType.TAG_TYPE_STRING_ARRAY),
-            BINARY(BanyandbMetadata.TagType.TAG_TYPE_DATA_BINARY);
+            INT(BanyandbDatabase.TagType.TAG_TYPE_INT),
+            STRING(BanyandbDatabase.TagType.TAG_TYPE_STRING),
+            INT_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_INT_ARRAY),
+            STRING_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_STRING_ARRAY),
+            BINARY(BanyandbDatabase.TagType.TAG_TYPE_DATA_BINARY),
+            ID(BanyandbDatabase.TagType.TAG_TYPE_ID);
 
             @Getter(AccessLevel.PRIVATE)
-            private final BanyandbMetadata.TagType tagType;
+            private final BanyandbDatabase.TagType tagType;
         }
     }
 }

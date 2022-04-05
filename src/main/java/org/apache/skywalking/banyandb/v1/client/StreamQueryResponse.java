@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.Getter;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
  * StreamQueryResponse represents the stream query result.
@@ -34,7 +34,7 @@ public class StreamQueryResponse {
     StreamQueryResponse(BanyandbStream.QueryResponse response) {
         final List<BanyandbStream.Element> elementsList = response.getElementsList();
         elements = new ArrayList<>(elementsList.size());
-        elementsList.forEach(element -> elements.add(new RowEntity(element)));
+        elementsList.forEach(element -> elements.add(RowEntity.create(element)));
     }
 
     /**

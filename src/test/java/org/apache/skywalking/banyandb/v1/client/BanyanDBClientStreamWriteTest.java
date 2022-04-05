@@ -19,19 +19,19 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.NullValue;
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import io.grpc.util.MutableHandlerRegistry;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
+import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -41,29 +41,58 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class BanyanDBClientWriteTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.powermock.api.mockito.PowerMockito.mock;
 
-    private final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
+public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
+    private final GroupRegistryServiceGrpc.GroupRegistryServiceImplBase groupRegistryServiceImpl =
+            mock(GroupRegistryServiceGrpc.GroupRegistryServiceImplBase.class, delegatesTo(
+                    new GroupRegistryServiceGrpc.GroupRegistryServiceImplBase() {
+                        @Override
+                        public void get(BanyandbDatabase.GroupRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.GroupRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.GroupRegistryServiceGetResponse.newBuilder()
+                                    .setGroup(BanyandbCommon.Group.newBuilder()
+                                            .setMetadata(BanyandbCommon.Metadata.newBuilder().setName("default").build())
+                                            .setCatalog(BanyandbCommon.Catalog.CATALOG_STREAM)
+                                            .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                    .setShardNum(2)
+                                                    .build())
+                                            .build())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    }));
 
-    private BanyanDBClient client;
     private StreamBulkWriteProcessor streamBulkWriteProcessor;
 
     @Before
-    public void setUp() throws IOException {
-        String serverName = InProcessServerBuilder.generateName();
-
-        Server server = InProcessServerBuilder
-                .forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor().build();
-        grpcCleanup.register(server.start());
-
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        client = new BanyanDBClient("127.0.0.1", server.getPort(), "default");
-        client.connect(channel);
+    public void setUp() throws IOException, BanyanDBException {
+        setUp(bindService(groupRegistryServiceImpl), bindStreamRegistry());
         streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
+
+        Stream expectedStream = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("endpoint_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("duration"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("http.method"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("status_code"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("db.type"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("db.instance"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.broker"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.topic"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.queue"))
+                        .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .build();
+        this.client.define(expectedStream);
     }
 
     @After
@@ -118,25 +147,21 @@ public class BanyanDBClientWriteTest {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = StreamWrite.builder()
-                .elementId(segmentId)
-                .dataTag(Tag.binaryField(byteData))
-                .timestamp(now.toEpochMilli())
-                .name("sw")
-                .searchableTag(Tag.stringField(traceId)) // 0
-                .searchableTag(Tag.stringField(serviceId))
-                .searchableTag(Tag.stringField(serviceInstanceId))
-                .searchableTag(Tag.stringField(endpointId))
-                .searchableTag(Tag.longField(latency)) // 4
-                .searchableTag(Tag.longField(state))
-                .searchableTag(Tag.stringField(httpStatusCode))
-                .searchableTag(Tag.nullField()) // 7
-                .searchableTag(Tag.stringField(dbType))
-                .searchableTag(Tag.stringField(dbInstance))
-                .searchableTag(Tag.stringField(broker))
-                .searchableTag(Tag.stringField(topic))
-                .searchableTag(Tag.stringField(queue)) // 12
-                .build();
+        StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+                .tag("data_binary", Value.binaryTagValue(byteData))
+                .tag("trace_id", Value.stringTagValue(traceId)) // 0
+                .tag("state", Value.longTagValue(state)) // 1
+                .tag("service_id", Value.stringTagValue(serviceId)) // 2
+                .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
+                .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
+                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("http.method", Value.stringTagValue(null)) // 6
+                .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
+                .tag("db.type", Value.stringTagValue(dbType)) // 8
+                .tag("db.instance", Value.stringTagValue(dbInstance)) // 9
+                .tag("mq.broker", Value.stringTagValue(broker)) // 10
+                .tag("mq.topic", Value.stringTagValue(topic)) // 11
+                .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
         streamBulkWriteProcessor.add(streamWrite);
 
@@ -146,7 +171,7 @@ public class BanyanDBClientWriteTest {
             Assert.assertArrayEquals(byteData, request.getElement().getTagFamilies(0).getTags(0).getBinaryData().toByteArray());
             Assert.assertEquals(13, request.getElement().getTagFamilies(1).getTagsCount());
             Assert.assertEquals(traceId, request.getElement().getTagFamilies(1).getTags(0).getStr().getValue());
-            Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(4).getInt().getValue());
+            Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(5).getInt().getValue());
             Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
             Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
         } else {
@@ -201,25 +226,21 @@ public class BanyanDBClientWriteTest {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = StreamWrite.builder()
-                .elementId(segmentId)
-                .dataTag(Tag.binaryField(byteData))
-                .timestamp(now.toEpochMilli())
-                .name("sw")
-                .searchableTag(Tag.stringField(traceId)) // 0
-                .searchableTag(Tag.stringField(serviceId))
-                .searchableTag(Tag.stringField(serviceInstanceId))
-                .searchableTag(Tag.stringField(endpointId))
-                .searchableTag(Tag.longField(latency)) // 4
-                .searchableTag(Tag.longField(state))
-                .searchableTag(Tag.stringField(httpStatusCode))
-                .searchableTag(Tag.nullField()) // 7
-                .searchableTag(Tag.stringField(dbType))
-                .searchableTag(Tag.stringField(dbInstance))
-                .searchableTag(Tag.stringField(broker))
-                .searchableTag(Tag.stringField(topic))
-                .searchableTag(Tag.stringField(queue)) // 12
-                .build();
+        StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+                .tag("data_binary", Value.binaryTagValue(byteData))
+                .tag("trace_id", Value.stringTagValue(traceId)) // 0
+                .tag("state", Value.longTagValue(state)) // 1
+                .tag("service_id", Value.stringTagValue(serviceId)) // 2
+                .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
+                .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
+                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("http.method", Value.stringTagValue(null)) // 6
+                .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
+                .tag("db.type", Value.stringTagValue(dbType)) // 8
+                .tag("db.instance", Value.stringTagValue(dbInstance)) // 9
+                .tag("mq.broker", Value.stringTagValue(broker)) // 10
+                .tag("mq.topic", Value.stringTagValue(topic)) // 11
+                .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
         client.write(streamWrite);
 
@@ -229,7 +250,7 @@ public class BanyanDBClientWriteTest {
             Assert.assertArrayEquals(byteData, request.getElement().getTagFamilies(0).getTags(0).getBinaryData().toByteArray());
             Assert.assertEquals(13, request.getElement().getTagFamilies(1).getTagsCount());
             Assert.assertEquals(traceId, request.getElement().getTagFamilies(1).getTags(0).getStr().getValue());
-            Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(4).getInt().getValue());
+            Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(5).getInt().getValue());
             Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
             Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
         } else {

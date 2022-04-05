@@ -18,176 +18,85 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import io.grpc.ManagedChannel;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
-import org.apache.skywalking.banyandb.database.v1.metadata.StreamRegistryServiceGrpc;
-import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
+import org.apache.skywalking.banyandb.v1.client.AbstractBanyanDBClientTest;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore("javax.management.*")
-public class StreamMetadataRegistryTest {
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-    private StreamMetadataRegistry client;
-
-    // play as an in-memory registry
-    private Map<String, BanyandbMetadata.Stream> streamRegistry;
-
-    private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase serviceImpl =
-            mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
-                    new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
-                        @Override
-                        public void create(BanyandbMetadata.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceCreateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceCreateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void update(BanyandbMetadata.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceUpdateResponse> responseObserver) {
-                            BanyandbMetadata.Stream s = request.getStream().toBuilder()
-                                    .setUpdatedAtNanoseconds(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                                    .build();
-                            streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceUpdateResponse.newBuilder().build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void delete(BanyandbMetadata.StreamRegistryServiceDeleteRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceDeleteResponse> responseObserver) {
-                            BanyandbMetadata.Stream oldStream = streamRegistry.remove(request.getMetadata().getName());
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceDeleteResponse.newBuilder()
-                                    .setDeleted(oldStream != null)
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void get(BanyandbMetadata.StreamRegistryServiceGetRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceGetResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceGetResponse.newBuilder()
-                                    .setStream(streamRegistry.get(request.getMetadata().getName()))
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-
-                        @Override
-                        public void list(BanyandbMetadata.StreamRegistryServiceListRequest request, StreamObserver<BanyandbMetadata.StreamRegistryServiceListResponse> responseObserver) {
-                            responseObserver.onNext(BanyandbMetadata.StreamRegistryServiceListResponse.newBuilder()
-                                    .addAllStream(streamRegistry.values())
-                                    .build());
-                            responseObserver.onCompleted();
-                        }
-                    }));
-
+public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
     @Before
     public void setUp() throws IOException {
-        streamRegistry = new HashMap<>();
-
-        // Generate a unique in-process server name.
-        String serverName = InProcessServerBuilder.generateName();
-
-        // Create a server, add service, start, and register for automatic graceful shutdown.
-        Server server = InProcessServerBuilder
-                .forName(serverName).directExecutor().addService(serviceImpl).build();
-        grpcCleanup.register(server.start());
-
-        // Create a client channel and register for automatic graceful shutdown.
-        ManagedChannel channel = grpcCleanup.register(
-                InProcessChannelBuilder.forName(serverName).directExecutor().build());
-
-        this.client = new StreamMetadataRegistry("default", channel);
+        setUp(bindStreamRegistry());
     }
 
     @Test
-    public void testStreamRegistry_create() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
-        this.client.create(s);
-        Assert.assertEquals(streamRegistry.size(), 1);
+    public void testStreamRegistry_createAndGet() throws BanyanDBException {
+        Stream expectedStream = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
+                        .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .build();
+        this.client.define(expectedStream);
+        Assert.assertTrue(streamRegistry.containsKey("sw"));
+        Stream actualStream = client.findStream("default", "sw");
+        Assert.assertNotNull(actualStream);
+        Assert.assertEquals(expectedStream, actualStream);
+        Assert.assertNotNull(actualStream.updatedAt());
     }
 
     @Test
-    public void testStreamRegistry_createAndGet() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
-        this.client.create(s);
-        Stream getStream = this.client.get("sw");
-        Assert.assertNotNull(getStream);
-        Assert.assertEquals(s, getStream);
-        Assert.assertNotNull(getStream.getUpdatedAt());
+    public void testStreamRegistry_createAndList() throws BanyanDBException {
+        Stream expectedStream = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .build();
+        client.define(expectedStream);
+        List<Stream> actualStreams = new StreamMetadataRegistry(this.channel).list("default");
+        Assert.assertNotNull(actualStreams);
+        Assert.assertEquals(1, actualStreams.size());
     }
 
     @Test
-    public void testStreamRegistry_createAndList() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
-        this.client.create(s);
-        List<Stream> listStream = this.client.list();
-        Assert.assertNotNull(listStream);
-        Assert.assertEquals(1, listStream.size());
-        Assert.assertEquals(listStream.get(0), s);
-    }
-
-    @Test
-    public void testStreamRegistry_createAndDelete() {
-        Stream s = new Stream("sw", 2, Duration.ofDays(30));
-        s.addTagNameAsEntity("service_id").addTagNameAsEntity("service_instance_id").addTagNameAsEntity("state");
-        // data
-        TagFamilySpec dataFamily = new TagFamilySpec("data");
-        dataFamily.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"));
-        s.addTagFamilySpec(dataFamily);
-        // searchable
-        TagFamilySpec searchableFamily = new TagFamilySpec("searchable");
-        searchableFamily.addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"));
-        s.addTagFamilySpec(searchableFamily);
-        this.client.create(s);
-        boolean deleted = this.client.delete("sw");
+    public void testStreamRegistry_createAndDelete() throws BanyanDBException {
+        Stream expectedStream = Stream.create("default", "sw")
+                .setEntityRelativeTags("service_id", "service_instance_id", "state")
+                .addTagFamily(TagFamilySpec.create("data")
+                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
+                        .build())
+                .addTagFamily(TagFamilySpec.create("searchable")
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
+                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+                        .build())
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .build();
+        this.client.define(expectedStream);
+        boolean deleted = new StreamMetadataRegistry(this.channel).delete("default", "sw");
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, streamRegistry.size());
     }

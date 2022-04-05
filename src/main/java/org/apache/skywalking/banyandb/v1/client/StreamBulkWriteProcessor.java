@@ -20,12 +20,10 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.stub.StreamObserver;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import lombok.extern.slf4j.Slf4j;
-import org.apache.skywalking.banyandb.v1.stream.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.stream.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.grpc.GRPCStreamServiceStatus;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -34,74 +32,43 @@ import javax.annotation.concurrent.ThreadSafe;
  */
 @Slf4j
 @ThreadSafe
-public class StreamBulkWriteProcessor extends BulkWriteProcessor {
-    /**
-     * The BanyanDB instance name.
-     */
-    private final String group;
-    private StreamServiceGrpc.StreamServiceStub streamServiceStub;
-
+public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<BanyandbStream.WriteRequest,
+        StreamServiceGrpc.StreamServiceStub> {
     /**
      * Create the processor.
      *
-     * @param streamServiceStub stub for gRPC call.
-     * @param maxBulkSize       the max bulk size for the flush operation
-     * @param flushInterval     if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                          automatically. Unit is second.
-     * @param concurrency       the number of concurrency would run for the flush max.
+     * @param serviceStub   stub for gRPC call.
+     * @param maxBulkSize   the max bulk size for the flush operation
+     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
+     *                      automatically. Unit is second.
+     * @param concurrency   the number of concurrency would run for the flush max.
      */
-    protected StreamBulkWriteProcessor(final String group,
-                                       final StreamServiceGrpc.StreamServiceStub streamServiceStub,
-                                       final int maxBulkSize,
-                                       final int flushInterval,
-                                       final int concurrency) {
-        super("StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
-        this.group = group;
-        this.streamServiceStub = streamServiceStub;
-    }
-
-    /**
-     * Add the stream to the bulk processor.
-     *
-     * @param streamWrite to add.
-     */
-    public void add(StreamWrite streamWrite) {
-        this.buffer.produce(streamWrite);
+    protected StreamBulkWriteProcessor(
+            final StreamServiceGrpc.StreamServiceStub serviceStub,
+            final int maxBulkSize,
+            final int flushInterval,
+            final int concurrency) {
+        super(serviceStub, "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
     }
 
     @Override
-    protected void flush(final List data) {
-        final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
-                = streamServiceStub.withDeadlineAfter(
-                        flushInterval, TimeUnit.SECONDS)
-                .write(
-                        new StreamObserver<BanyandbStream.WriteResponse>() {
-                            @Override
-                            public void onNext(
-                                    BanyandbStream.WriteResponse writeResponse) {
-                            }
+    protected StreamObserver<BanyandbStream.WriteRequest> buildStreamObserver(StreamServiceGrpc.StreamServiceStub stub, GRPCStreamServiceStatus status) {
+        return stub.write(
+                new StreamObserver<BanyandbStream.WriteResponse>() {
+                    @Override
+                    public void onNext(BanyandbStream.WriteResponse writeResponse) {
+                    }
 
-                            @Override
-                            public void onError(
-                                    Throwable throwable) {
-                                log.error(
-                                        "Error occurs in flushing streams.",
-                                        throwable
-                                );
-                            }
+                    @Override
+                    public void onError(Throwable t) {
+                        status.finished();
+                        log.error("Error occurs in flushing streams", t);
+                    }
 
-                            @Override
-                            public void onCompleted() {
-                            }
-                        });
-        try {
-            data.forEach(write -> {
-                final StreamWrite streamWrite = (StreamWrite) write;
-                BanyandbStream.WriteRequest request = streamWrite.build(group);
-                writeRequestStreamObserver.onNext(request);
-            });
-        } finally {
-            writeRequestStreamObserver.onCompleted();
-        }
+                    @Override
+                    public void onCompleted() {
+                        status.finished();
+                    }
+                });
     }
 }

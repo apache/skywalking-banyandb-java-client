@@ -21,12 +21,14 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.v1.Banyandb;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 
 @RequiredArgsConstructor
 public enum Catalog {
-    STREAM(Banyandb.Catalog.CATALOG_STREAM), MEASURE(Banyandb.Catalog.CATALOG_MEASURE);
+    UNSPECIFIED(BanyandbCommon.Catalog.CATALOG_UNSPECIFIED),
+    STREAM(BanyandbCommon.Catalog.CATALOG_STREAM),
+    MEASURE(BanyandbCommon.Catalog.CATALOG_MEASURE);
 
     @Getter(AccessLevel.PACKAGE)
-    private final Banyandb.Catalog catalog;
+    private final BanyandbCommon.Catalog catalog;
 }

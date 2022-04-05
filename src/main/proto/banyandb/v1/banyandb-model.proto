@@ -17,26 +17,15 @@
 
 syntax = "proto3";
 
-option java_package = "org.apache.skywalking.banyandb.v1";
+option java_package = "org.apache.skywalking.banyandb.model.v1";
 
-package banyandb.v1;
+package banyandb.model.v1;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
-enum Catalog {
-  CATALOG_UNSPECIFIED = 0;
-  CATALOG_STREAM = 1;
-  CATALOG_MEASURE = 2;
-}
-
-// Metadata is for multi-tenant, multi-model use
-message Metadata {
-  // group contains a set of options, like retention policy, max
-  string group = 1;
-  // name of the entity
-  string name = 2;
-  uint32 id = 3;
+message ID {
+  string value = 1;
 }
 
 message Str {
@@ -63,11 +52,30 @@ message TagValue {
     Int int = 4;
     IntArray int_array = 5;
     bytes binary_data = 6;
+    ID id = 7;
   }
 }
 
 message TagFamilyForWrite {
   repeated TagValue tags = 1;
+}
+
+message FieldValue {
+  oneof value {
+    google.protobuf.NullValue null = 1;
+    model.v1.Str str = 2;
+    model.v1.Int int = 3;
+    bytes binary_data = 4;
+  }
+}
+
+enum AggregationFunction {
+  AGGREGATION_FUNCTION_UNSPECIFIED = 0;
+  AGGREGATION_FUNCTION_MEAN = 1;
+  AGGREGATION_FUNCTION_MAX = 2;
+  AGGREGATION_FUNCTION_MIN = 3;
+  AGGREGATION_FUNCTION_COUNT = 4;
+  AGGREGATION_FUNCTION_SUM = 5;
 }
 
 // Pair is the building block of a record which is equivalent to a key-value pair.
@@ -102,31 +110,39 @@ message Condition {
     BINARY_OP_GE = 6;
     BINARY_OP_HAVING = 7;
     BINARY_OP_NOT_HAVING = 8;
+    BINARY_OP_IN = 9;
+    BINARY_OP_NOT_IN = 10;
   }
   string name = 1;
   BinaryOp op = 2;
   TagValue value = 3;
 }
 
+// tag_families are indexed.
+message Criteria {
+  string tag_family_name = 1;
+  repeated model.v1.Condition conditions = 2;
+}
+
+enum Sort {
+  SORT_UNSPECIFIED = 0;
+  SORT_DESC = 1;
+  SORT_ASC = 2;
+}
+
 // QueryOrder means a Sort operation to be done for a given index rule.
 // The index_rule_name refers to the name of a index rule bound to the subject.
 message QueryOrder {
   string index_rule_name = 1;
-  enum Sort {
-    SORT_UNSPECIFIED = 0;
-    SORT_DESC = 1;
-    SORT_ASC = 2;
-  }
   Sort sort = 2;
 }
 
-// Projection is used to select the names of keys to be returned.
-message Projection {
+// TagProjection is used to select the names of keys to be returned.
+message TagProjection {
   message TagFamily {
     string name = 1;
     repeated string tags = 2;
   }
-  // The key_name refers to the key(s) of Pair(s).
   repeated TagFamily tag_families = 1;
 }
 
@@ -136,3 +152,4 @@ message TimeRange {
   google.protobuf.Timestamp begin = 1;
   google.protobuf.Timestamp end = 2;
 }
+

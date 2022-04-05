@@ -21,12 +21,13 @@ package org.apache.skywalking.banyandb.v1.client;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManagerSettings;
 
 /**
  * Client connection options.
  */
 @Setter
-@Getter(AccessLevel.PACKAGE)
+@Getter(AccessLevel.PUBLIC)
 public class Options {
     /**
      * Max inbound message size
@@ -36,8 +37,39 @@ public class Options {
      * Threshold of gRPC blocking query, unit is second
      */
     private int deadline = 30;
+    /**
+     * Refresh interval for the gRPC channel, unit is second
+     */
+    private long refreshInterval = 30;
+    /**
+     * Threshold of force gRPC reconnection if network issue is encountered
+     */
+    private long forceReconnectionThreshold = 1;
+    /**
+     * Force use TLS for gRPC
+     * Default is false
+     */
+    private boolean forceTLS = false;
+    /**
+     * SSL: Trusted CA Path
+     */
+    private String sslTrustCAPath = "";
+    /**
+     * SSL: Cert Chain Path
+     */
+    private String sslCertChainPath = "";
+    /**
+     * SSL: Cert Key Path
+     */
+    private String sslKeyPath = "";
 
     Options() {
     }
 
+    ChannelManagerSettings buildChannelManagerSettings() {
+        return ChannelManagerSettings.newBuilder()
+                .setRefreshInterval(this.refreshInterval)
+                .setForceReconnectionThreshold(this.forceReconnectionThreshold)
+                .build();
+    }
 }

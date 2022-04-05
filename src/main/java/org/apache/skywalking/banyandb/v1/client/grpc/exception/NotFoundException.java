@@ -16,12 +16,16 @@
  *
  */
 
-package org.apache.skywalking.banyandb.v1.client;
+package org.apache.skywalking.banyandb.v1.client.grpc.exception;
 
-/**
- * An interface that represents an object which can be converted to the protobuf representation
- * of BanyanDB.Field. BanyanDB.Field is used for writing entities to the database.
- */
-public interface SerializableTag<T> {
-    T toTag();
+import io.grpc.Status;
+
+public class NotFoundException extends BanyanDBException {
+    public NotFoundException(Throwable cause, Status.Code status, boolean retryable) {
+        super(cause, status, retryable);
+    }
+
+    public NotFoundException(String message, Throwable cause, Status.Code status, boolean retryable) {
+        super(message, cause, status, retryable);
+    }
 }

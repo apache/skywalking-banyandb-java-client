@@ -18,92 +18,116 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import lombok.AccessLevel;
+import com.google.common.base.Strings;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.database.v1.metadata.BanyandbMetadata;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @EqualsAndHashCode
-public class Duration implements Serializable<BanyandbMetadata.Duration> {
-    private final int val;
-    private final Unit unit;
+public class Duration {
+    private static final Pattern DURATION_PATTERN =
+            Pattern.compile("(((?<year>[0-9]+)y)?((?<week>[0-9]+)w)?((?<day>[0-9]+)d)?((?<hour>[0-9]+)h)?((?<minute>[0-9]+)m)?|0)");
+    private static final long MINUTES_PER_HOUR = 60;
+    private static final long MINUTES_PER_DAY = MINUTES_PER_HOUR * 24;
+    private static final long MINUTES_PER_WEEK = MINUTES_PER_DAY * 7;
+    private static final long MINUTES_PER_YEAR = MINUTES_PER_DAY * 365;
 
-    private Duration(int val, Unit unit) {
-        this.val = val;
-        this.unit = unit;
+    @EqualsAndHashCode.Exclude
+    private volatile String text;
+    private final long minutes;
+
+    private Duration(long minutes) {
+        this.minutes = minutes;
     }
 
-    /**
-     * Create duration with hours
-     *
-     * @param hours the number of hours
-     * @return Duration in the unit of hour
-     */
-    public static Duration ofHours(int hours) {
-        return new Duration(hours, Unit.HOUR);
-    }
-
-    /**
-     * Create duration with days
-     *
-     * @param days the number of days
-     * @return Duration in the unit of day
-     */
-    public static Duration ofDays(int days) {
-        return new Duration(days, Unit.DAY);
-    }
-
-    /**
-     * Create duration with weeks
-     *
-     * @param weeks the number of weeks
-     * @return Duration in the unit of week
-     */
-    public static Duration ofWeeks(int weeks) {
-        return new Duration(weeks, Unit.WEEK);
-    }
-
-    /**
-     * Create duration with months
-     *
-     * @param months the number of months
-     * @return Duration in the unit of month
-     */
-    public static Duration ofMonths(int months) {
-        return new Duration(months, Unit.MONTH);
-    }
-
-    @Override
-    public BanyandbMetadata.Duration serialize() {
-        return BanyandbMetadata.Duration.newBuilder()
-                .setVal(this.val)
-                .setUnit(this.unit.getDurationUnit())
-                .build();
-    }
-
-    @RequiredArgsConstructor
-    public enum Unit {
-        HOUR(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_HOUR),
-        DAY(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_DAY),
-        WEEK(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_WEEK),
-        MONTH(BanyandbMetadata.Duration.DurationUnit.DURATION_UNIT_MONTH);
-
-        @Getter(AccessLevel.PRIVATE)
-        private final BanyandbMetadata.Duration.DurationUnit durationUnit;
-    }
-
-    static Duration fromProtobuf(BanyandbMetadata.Duration duration) {
-        switch (duration.getUnit()) {
-            case DURATION_UNIT_DAY:
-                return ofDays(duration.getVal());
-            case DURATION_UNIT_HOUR:
-                return ofHours(duration.getVal());
-            case DURATION_UNIT_MONTH:
-                return ofMonths(duration.getVal());
-            case DURATION_UNIT_WEEK:
-                return ofWeeks(duration.getVal());
+    public String format() {
+        if (!Strings.isNullOrEmpty(text)) {
+            return text;
         }
-        throw new IllegalArgumentException("unrecognized DurationUnit");
+
+        final StringBuilder builder = new StringBuilder();
+        long minutes = this.minutes;
+        if (minutes >= MINUTES_PER_YEAR) {
+            long years = minutes / MINUTES_PER_YEAR;
+            builder.append(years).append("y");
+            minutes = minutes % MINUTES_PER_YEAR;
+        }
+        if (minutes >= MINUTES_PER_WEEK) {
+            long weeks = minutes / MINUTES_PER_WEEK;
+            builder.append(weeks).append("w");
+            minutes = minutes % MINUTES_PER_WEEK;
+        }
+        if (minutes >= MINUTES_PER_DAY) {
+            long weeks = minutes / MINUTES_PER_DAY;
+            builder.append(weeks).append("d");
+            minutes = minutes % MINUTES_PER_DAY;
+        }
+        if (minutes >= MINUTES_PER_HOUR) {
+            long weeks = minutes / MINUTES_PER_HOUR;
+            builder.append(weeks).append("h");
+            minutes = minutes % MINUTES_PER_HOUR;
+        }
+        if (minutes > 0) {
+            builder.append(minutes).append("m");
+        }
+        this.text = builder.toString();
+        return this.text;
+    }
+
+    public Duration add(Duration duration) {
+        return new Duration(this.minutes + duration.minutes);
+    }
+
+    public static Duration parse(String text) {
+        if (Strings.isNullOrEmpty(text)) {
+            return new Duration(0);
+        }
+        Matcher matcher = DURATION_PATTERN.matcher(text);
+        if (!matcher.find()) {
+            return new Duration(0);
+        }
+        long total = 0;
+        final String years = matcher.group("year");
+        if (!Strings.isNullOrEmpty(years)) {
+            total += Long.parseLong(years) * MINUTES_PER_YEAR;
+        }
+        final String weeks = matcher.group("week");
+        if (!Strings.isNullOrEmpty(weeks)) {
+            total += Long.parseLong(weeks) * MINUTES_PER_WEEK;
+        }
+        final String days = matcher.group("day");
+        if (!Strings.isNullOrEmpty(days)) {
+            total += Long.parseLong(days) * MINUTES_PER_DAY;
+        }
+        final String hours = matcher.group("hour");
+        if (!Strings.isNullOrEmpty(hours)) {
+            total += Long.parseLong(hours) * MINUTES_PER_HOUR;
+        }
+        final String minutes = matcher.group("minute");
+        if (!Strings.isNullOrEmpty(minutes)) {
+            total += Long.parseLong(minutes);
+        }
+        return new Duration(total);
+    }
+
+    public static Duration ofMinutes(long minutes) {
+        return new Duration(minutes);
+    }
+
+    public static Duration ofHours(long hours) {
+        return new Duration(hours * MINUTES_PER_HOUR);
+    }
+
+    public static Duration ofDays(long days) {
+        return ofHours(days * MINUTES_PER_DAY);
+    }
+
+    public static Duration ofWeeks(long weeks) {
+        return ofHours(weeks * MINUTES_PER_WEEK);
+    }
+
+    public static Duration ofYears(long years) {
+        return ofHours(years * MINUTES_PER_YEAR);
     }
 }
