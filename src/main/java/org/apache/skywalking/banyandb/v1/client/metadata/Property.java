@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
 import org.apache.skywalking.banyandb.v1.client.TagAndValue;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ import java.util.List;
 
 @AutoValue
 public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
-    abstract String id();
+    public abstract String id();
 
     abstract ImmutableList<TagAndValue<?>> tags();
 
@@ -51,6 +52,20 @@ public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
 
     public static Builder create(String group, String name, String id) {
         return new AutoValue_Property.Builder().setGroup(group).setName(name).setId(id);
+    }
+
+    static Property fromProtobuf(BanyandbProperty.Property pb) {
+        final Property.Builder b = Property.create(pb.getMetadata().getContainer().getGroup(),
+                        pb.getMetadata().getContainer().getName(),
+                        pb.getMetadata().getId())
+                .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()));
+
+        // build tag family spec
+        for (int i = 0; i < pb.getTagsCount(); i++) {
+            b.addTag(TagAndValue.fromProtobuf(pb.getTags(i)));
+        }
+
+        return b.build();
     }
 
     @AutoValue.Builder

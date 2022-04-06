@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
-public class BanyanDBMeasureQueryIntegrationTests extends BanyanDBClientTestCI {
+public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
     private MeasureBulkWriteProcessor processor;
 
     @Before

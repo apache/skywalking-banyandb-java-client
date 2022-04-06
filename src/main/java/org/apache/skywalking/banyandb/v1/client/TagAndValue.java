@@ -65,7 +65,7 @@ public abstract class TagAndValue<T> extends Value<T> {
                 .build();
     }
 
-    static TagAndValue<?> fromProtobuf(BanyandbModel.Tag tag) {
+    public static TagAndValue<?> fromProtobuf(BanyandbModel.Tag tag) {
         switch (tag.getValue().getValueCase()) {
             case INT:
                 return new LongTagPair(tag.getKey(), tag.getValue().getInt().getValue());
@@ -84,6 +84,7 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class StringTagPair extends TagAndValue<String> {
         StringTagPair(final String tagName, final String value) {
             super(tagName, value);
@@ -99,6 +100,11 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    public static TagAndValue<String> newStringTag(final String tagName, final String value) {
+        return new StringTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class StringArrayTagPair extends TagAndValue<List<String>> {
         StringArrayTagPair(final String tagName, final List<String> value) {
             super(tagName, value);
@@ -114,6 +120,11 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    public static TagAndValue<List<String>> newStringArrayTagPair(final String tagName, final List<String> value) {
+        return new StringArrayTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class LongTagPair extends TagAndValue<Long> {
         LongTagPair(final String tagName, final Long value) {
             super(tagName, value);
@@ -129,6 +140,11 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    public static TagAndValue<Long> newLongTag(final String tagName, final long value) {
+        return new LongTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
         LongArrayTagPair(final String tagName, final List<Long> value) {
             super(tagName, value);
@@ -144,6 +160,11 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    public static TagAndValue<Long> newLongArrayTag(final String tagName, final long value) {
+        return new LongTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class BinaryTagPair extends TagAndValue<ByteString> {
         public BinaryTagPair(String fieldName, ByteString byteString) {
             super(fieldName, byteString);
@@ -157,6 +178,11 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    public static TagAndValue<ByteString> newBinaryTag(final String tagName, final byte[] bytes) {
+        return new BinaryTagPair(tagName, ByteString.copyFrom(bytes));
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class NullTagPair extends TagAndValue<Void> {
         NullTagPair(final String tagName) {
             super(tagName, null);
@@ -173,5 +199,9 @@ public abstract class TagAndValue<T> extends Value<T> {
         public boolean isNull() {
             return true;
         }
+    }
+
+    public static TagAndValue<Void> newNullTag(final String tagName) {
+        return new NullTagPair(tagName);
     }
 }
