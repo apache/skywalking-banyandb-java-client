@@ -328,8 +328,7 @@ public class BanyanDBClient implements Closeable {
             store.get(property.group(), property.name(), property.id());
             store.update(property);
         } catch (BanyanDBException ex) {
-            // TODO: polish "404" response code in BanyanDB
-            if (ex.getStatus().equals(Status.Code.UNKNOWN)) {
+            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
                 store.create(property);
                 return;
             }
@@ -337,6 +336,14 @@ public class BanyanDBClient implements Closeable {
         }
     }
 
+    /**
+     * Find property
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param id    identity of the property
+     * @return property if it can be found
+     */
     public Property findProperty(String group, String name, String id) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
         return store.get(group, name, id);
