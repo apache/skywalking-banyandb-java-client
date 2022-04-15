@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
@@ -60,6 +61,23 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
             Assert.assertNotNull(gotProperty);
             Assert.assertEquals(property, gotProperty);
         });
+    }
+
+    @Test
+    public void test_PropertyCreateDeleteAndGet() throws BanyanDBException {
+        Property property = Property.create("default", "sw", "ui_template")
+                .addTag(TagAndValue.newStringTag("name", "hello"))
+                .build();
+        this.client.save(property);
+
+        Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template"));
+
+        try {
+            client.findProperty("default", "sw", "ui_template");
+            Assert.fail();
+        } catch (BanyanDBException ex) {
+            Assert.assertEquals(Status.Code.NOT_FOUND, ex.getStatus());
+        }
     }
 
     @Test

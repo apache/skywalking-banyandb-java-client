@@ -350,6 +350,19 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Delete property
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param id    identity of the property
+     * @return if this property has been deleted
+     */
+    public boolean deleteProperty(String group, String name, String id) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        return store.delete(group, name, id);
+    }
+
+    /**
      * Bind index rule to the stream
      *
      * @param stream     the subject of index rule binding

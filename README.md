@@ -242,11 +242,19 @@ this.client.save(property);
 ```
 
 ### Query
-g
+
 Property can be queried via `Client.findProperty`,
 
 ```java
 Property gotProperty = this.client.findProperty("default", "sw", "ui_template");
+```
+
+### Delete
+
+Property can be deleted by calling `Client.deleteProperty`,
+
+```java
+this.client.deleteProperty("default", "sw", "ui_template");
 ```
 
 # Compiling project
