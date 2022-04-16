@@ -37,7 +37,6 @@ import static org.awaitility.Awaitility.await;
 public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
-        this.setUpConnection();
         Group expectedGroup = this.client.define(
                 Group.create("default", Catalog.STREAM, 2, 0, Duration.ofDays(7))
         );
@@ -69,6 +68,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
         this.client.save(property);
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            Property gotProperty = client.findProperty("default", "sw", "ui_template");
+            Assert.assertNotNull(gotProperty);
+            Assert.assertEquals(property, gotProperty);
+        });
 
         Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template"));
 

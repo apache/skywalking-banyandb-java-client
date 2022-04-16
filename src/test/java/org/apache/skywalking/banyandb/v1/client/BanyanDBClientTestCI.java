@@ -30,21 +30,21 @@ import java.io.IOException;
 public class BanyanDBClientTestCI {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "6f081f2f8e1f59a762513175b9cb69964bb43d07";
+    private static final String TAG = "ad94bb9e39276a985d1647cacae4afc565b17d83";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
-    private static final int BANYANDB_PORT = 17912;
+    protected static final int BANYANDB_PORT = 17912;
 
     @Rule
     public GenericContainer<?> banyanDB = new GenericContainer<>(
             DockerImageName.parse(IMAGE))
             .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-stream-data",
                     "--measure-root-path", "/tmp/banyand-measure-data")
-            .withExposedPorts(BANYANDB_PORT)
-            .waitingFor(
-                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
-            );
+            .withExposedPorts(BANYANDB_PORT);
+//            .waitingFor(
+//                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
+//            );
 
     protected BanyanDBClient client;
 
