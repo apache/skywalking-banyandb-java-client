@@ -37,6 +37,7 @@ import static org.awaitility.Awaitility.await;
 public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
+        super.setUpConnection();
         Group expectedGroup = this.client.define(
                 Group.create("default", Catalog.STREAM, 2, 0, Duration.ofDays(7))
         );
