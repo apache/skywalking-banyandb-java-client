@@ -41,10 +41,10 @@ public class BanyanDBClientTestCI {
             DockerImageName.parse(IMAGE))
             .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-stream-data",
                     "--measure-root-path", "/tmp/banyand-measure-data")
-            .withExposedPorts(BANYANDB_PORT);
-//            .waitingFor(
-//                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
-//            );
+            .withExposedPorts(BANYANDB_PORT)
+            .waitingFor(
+                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
+            );
 
     protected BanyanDBClient client;
 
