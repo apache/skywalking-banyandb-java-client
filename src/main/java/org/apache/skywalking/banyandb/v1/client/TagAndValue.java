@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import java.util.List;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.NullValue;
 import lombok.EqualsAndHashCode;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
@@ -50,7 +51,21 @@ public abstract class TagAndValue<T> extends Value<T> {
         return this.value == null;
     }
 
-    static TagAndValue<?> build(BanyandbModel.Tag tag) {
+    /**
+     * TagValue is referenced from various derived data structs.
+     *
+     * @return TagValue to be included
+     */
+    protected abstract BanyandbModel.TagValue buildTypedTagValue();
+
+    public BanyandbModel.Tag build() {
+        return BanyandbModel.Tag.newBuilder()
+                .setKey(this.tagName)
+                .setValue(buildTypedTagValue())
+                .build();
+    }
+
+    public static TagAndValue<?> fromProtobuf(BanyandbModel.Tag tag) {
         switch (tag.getValue().getValueCase()) {
             case INT:
                 return new LongTagPair(tag.getKey(), tag.getValue().getInt().getValue());
@@ -69,44 +84,124 @@ public abstract class TagAndValue<T> extends Value<T> {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class StringTagPair extends TagAndValue<String> {
         StringTagPair(final String tagName, final String value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setStr(BanyandbModel.Str
+                            .newBuilder()
+                            .setValue(value).build())
+                    .build();
+        }
     }
 
+    public static TagAndValue<String> newStringTag(final String tagName, final String value) {
+        return new StringTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class StringArrayTagPair extends TagAndValue<List<String>> {
         StringArrayTagPair(final String tagName, final List<String> value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setStrArray(BanyandbModel.StrArray
+                            .newBuilder()
+                            .addAllValue(value).build())
+                    .build();
+        }
     }
 
+    public static TagAndValue<List<String>> newStringArrayTagPair(final String tagName, final List<String> value) {
+        return new StringArrayTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class LongTagPair extends TagAndValue<Long> {
         LongTagPair(final String tagName, final Long value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setInt(BanyandbModel.Int
+                            .newBuilder()
+                            .setValue(value).build())
+                    .build();
+        }
     }
 
+    public static TagAndValue<Long> newLongTag(final String tagName, final long value) {
+        return new LongTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class LongArrayTagPair extends TagAndValue<List<Long>> {
         LongArrayTagPair(final String tagName, final List<Long> value) {
             super(tagName, value);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setIntArray(BanyandbModel.IntArray
+                            .newBuilder()
+                            .addAllValue(value).build())
+                    .build();
+        }
     }
 
+    public static TagAndValue<Long> newLongArrayTag(final String tagName, final long value) {
+        return new LongTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class BinaryTagPair extends TagAndValue<ByteString> {
         public BinaryTagPair(String fieldName, ByteString byteString) {
             super(fieldName, byteString);
         }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setBinaryData(this.value)
+                    .build();
+        }
     }
 
+    public static TagAndValue<ByteString> newBinaryTag(final String tagName, final byte[] bytes) {
+        return new BinaryTagPair(tagName, ByteString.copyFrom(bytes));
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class NullTagPair extends TagAndValue<Void> {
         NullTagPair(final String tagName) {
             super(tagName, null);
         }
 
         @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setNull(NullValue.NULL_VALUE)
+                    .build();
+        }
+
+        @Override
         public boolean isNull() {
             return true;
         }
+    }
+
+    public static TagAndValue<Void> newNullTag(final String tagName) {
+        return new NullTagPair(tagName);
     }
 }

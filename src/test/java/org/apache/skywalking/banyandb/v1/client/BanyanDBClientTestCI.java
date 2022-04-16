@@ -30,11 +30,11 @@ import java.io.IOException;
 public class BanyanDBClientTestCI {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "d061ab4abe0232c868f60cd3f311877b5a3703ac";
+    private static final String TAG = "ad94bb9e39276a985d1647cacae4afc565b17d83";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
-    private static final int BANYANDB_PORT = 17912;
+    protected static final int BANYANDB_PORT = 17912;
 
     @Rule
     public GenericContainer<?> banyanDB = new GenericContainer<>(

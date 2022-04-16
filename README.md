@@ -225,6 +225,38 @@ MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", 
 measureBulkWriteProcessor.add(measureWrite);
 ```
 
+## Property APIs
+
+Property APIs are used to store key-value pairs.
+
+### Create/Update
+
+`save` will always succeed whenever the property exists or not.
+The old value will be overwritten if already existed, otherwise a new value will be set.
+
+```java
+Property property = Property.create("default", "sw", "ui_template")
+    .addTag(TagAndValue.newStringTag("name", "hello"))
+    .build();
+this.client.save(property);
+```
+
+### Query
+
+Property can be queried via `Client.findProperty`,
+
+```java
+Property gotProperty = this.client.findProperty("default", "sw", "ui_template");
+```
+
+### Delete
+
+Property can be deleted by calling `Client.deleteProperty`,
+
+```java
+this.client.deleteProperty("default", "sw", "ui_template");
+```
+
 # Compiling project
 > ./mvnw clean package
 

@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -54,6 +55,8 @@ import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegist
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
+import org.apache.skywalking.banyandb.v1.client.metadata.Property;
+import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 
@@ -312,6 +315,51 @@ public class BanyanDBClient implements Closeable {
         measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
         MetadataCache.INSTANCE.register(measure);
+    }
+
+    /**
+     * Create or update the property
+     *
+     * @param property the property to be stored in the BanyanBD
+     */
+    public void save(Property property) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        try {
+            store.get(property.group(), property.name(), property.id());
+            store.update(property);
+        } catch (BanyanDBException ex) {
+            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
+                store.create(property);
+                return;
+            }
+            throw ex;
+        }
+    }
+
+    /**
+     * Find property
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param id    identity of the property
+     * @return property if it can be found
+     */
+    public Property findProperty(String group, String name, String id) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        return store.get(group, name, id);
+    }
+
+    /**
+     * Delete property
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param id    identity of the property
+     * @return if this property has been deleted
+     */
+    public boolean deleteProperty(String group, String name, String id) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        return store.delete(group, name, id);
     }
 
     /**
