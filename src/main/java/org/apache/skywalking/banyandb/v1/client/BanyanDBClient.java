@@ -471,7 +471,9 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
         Stream s = new StreamMetadataRegistry(checkNotNull(this.channel)).get(group, name);
-        return s.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
+        s = s.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
+        MetadataCache.INSTANCE.register(s);
+        return s;
     }
 
     /**
@@ -486,7 +488,9 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
         Measure m = new MeasureMetadataRegistry(checkNotNull(this.channel)).get(group, name);
-        return m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
+        m = m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
+        MetadataCache.INSTANCE.register(m);
+        return m;
     }
 
     private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws BanyanDBException {
