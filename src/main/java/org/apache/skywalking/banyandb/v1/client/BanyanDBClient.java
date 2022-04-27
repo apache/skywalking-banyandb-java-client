@@ -328,6 +328,7 @@ public class BanyanDBClient implements Closeable {
             store.get(property.group(), property.name(), property.id());
             store.update(property);
         } catch (BanyanDBException ex) {
+            // multiple entity can share a single index rule
             if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
                 store.create(property);
                 return;
@@ -347,6 +348,18 @@ public class BanyanDBClient implements Closeable {
     public Property findProperty(String group, String name, String id) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
         return store.get(group, name, id);
+    }
+
+    /**
+     * List Properties
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @return all properties belonging to the group and the name
+     */
+    public List<Property> findProperties(String group, String name) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        return store.list(group, name);
     }
 
     /**
@@ -373,7 +386,14 @@ public class BanyanDBClient implements Closeable {
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
         for (final IndexRule ir : indexRules) {
-            irRegistry.create(ir);
+            try {
+                irRegistry.create(ir);
+            } catch (BanyanDBException ex) {
+                if (ex.getStatus().equals(Status.Code.ALREADY_EXISTS)) {
+                    continue;
+                }
+                throw ex;
+            }
         }
 
         List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
@@ -398,7 +418,15 @@ public class BanyanDBClient implements Closeable {
 
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
         for (final IndexRule ir : indexRules) {
-            irRegistry.create(ir);
+            try {
+                irRegistry.create(ir);
+            } catch (BanyanDBException ex) {
+                // multiple entity can share a single index rule
+                if (ex.getStatus().equals(Status.Code.ALREADY_EXISTS)) {
+                    continue;
+                }
+                throw ex;
+            }
         }
 
         List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
@@ -409,6 +437,26 @@ public class BanyanDBClient implements Closeable {
                 IndexRuleBinding.Subject.referToStream(measure.name()),
                 indexRuleNames);
         irbRegistry.create(binding);
+    }
+
+    /**
+     * Try to find the group defined
+     *
+     * @param name name of the group
+     * @return the group found in BanyanDB
+     */
+    public Group findGroup(String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        try {
+            return new GroupMetadataRegistry(checkNotNull(this.channel)).get(name, name);
+        } catch (BanyanDBException ex) {
+            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
+                return null;
+            }
+
+            throw ex;
+        }
     }
 
     /**

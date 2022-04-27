@@ -36,12 +36,12 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
     /**
      * name of the tag family
      */
-    abstract String tagFamilyName();
+    public abstract String tagFamilyName();
 
     /**
      * TagSpec(s) contained in this family
      */
-    abstract ImmutableList<TagSpec> tagSpecs();
+    public abstract ImmutableList<TagSpec> tagSpecs();
 
     public static TagFamilySpec.Builder create(String tagFamilyName) {
         return new AutoValue_TagFamilySpec.Builder().setTagFamilyName(tagFamilyName);
@@ -55,6 +55,11 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
 
         public final Builder addTagSpec(TagSpec tagSpec) {
             tagSpecsBuilder().add(tagSpec);
+            return this;
+        }
+
+        public final Builder addTagSpecs(Iterable<TagSpec> tagSpecs) {
+            tagSpecsBuilder().addAll(tagSpecs);
             return this;
         }
 

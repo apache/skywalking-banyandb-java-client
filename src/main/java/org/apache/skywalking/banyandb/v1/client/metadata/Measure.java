@@ -85,6 +85,11 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
             return this;
         }
 
+        public final Measure.Builder addTagFamilies(Iterable<TagFamilySpec> tagFamilySpecs) {
+            tagFamiliesBuilder().addAll(tagFamilySpecs);
+            return this;
+        }
+
         abstract ImmutableList.Builder<FieldSpec> fieldsBuilder();
 
         public final Measure.Builder addField(FieldSpec fieldSpec) {
@@ -95,7 +100,9 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
         abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
 
         public final Measure.Builder addIndexes(Iterable<IndexRule> indexRules) {
-            indexRulesBuilder().addAll(indexRules);
+            for (final IndexRule ir : indexRules) {
+                this.addIndex(ir);
+            }
             return this;
         }
 

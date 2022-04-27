@@ -33,7 +33,7 @@ import java.util.List;
 public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
     public abstract String id();
 
-    abstract ImmutableList<TagAndValue<?>> tags();
+    public abstract ImmutableList<TagAndValue<?>> tags();
 
     @Override
     public BanyandbProperty.Property serialize() {
