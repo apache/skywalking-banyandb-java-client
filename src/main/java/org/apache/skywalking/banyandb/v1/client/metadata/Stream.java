@@ -71,10 +71,17 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
             return this;
         }
 
+        public final Builder addTagFamilies(Iterable<TagFamilySpec> tagFamilySpecs) {
+            tagFamiliesBuilder().addAll(tagFamilySpecs);
+            return this;
+        }
+
         abstract ImmutableList.Builder<IndexRule> indexRulesBuilder();
 
         public final Builder addIndexes(Iterable<IndexRule> indexRules) {
-            indexRulesBuilder().addAll(indexRules);
+            for (final IndexRule ir : indexRules) {
+                this.addIndex(ir);
+            }
             return this;
         }
 

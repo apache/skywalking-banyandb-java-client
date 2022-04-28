@@ -27,11 +27,9 @@ import java.util.regex.Pattern;
 @EqualsAndHashCode
 public class Duration {
     private static final Pattern DURATION_PATTERN =
-            Pattern.compile("(((?<year>[0-9]+)y)?((?<week>[0-9]+)w)?((?<day>[0-9]+)d)?((?<hour>[0-9]+)h)?((?<minute>[0-9]+)m)?|0)");
+            Pattern.compile("(((?<day>\\d+)d)?((?<hour>\\d+)h)?((?<minute>\\d+)m)?|0)");
     private static final long MINUTES_PER_HOUR = 60;
     private static final long MINUTES_PER_DAY = MINUTES_PER_HOUR * 24;
-    private static final long MINUTES_PER_WEEK = MINUTES_PER_DAY * 7;
-    private static final long MINUTES_PER_YEAR = MINUTES_PER_DAY * 365;
 
     @EqualsAndHashCode.Exclude
     private volatile String text;
@@ -48,16 +46,6 @@ public class Duration {
 
         final StringBuilder builder = new StringBuilder();
         long minutes = this.minutes;
-        if (minutes >= MINUTES_PER_YEAR) {
-            long years = minutes / MINUTES_PER_YEAR;
-            builder.append(years).append("y");
-            minutes = minutes % MINUTES_PER_YEAR;
-        }
-        if (minutes >= MINUTES_PER_WEEK) {
-            long weeks = minutes / MINUTES_PER_WEEK;
-            builder.append(weeks).append("w");
-            minutes = minutes % MINUTES_PER_WEEK;
-        }
         if (minutes >= MINUTES_PER_DAY) {
             long weeks = minutes / MINUTES_PER_DAY;
             builder.append(weeks).append("d");
@@ -88,14 +76,6 @@ public class Duration {
             return new Duration(0);
         }
         long total = 0;
-        final String years = matcher.group("year");
-        if (!Strings.isNullOrEmpty(years)) {
-            total += Long.parseLong(years) * MINUTES_PER_YEAR;
-        }
-        final String weeks = matcher.group("week");
-        if (!Strings.isNullOrEmpty(weeks)) {
-            total += Long.parseLong(weeks) * MINUTES_PER_WEEK;
-        }
         final String days = matcher.group("day");
         if (!Strings.isNullOrEmpty(days)) {
             total += Long.parseLong(days) * MINUTES_PER_DAY;
@@ -121,13 +101,5 @@ public class Duration {
 
     public static Duration ofDays(long days) {
         return ofHours(days * MINUTES_PER_DAY);
-    }
-
-    public static Duration ofWeeks(long weeks) {
-        return ofHours(weeks * MINUTES_PER_WEEK);
-    }
-
-    public static Duration ofYears(long years) {
-        return ofHours(years * MINUTES_PER_YEAR);
     }
 }
