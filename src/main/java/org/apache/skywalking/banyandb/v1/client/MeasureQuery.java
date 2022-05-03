@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
@@ -45,10 +46,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     }
 
     public MeasureQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
-        super(group, name, timestampRange, tagProjections);
+        super(group, name, timestampRange, addIDProjection(tagProjections));
         this.fieldProjections = fieldProjections;
-        // automatically add ID to projection since we always need dataPointID
-        this.tagProjections.add(Measure.ID);
     }
 
     public MeasureQuery maxBy(String field, Set<String> groupByKeys) {
@@ -144,5 +143,10 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
             SUM(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_SUM);
             private final BanyandbModel.AggregationFunction function;
         }
+    }
+
+    static ImmutableSet<String> addIDProjection(Set<String> tagProjections) {
+        // make a defensive copy in case the original one is immutable
+        return ImmutableSet.<String>builder().addAll(tagProjections).add(Measure.ID).build();
     }
 }
