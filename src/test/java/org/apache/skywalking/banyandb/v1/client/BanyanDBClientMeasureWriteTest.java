@@ -19,11 +19,13 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBinding;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
@@ -65,6 +67,14 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
     @After
     public void shutdown() throws IOException {
         measureBulkWriteProcessor.close();
+    }
+
+    @Test
+    public void testRegistry() {
+        Assert.assertEquals(indexRuleBindingRegistry.size(), 1);
+        Assert.assertTrue(indexRuleBindingRegistry.containsKey(IndexRuleBinding.defaultBindingRule("service_cpm_minute")));
+        Assert.assertEquals(indexRuleBindingRegistry.get(IndexRuleBinding.defaultBindingRule("service_cpm_minute")).getSubject().getCatalog(),
+                BanyandbCommon.Catalog.CATALOG_MEASURE);
     }
 
     @Test
