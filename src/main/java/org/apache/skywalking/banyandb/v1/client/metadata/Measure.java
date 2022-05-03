@@ -32,6 +32,8 @@ import java.util.List;
 
 @AutoValue
 public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
+    public static final String ID = "id";
+
     /**
      * specs of tag families
      */
@@ -57,7 +59,7 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
      */
     public abstract ImmutableList<IndexRule> indexRules();
 
-    abstract Measure.Builder toBuilder();
+    public abstract Measure.Builder toBuilder();
 
     public final Measure withIndexRules(List<IndexRule> indexRules) {
         return toBuilder().addIndexes(indexRules)
@@ -71,6 +73,8 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     @AutoValue.Builder
     public abstract static class Builder {
         abstract String group();
+
+        abstract ImmutableList<TagFamilySpec> tagFamilies();
 
         abstract Measure.Builder setGroup(String group);
 

@@ -76,7 +76,7 @@ public abstract class AbstractQuery<T> {
      *
      * @param condition the query condition to be appended
      */
-    public AbstractQuery<T> appendCondition(PairQueryCondition<?> condition) {
+    public AbstractQuery<T> and(PairQueryCondition<?> condition) {
         this.conditions.add(condition);
         return this;
     }

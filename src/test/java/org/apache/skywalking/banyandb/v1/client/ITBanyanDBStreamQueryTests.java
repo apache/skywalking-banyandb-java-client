@@ -120,7 +120,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         processor.add(streamWrite);
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
-        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
+        query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             StreamQueryResponse resp = client.query(query);

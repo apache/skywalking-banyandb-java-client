@@ -19,11 +19,13 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 
 import java.util.Set;
 
@@ -44,7 +46,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     }
 
     public MeasureQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
-        super(group, name, timestampRange, tagProjections);
+        super(group, name, timestampRange, addIDProjection(tagProjections));
         this.fieldProjections = fieldProjections;
     }
 
@@ -84,6 +86,16 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.COUNT, groupByKeys);
+        return this;
+    }
+
+    /**
+     * Query ID column with given value.
+     *
+     * @param value candidate value of ID
+     */
+    public MeasureQuery andWithID(String value) {
+        this.and(PairQueryCondition.IDQueryCondition.eq(Measure.ID, value));
         return this;
     }
 
@@ -131,5 +143,10 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
             SUM(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_SUM);
             private final BanyandbModel.AggregationFunction function;
         }
+    }
+
+    static ImmutableSet<String> addIDProjection(Set<String> tagProjections) {
+        // make a defensive copy in case the original one is immutable
+        return ImmutableSet.<String>builder().addAll(tagProjections).add(Measure.ID).build();
     }
 }

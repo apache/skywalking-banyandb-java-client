@@ -434,7 +434,7 @@ public class BanyanDBClient implements Closeable {
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
         IndexRuleBinding binding = IndexRuleBinding.create(measure.group(),
                 IndexRuleBinding.defaultBindingRule(measure.name()),
-                IndexRuleBinding.Subject.referToStream(measure.name()),
+                IndexRuleBinding.Subject.referToMeasure(measure.name()),
                 indexRuleNames);
         irbRegistry.create(binding);
     }

@@ -152,7 +152,7 @@ public abstract class Value<T> {
         return new StringTagValue(val);
     }
 
-    public static Serializable<BanyandbModel.TagValue> idTagValue(String val) {
+    static Serializable<BanyandbModel.TagValue> idTagValue(String val) {
         if (Strings.isNullOrEmpty(val)) {
             throw new NullPointerException();
         }

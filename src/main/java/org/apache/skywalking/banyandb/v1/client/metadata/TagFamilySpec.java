@@ -58,6 +58,11 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
             return this;
         }
 
+        public final Builder addIDTagSpec() {
+            tagSpecsBuilder().add(TagSpec.newIDTag(Measure.ID));
+            return this;
+        }
+
         public final Builder addTagSpecs(Iterable<TagSpec> tagSpecs) {
             tagSpecsBuilder().addAll(tagSpecs);
             return this;
@@ -183,7 +188,7 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
          * @param name the name of the tag
          * @return a binary array tag spec
          */
-        public static TagSpec newIDTag(final String name) {
+        private static TagSpec newIDTag(final String name) {
             return new TagSpec(name, TagType.ID);
         }
 

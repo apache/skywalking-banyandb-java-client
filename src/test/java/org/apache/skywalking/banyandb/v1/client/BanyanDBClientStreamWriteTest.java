@@ -27,6 +27,7 @@ import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBinding;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
@@ -98,6 +99,14 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
     @After
     public void shutdown() throws IOException {
         streamBulkWriteProcessor.close();
+    }
+
+    @Test
+    public void testRegistry() {
+        Assert.assertEquals(indexRuleBindingRegistry.size(), 1);
+        Assert.assertTrue(indexRuleBindingRegistry.containsKey(IndexRuleBinding.defaultBindingRule("sw")));
+        Assert.assertEquals(indexRuleBindingRegistry.get(IndexRuleBinding.defaultBindingRule("sw")).getSubject().getCatalog(),
+                BanyandbCommon.Catalog.CATALOG_STREAM);
     }
 
     @Test

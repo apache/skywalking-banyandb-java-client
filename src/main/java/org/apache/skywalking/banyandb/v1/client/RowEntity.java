@@ -34,7 +34,8 @@ import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 public class RowEntity {
     /**
      * identity of the entity.
-     * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking.
+     * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking,
+     * For a metrics data point, it extracted from the {@link org.apache.skywalking.banyandb.v1.client.metadata.Measure#ID} tag.
      */
     protected String id;
 

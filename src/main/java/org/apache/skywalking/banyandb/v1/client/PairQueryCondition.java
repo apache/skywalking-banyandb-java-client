@@ -159,6 +159,24 @@ public abstract class PairQueryCondition<T> {
         }
     }
 
+    public static class IDQueryCondition extends PairQueryCondition<String> {
+        private IDQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, String value) {
+            super(op, new TagAndValue.IDTagPair(tagName, value));
+        }
+
+        /**
+         * Build a query condition for {@link String} type
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_EQ} as the relation
+         *
+         * @param tagName name of the tag
+         * @param val     value of the tag
+         * @return a query that `String == value`
+         */
+        static PairQueryCondition<String> eq(String tagName, String val) {
+            return new IDQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, val);
+        }
+    }
+
     /**
      * StringArrayQueryCondition represents `tag(List of String) $op value` condition.
      */
@@ -264,9 +282,8 @@ public abstract class PairQueryCondition<T> {
          * Build a query condition for {@link List} of {@link Long} as the type
          * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_NOT_HAVING} as the relation
          *
-         * @param tagFamilyName family name of the tag
-         * @param tagName       name of the tag
-         * @param val           value of the tag
+         * @param tagName name of the tag
+         * @param val     value of the tag
          * @return a query that `[Long] not having values`
          */
         public static PairQueryCondition<List<Long>> notHaving(String tagName, List<Long> val) {

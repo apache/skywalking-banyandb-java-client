@@ -55,8 +55,8 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     }
 
     @Override
-    public StreamQuery appendCondition(PairQueryCondition<?> condition) {
-        return (StreamQuery) super.appendCondition(condition);
+    public StreamQuery and(PairQueryCondition<?> condition) {
+        return (StreamQuery) super.and(condition);
     }
 
     @Override

@@ -105,6 +105,26 @@ public abstract class TagAndValue<T> extends Value<T> {
     }
 
     @EqualsAndHashCode(callSuper = true)
+    public static class IDTagPair extends TagAndValue<String> {
+        IDTagPair(final String tagName, final String value) {
+            super(tagName, value);
+        }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            return BanyandbModel.TagValue.newBuilder()
+                    .setId(BanyandbModel.ID
+                            .newBuilder()
+                            .setValue(value).build())
+                    .build();
+        }
+    }
+
+    public static TagAndValue<String> newIDTag(final String tagName, final String value) {
+        return new IDTagPair(tagName, value);
+    }
+
+    @EqualsAndHashCode(callSuper = true)
     public static class StringArrayTagPair extends TagAndValue<List<String>> {
         StringArrayTagPair(final String tagName, final List<String> value) {
             super(tagName, value);
