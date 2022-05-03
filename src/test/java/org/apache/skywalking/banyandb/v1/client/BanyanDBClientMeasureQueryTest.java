@@ -71,7 +71,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
-                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addIDTagSpec()
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
@@ -93,7 +93,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                 ImmutableSet.of("total"));
         query.maxBy("total", ImmutableSet.of("entity_id"));
         // search with conditions
-        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("entity_id", "abc"));
+        query.and(PairQueryCondition.StringQueryCondition.eq("entity_id", "abc"));
         client.query(query);
 
         verify(measureQueryService).query(requestCaptor.capture(), ArgumentMatchers.any());

@@ -54,7 +54,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
         Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
-                        .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+                        .addIDTagSpec()
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())

@@ -24,6 +24,7 @@ import lombok.Setter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 
 import java.util.Set;
 
@@ -46,6 +47,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     public MeasureQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
         super(group, name, timestampRange, tagProjections);
         this.fieldProjections = fieldProjections;
+        // automatically add ID to projection since we always need dataPointID
+        this.tagProjections.add(Measure.ID);
     }
 
     public MeasureQuery maxBy(String field, Set<String> groupByKeys) {
@@ -84,6 +87,16 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
         this.aggregation = new Aggregation(field, Aggregation.Type.COUNT, groupByKeys);
+        return this;
+    }
+
+    /**
+     * Query ID column with given value.
+     *
+     * @param value candidate value of ID
+     */
+    public MeasureQuery andWithID(String value) {
+        this.and(PairQueryCondition.IDQueryCondition.eq(Measure.ID, value));
         return this;
     }
 

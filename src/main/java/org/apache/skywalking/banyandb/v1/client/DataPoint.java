@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class DataPoint extends RowEntity {
 
     public static DataPoint create(BanyandbMeasure.DataPoint dataPoint) {
         final DataPoint dp = new DataPoint(dataPoint);
-        dp.id = dp.getTagValue("id");
+        dp.id = dp.getTagValue(Measure.ID);
         return dp;
     }
 

@@ -102,7 +102,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for all states
-        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("state", 0L));
+        query.and(PairQueryCondition.LongQueryCondition.eq("state", 0L));
         query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
         client.query(query);
 
@@ -145,12 +145,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for the successful states
-        query.appendCondition(PairQueryCondition.LongQueryCondition.eq("state", 1L))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId))
-                .appendCondition(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
-                .appendCondition(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
-                .appendCondition(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
+        query.and(PairQueryCondition.LongQueryCondition.eq("state", 1L))
+                .and(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
+                .and(PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId))
+                .and(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
+                .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
+                .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
                 .setOrderBy(new StreamQuery.OrderBy("start_time", StreamQuery.OrderBy.Type.ASC));
 
         client.query(query);
@@ -187,7 +187,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         String traceId = "1111.222.333";
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
-        query.appendCondition(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
+        query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         client.query(query);
 
