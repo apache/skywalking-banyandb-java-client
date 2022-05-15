@@ -48,4 +48,4 @@ jobs:
         with:
           submodules: true
       - name: Build and Test
-        run: ./mvnw -P github -q clean verify deploy
+        run: ./mvnw -q clean verify install
