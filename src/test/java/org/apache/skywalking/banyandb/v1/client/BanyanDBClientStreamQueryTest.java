@@ -103,7 +103,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for all states
         query.and(PairQueryCondition.LongQueryCondition.eq("state", 0L));
-        query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
+        query.setOrderBy(new StreamQuery.OrderBy("duration", AbstractQuery.Sort.DESC));
         client.query(query);
 
         verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
@@ -151,7 +151,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 .and(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
                 .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
                 .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
-                .setOrderBy(new StreamQuery.OrderBy("start_time", StreamQuery.OrderBy.Type.ASC));
+                .setOrderBy(new StreamQuery.OrderBy("start_time", AbstractQuery.Sort.ASC));
 
         client.query(query);
 

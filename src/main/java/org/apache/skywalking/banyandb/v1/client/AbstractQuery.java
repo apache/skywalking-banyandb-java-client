@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
@@ -140,5 +141,11 @@ public abstract class AbstractQuery<T> {
                     .build());
         }
         return b.build();
+    }
+
+    @RequiredArgsConstructor
+    @Getter(AccessLevel.PROTECTED)
+    public enum Sort {
+        ASC, DESC;
     }
 }

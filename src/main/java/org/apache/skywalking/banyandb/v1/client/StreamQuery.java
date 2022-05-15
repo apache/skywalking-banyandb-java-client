@@ -86,18 +86,14 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         /**
          * The type of ordering.
          */
-        private final Type type;
+        private final Sort type;
 
         private BanyandbModel.QueryOrder build() {
             final BanyandbModel.QueryOrder.Builder builder = BanyandbModel.QueryOrder.newBuilder();
             builder.setIndexRuleName(indexRuleName);
             builder.setSort(
-                    Type.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
+                    Sort.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
             return builder.build();
-        }
-
-        public enum Type {
-            ASC, DESC
         }
     }
 }

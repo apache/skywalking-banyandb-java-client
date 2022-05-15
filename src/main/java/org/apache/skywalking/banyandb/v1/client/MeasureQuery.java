@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -41,6 +42,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     private Aggregation aggregation;
 
+    private TopN topN;
+
     public MeasureQuery(final String group, final String name, final Set<String> tagProjections, final Set<String> fieldProjections) {
         this(group, name, null, tagProjections, fieldProjections);
     }
@@ -48,6 +51,12 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     public MeasureQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
         super(group, name, timestampRange, addIDProjection(tagProjections));
         this.fieldProjections = fieldProjections;
+    }
+
+    public MeasureQuery groupBy(Set<String> groupByKeys) {
+        Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
+        this.aggregation = new Aggregation(null, Aggregation.Type.UNSPECIFIED, groupByKeys);
+        return this;
     }
 
     public MeasureQuery maxBy(String field, Set<String> groupByKeys) {
@@ -89,6 +98,18 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         return this;
     }
 
+    public MeasureQuery topN(int number, String field) {
+        Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
+        this.topN = new TopN(field, number, Sort.DESC);
+        return this;
+    }
+
+    public MeasureQuery bottomN(int number, String field) {
+        Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
+        this.topN = new TopN(field, number, Sort.ASC);
+        return this;
+    }
+
     /**
      * Query ID column with given value.
      *
@@ -113,19 +134,40 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
                 .addAllNames(fieldProjections)
                 .build());
         if (this.aggregation != null) {
-            BanyandbMeasure.QueryRequest.GroupBy groupBy = BanyandbMeasure.QueryRequest.GroupBy.newBuilder()
-                    .setTagProjection(buildTagProjections(this.aggregation.groupByTagsProjection))
-                    .setFieldName(this.aggregation.fieldName)
+            BanyandbMeasure.QueryRequest.GroupBy.Builder groupByBuilder = BanyandbMeasure.QueryRequest.GroupBy.newBuilder()
+                    .setTagProjection(buildTagProjections(this.aggregation.groupByTagsProjection));
+            if (Strings.isNullOrEmpty(this.aggregation.fieldName)) {
+                if (this.aggregation.aggregationType != Aggregation.Type.UNSPECIFIED) {
+                    throw new IllegalArgumentException("field name cannot be null or empty if aggregation is specified");
+                }
+            } else {
+                builder.setGroupBy(groupByBuilder.build());
+                groupByBuilder.setFieldName(this.aggregation.fieldName);
+                BanyandbMeasure.QueryRequest.Aggregation aggr = BanyandbMeasure.QueryRequest.Aggregation.newBuilder()
+                        .setFunction(this.aggregation.aggregationType.function)
+                        .setFieldName(this.aggregation.fieldName)
+                        .build();
+                builder.setGroupBy(groupByBuilder.build()).setAgg(aggr);
+            }
+        }
+        if (this.topN != null) {
+            BanyandbMeasure.QueryRequest.Top top = BanyandbMeasure.QueryRequest.Top.newBuilder()
+                    .setFieldName(this.topN.fieldName)
+                    .setNumber(this.topN.number)
+                    .setFieldValueSort(Sort.DESC.equals(this.topN.sort) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC)
                     .build();
-            BanyandbMeasure.QueryRequest.Aggregation aggr = BanyandbMeasure.QueryRequest.Aggregation.newBuilder()
-                    .setFunction(this.aggregation.aggregationType.function)
-                    .setFieldName(this.aggregation.fieldName)
-                    .build();
-            builder.setGroupBy(groupBy).setAgg(aggr);
+            builder.setTop(top);
         }
         // add all criteria
         builder.addAllCriteria(buildCriteria());
         return builder.build();
+    }
+
+    @RequiredArgsConstructor
+    public static class TopN {
+        private final String fieldName;
+        private final int number;
+        private final AbstractQuery.Sort sort;
     }
 
     @RequiredArgsConstructor
@@ -136,6 +178,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
         @RequiredArgsConstructor
         public enum Type {
+            UNSPECIFIED(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_UNSPECIFIED),
             MEAN(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_MEAN),
             MAX(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_MAX),
             MIN(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_MIN),
