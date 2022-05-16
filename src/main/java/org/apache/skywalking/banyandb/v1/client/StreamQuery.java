@@ -20,9 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import java.util.Set;
 
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
@@ -65,8 +63,6 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
                 .setMetadata(buildMetadata());
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
-        } else {
-            builder.setTimeRange(TimestampRange.MAX_RANGE);
         }
         builder.setProjection(buildTagProjections());
         // set conditions grouped by tagFamilyName
@@ -77,25 +73,5 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
             builder.setOrderBy(orderBy.build());
         }
         return builder.build();
-    }
-
-    @RequiredArgsConstructor
-    public static class OrderBy {
-        /**
-         * The field name for ordering.
-         */
-        private final String indexRuleName;
-        /**
-         * The type of ordering.
-         */
-        private final Sort type;
-
-        private BanyandbModel.QueryOrder build() {
-            final BanyandbModel.QueryOrder.Builder builder = BanyandbModel.QueryOrder.newBuilder();
-            builder.setIndexRuleName(indexRuleName);
-            builder.setSort(
-                    Sort.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
-            return builder.build();
-        }
     }
 }

@@ -44,6 +44,12 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     private TopN topN;
 
+    private Integer limit;
+
+    private int offset;
+
+    private OrderBy orderBy;
+
     public MeasureQuery(final String group, final String name, final Set<String> tagProjections, final Set<String> fieldProjections) {
         this(group, name, null, tagProjections, fieldProjections);
     }
@@ -98,9 +104,30 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         return this;
     }
 
-    public MeasureQuery limit(int number, String field, Sort sort) {
+    public MeasureQuery topN(int number, String field) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        this.topN = new TopN(field, number, sort);
+        this.topN = new TopN(field, number, Sort.DESC);
+        return this;
+    }
+
+    public MeasureQuery bottomN(int number, String field) {
+        Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
+        this.topN = new TopN(field, number, Sort.ASC);
+        return this;
+    }
+
+    public MeasureQuery limit(int limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    public MeasureQuery offset(int offset) {
+        this.offset = offset;
+        return this;
+    }
+
+    public MeasureQuery orderBy(String tagName, Sort sort) {
+        this.orderBy = new OrderBy(tagName, sort);
         return this;
     }
 
@@ -153,6 +180,13 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
                     .setFieldValueSort(Sort.DESC.equals(this.topN.sort) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC)
                     .build();
             builder.setTop(top);
+        }
+        builder.setOffset(this.offset);
+        if (this.limit != null) {
+            builder.setLimit(this.limit);
+        }
+        if (this.orderBy != null) {
+            builder.setOrderBy(orderBy.build());
         }
         // add all criteria
         builder.addAllCriteria(buildCriteria());
