@@ -65,7 +65,9 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
                 .setMetadata(buildMetadata());
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
-        }
+        } else {
+            builder.setTimeRange(TimestampRange.MAX_RANGE);
+        }g
         builder.setProjection(buildTagProjections());
         // set conditions grouped by tagFamilyName
         builder.addAllCriteria(buildCriteria());

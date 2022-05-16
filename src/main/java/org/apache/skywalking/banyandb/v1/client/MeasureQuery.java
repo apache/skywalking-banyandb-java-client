@@ -128,6 +128,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         builder.setMetadata(buildMetadata());
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
+        } else {
+            builder.setTimeRange(TimestampRange.MAX_RANGE);
         }
         builder.setTagProjection(buildTagProjections());
         builder.setFieldProjection(BanyandbMeasure.QueryRequest.FieldProjection.newBuilder()

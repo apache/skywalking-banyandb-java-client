@@ -38,4 +38,14 @@ public class TimeUtils {
                 .setNanos(zdt.toInstant().getNano())
                 .build();
     }
+
+    public static Timestamp fromEpochNanos(long nanos) {
+        long seconds = nanos / 1000_000_000;
+        int nanosInt = (int) (nanos - seconds * 1000_000_000);
+        int res = nanosInt % 1000_000;
+        return Timestamp.newBuilder()
+                .setSeconds(seconds)
+                .setNanos(nanosInt - res)
+                .build();
+    }
 }
