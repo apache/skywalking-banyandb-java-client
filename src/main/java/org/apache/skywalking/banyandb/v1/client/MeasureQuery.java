@@ -98,15 +98,9 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         return this;
     }
 
-    public MeasureQuery topN(int number, String field) {
+    public MeasureQuery limit(int number, String field, Sort sort) {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        this.topN = new TopN(field, number, Sort.DESC);
-        return this;
-    }
-
-    public MeasureQuery bottomN(int number, String field) {
-        Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
-        this.topN = new TopN(field, number, Sort.ASC);
+        this.topN = new TopN(field, number, sort);
         return this;
     }
 
