@@ -164,6 +164,16 @@ MeasureQueryResponse resp = client.query(query);
 List<DataPoint> dataPointList = resp.getDataPoints();
 ```
 
+Measure API supports TopN search,
+
+```java
+MeasureQuery query = new MeasureQuery("sw_metrics", "service_instance_cpm_day",
+        new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+        ImmutableSet.of("id", "scope", "service_id"),
+        ImmutableSet.of("total"));
+query.limit(5, "total", AbstractQuery.Sort.DESC);
+```
+
 ## Write
 
 ### Stream
