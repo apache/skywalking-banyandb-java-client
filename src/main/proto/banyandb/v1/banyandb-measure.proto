@@ -75,6 +75,27 @@ message QueryRequest {
   }
   // agg aggregates data points based on a field
   Aggregation agg = 8;
+  message Top {
+    // number set the how many items should be returned
+    int32 number = 1;
+    // field_name must be one of files indicated by the field_projection
+    string field_name = 2;
+    // field_value_sort indicates how to sort fields
+    // ASC: bottomN
+    // DESC: topN
+    // UNSPECIFIED: topN
+    model.v1.Sort field_value_sort = 3;
+  }
+  // top limit the result based on a particular field
+  Top top = 9;
+  // offset is used to support pagination, together with the following limit.
+  // If top is specified, offset processes the dataset based on top's output
+  uint32 offset = 10;
+  // limit is used to impose a boundary on the number of records being returned.
+  // If top is specified, limit processes the dataset based on top's output
+  uint32 limit = 11;
+  // order_by is given to specify the sort for a tag.
+  model.v1.QueryOrder order_by = 12;
 }
 
 //TopNList contains a series of topN items

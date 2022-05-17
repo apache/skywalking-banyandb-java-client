@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
@@ -140,5 +141,31 @@ public abstract class AbstractQuery<T> {
                     .build());
         }
         return b.build();
+    }
+
+    @RequiredArgsConstructor
+    public static class OrderBy {
+        /**
+         * The field name for ordering.
+         */
+        private final String indexRuleName;
+        /**
+         * The type of ordering.
+         */
+        private final Sort type;
+
+        BanyandbModel.QueryOrder build() {
+            final BanyandbModel.QueryOrder.Builder builder = BanyandbModel.QueryOrder.newBuilder();
+            builder.setIndexRuleName(indexRuleName);
+            builder.setSort(
+                    Sort.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
+            return builder.build();
+        }
+    }
+
+    @RequiredArgsConstructor
+    @Getter(AccessLevel.PROTECTED)
+    public enum Sort {
+        ASC, DESC;
     }
 }

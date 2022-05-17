@@ -23,10 +23,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 @RequiredArgsConstructor
 @Getter(AccessLevel.PROTECTED)
 public class TimestampRange {
+    static final BanyandbModel.TimeRange MAX_RANGE = BanyandbModel.TimeRange.newBuilder()
+            .setBegin(TimeUtils.fromEpochNanos(Long.MIN_VALUE))
+            .setEnd(TimeUtils.fromEpochNanos(Long.MAX_VALUE))
+            .build();
     /**
      * start timestamp in timeunit of milliseconds. inclusive.
      */

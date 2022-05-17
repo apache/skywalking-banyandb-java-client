@@ -164,6 +164,27 @@ MeasureQueryResponse resp = client.query(query);
 List<DataPoint> dataPointList = resp.getDataPoints();
 ```
 
+Measure API supports `TopN`/`BottomN` search. The results or (grouped-)results are
+ordered by the given `field`,
+
+```java
+MeasureQuery query = new MeasureQuery("sw_metrics", "service_instance_cpm_day",
+        new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+        ImmutableSet.of("id", "scope", "service_id"),
+        ImmutableSet.of("total"));
+query.topN(5, "total"); // bottomN
+```
+
+Besides, `limit` and `offset` are used to support pagination. `Tag`-based sort can also 
+be done to the final results,
+
+```java
+query.limit(5);
+query.offset(1);
+query.orderBy("service_id", Sort.DESC);
+```
+
+
 ## Write
 
 ### Stream
