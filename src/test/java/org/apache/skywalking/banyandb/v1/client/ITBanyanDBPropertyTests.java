@@ -21,12 +21,13 @@ package org.apache.skywalking.banyandb.v1.client;
 import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
-import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
+import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Property;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,12 +35,15 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
+@Ignore
 public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
         Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2, 0, Duration.ofDays(7))
+                Group.create("default", Catalog.STREAM, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 1),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 7))
         );
         Assert.assertNotNull(expectedGroup);
     }
@@ -54,7 +58,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.client.save(property);
+        Assert.assertTrue(this.client.apply(property).created());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             Property gotProperty = client.findProperty("default", "sw", "ui_template");
@@ -68,7 +72,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.client.save(property);
+        Assert.assertTrue(this.client.apply(property).created());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             Property gotProperty = client.findProperty("default", "sw", "ui_template");
@@ -76,7 +80,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
             Assert.assertEquals(property, gotProperty);
         });
 
-        Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template"));
+        Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template").deleted());
 
         try {
             client.findProperty("default", "sw", "ui_template");
@@ -91,12 +95,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property1 = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.client.save(property1);
+        Assert.assertTrue(this.client.apply(property1).created());
 
         Property property2 = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "world"))
                 .build();
-        this.client.save(property2);
+        Assert.assertFalse(this.client.apply(property2).created());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             Property gotProperty = client.findProperty("default", "sw", "ui_template");

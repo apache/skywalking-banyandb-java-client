@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
 @AutoValue
@@ -45,6 +46,12 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
      * indexLocation indicates where to store index.
      */
     abstract IndexLocation indexLocation();
+
+    /**
+     * analyzer indicates how to analyze the value.
+     */
+    @Nullable
+    abstract Analyzer analyzer();
 
     abstract Builder toBuilder();
 
@@ -80,6 +87,8 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
         abstract Builder setIndexType(IndexType indexType);
 
         abstract Builder setIndexLocation(IndexLocation indexLocation);
+
+        abstract Builder setAnalyzer(Analyzer analyzer);
 
         abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
 
@@ -144,6 +153,27 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
                     return SERIES;
                 default:
                     throw new IllegalArgumentException("unrecognized index location");
+            }
+        }
+    }
+
+    @RequiredArgsConstructor
+    public enum Analyzer {
+        KEYWORD(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_KEYWORD), STANDARD(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_STANDARD),
+        SIMPLE(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_SIMPLE);
+
+        private final BanyandbDatabase.IndexRule.Analyzer analyzer;
+
+        private static Analyzer fromProtobuf(BanyandbDatabase.IndexRule.Analyzer analyzer) {
+            switch (analyzer) {
+                case ANALYZER_KEYWORD:
+                    return KEYWORD;
+                case ANALYZER_SIMPLE:
+                    return SIMPLE;
+                case ANALYZER_STANDARD:
+                    return STANDARD;
+                default:
+                    throw new IllegalArgumentException("unrecognized analyzer");
             }
         }
     }

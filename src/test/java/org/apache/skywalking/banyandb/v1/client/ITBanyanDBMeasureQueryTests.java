@@ -24,11 +24,13 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Measure;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,26 +40,16 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
+@Ignore
 public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
     private MeasureBulkWriteProcessor processor;
 
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
-        Group expectedGroup = this.client.define(
-                Group.create("sw_metric", Catalog.MEASURE, 2, 12, Duration.ofDays(7))
-        );
+        Group expectedGroup = this.client.define(Group.create("sw_metric", Catalog.MEASURE, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4), IntervalRule.create(IntervalRule.Unit.DAY, 1), IntervalRule.create(IntervalRule.Unit.DAY, 7)));
         Assert.assertNotNull(expectedGroup);
-        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1))
-                .setEntityRelativeTags("entity_id")
-                .addTagFamily(TagFamilySpec.create("default")
-                        .addIDTagSpec()
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
-                        .build())
-                .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
-                .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
-                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
-                .build();
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addIDTagSpec().addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES)).build();
         client.define(expectedMeasure);
         Assert.assertNotNull(expectedMeasure);
         processor = client.buildMeasureWriteProcessor(1000, 1, 1);
@@ -78,16 +70,11 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         Instant begin = now.minus(15, ChronoUnit.MINUTES);
 
         MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
-        measureWrite.tag("id", TagAndValue.idTagValue("1"))
-                .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
-                .field("total", TagAndValue.longFieldValue(100))
-                .field("value", TagAndValue.longFieldValue(1));
+        measureWrite.tag("id", TagAndValue.idTagValue("1")).tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
 
         processor.add(measureWrite);
 
-        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute",
-                new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()),
-                ImmutableSet.of("id", "entity_id"), // tags
+        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("id", "entity_id"), // tags
                 ImmutableSet.of("total")); // fields
         client.query(query);
 

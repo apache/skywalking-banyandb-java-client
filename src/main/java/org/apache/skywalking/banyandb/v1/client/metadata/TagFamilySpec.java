@@ -126,6 +126,11 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
          */
         private final TagType tagType;
 
+        /**
+         * indexedOnly of the tag
+         */
+        private boolean indexedOnly;
+
         private TagSpec(String tagName, TagType tagType) {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(tagName), "tagName must not be null or empty");
             this.tagName = tagName;
@@ -192,11 +197,19 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
             return new TagSpec(name, TagType.ID);
         }
 
+        /**
+         * Set the tag to indexed_only
+         */
+        public void indexedOnly() {
+            indexedOnly = true;
+        }
+
         @Override
         public BanyandbDatabase.TagSpec serialize() {
             return BanyandbDatabase.TagSpec.newBuilder()
                     .setName(this.tagName)
                     .setType(this.tagType.getTagType())
+                    .setIndexedOnly(this.indexedOnly)
                     .build();
         }
 

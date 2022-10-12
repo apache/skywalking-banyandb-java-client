@@ -21,14 +21,15 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.common.collect.ImmutableSet;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
-import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
+@Ignore
 public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     private StreamBulkWriteProcessor processor;
 
@@ -44,7 +46,9 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
         Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2, 0, Duration.ofDays(7))
+                Group.create("default", Catalog.STREAM, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 1),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 7))
         );
         Assert.assertNotNull(expectedGroup);
         Stream expectedStream = Stream.create("default", "sw")

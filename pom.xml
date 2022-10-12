@@ -93,6 +93,7 @@
         <auto-value.version>1.9</auto-value.version>
         <testcontainers.version>1.16.3</testcontainers.version>
         <awaitility.version>4.2.0</awaitility.version>
+        <bufbuild.protoc-gen-validate.version>0.6.13</bufbuild.protoc-gen-validate.version>
         <!-- necessary for Java 9+ -->
         <org.apache.tomcat.annotations-api.version>6.0.53</org.apache.tomcat.annotations-api.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -150,6 +151,17 @@
             <artifactId>annotations-api</artifactId>
             <version>${org.apache.tomcat.annotations-api.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>build.buf.protoc-gen-validate</groupId>
+            <artifactId>protoc-gen-validate</artifactId>
+            <version>${bufbuild.protoc-gen-validate.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>build.buf.protoc-gen-validate</groupId>
+            <artifactId>pgv-java-stub</artifactId>
+            <version>${bufbuild.protoc-gen-validate.version}</version>
         </dependency>
 
         <dependency>
@@ -256,6 +268,17 @@
                             <goal>compile</goal>
                             <goal>compile-custom</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>protoc-java-pgv</id>
+                        <goals>
+                            <goal>compile-custom</goal>
+                        </goals>
+                        <configuration>
+                            <pluginParameter>lang=java</pluginParameter>
+                            <pluginId>java-pgv</pluginId>
+                            <pluginArtifact>build.buf.protoc-gen-validate:protoc-gen-validate:${bufbuild.protoc-gen-validate.version}:exe:${os.detected.classifier}</pluginArtifact>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

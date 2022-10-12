@@ -71,6 +71,15 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     }
 
     @Override
+    public boolean exist(String group, String name) throws BanyanDBException {
+        BanyandbDatabase.StreamRegistryServiceExistResponse resp = execute(() ->
+                stub.exist(BanyandbDatabase.StreamRegistryServiceExistRequest.newBuilder()
+                        .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                        .build()));
+        return resp.getHasStream();
+    }
+
+    @Override
     public List<Stream> list(String group) throws BanyanDBException {
         BanyandbDatabase.StreamRegistryServiceListResponse resp = execute(() ->
                 stub.list(BanyandbDatabase.StreamRegistryServiceListRequest.newBuilder()

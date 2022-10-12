@@ -75,6 +75,16 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
     public abstract S get(String group, String name) throws BanyanDBException;
 
     /**
+     * Check whether a schema exists
+     *
+     * @param group the group of the schema to be found
+     * @param name the name of the schema to be found
+     * @return ture: existed false: absent
+     * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
+     */
+    public abstract boolean exist(String group, String name) throws BanyanDBException;
+
+    /**
      * List all schemas with the same group name
      *
      * @return a list of schemas found

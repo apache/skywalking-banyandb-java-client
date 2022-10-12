@@ -58,6 +58,11 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     }
 
     @Override
+    public StreamQuery or(PairQueryCondition<?> condition) {
+        return (StreamQuery) super.or(condition);
+    }
+
+    @Override
     BanyandbStream.QueryRequest build() throws BanyanDBException {
         final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder()
                 .setMetadata(buildMetadata());
@@ -65,8 +70,7 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
             builder.setTimeRange(timestampRange.build());
         }
         builder.setProjection(buildTagProjections());
-        // set conditions grouped by tagFamilyName
-        builder.addAllCriteria(buildCriteria());
+        buildCriteria().ifPresent(builder::setCriteria);
         builder.setOffset(offset);
         builder.setLimit(limit);
         if (orderBy != null) {

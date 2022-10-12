@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
@@ -112,14 +111,23 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(begin.toEpochMilli() % 1000), request.getTimeRange().getBegin().getNanos());
         Assert.assertEquals(end.toEpochMilli() / 1000, request.getTimeRange().getEnd().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(end.toEpochMilli() % 1000), request.getTimeRange().getEnd().getNanos());
-        // assert fields, we only have state as a condition which should be state
-        Assert.assertEquals(1, request.getCriteriaCount());
+        // assert criteria
+        Assert.assertEquals("le {\n" +
+                "  op: LOGICAL_OP_AND\n" +
+                "  left {\n" +
+                "    condition {\n" +
+                "      name: \"state\"\n" +
+                "      op: BINARY_OP_EQ\n" +
+                "      value {\n" +
+                "        int {\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}", request.getCriteria().toString().trim());
         // assert orderBy, by default DESC
         Assert.assertEquals(BanyandbModel.Sort.SORT_DESC, request.getOrderBy().getSort());
         Assert.assertEquals("duration", request.getOrderBy().getIndexRuleName());
-        // assert state
-        Assert.assertEquals(BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, request.getCriteria(0).getConditions(0).getOp());
-        Assert.assertEquals(0L, request.getCriteria(0).getConditions(0).getValue().getInt().getValue());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"),
                 parseProjectionList(request.getProjection()));
@@ -158,22 +166,106 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         // assert timeRange
         Assert.assertEquals(begin.getEpochSecond(), request.getTimeRange().getBegin().getSeconds());
         Assert.assertEquals(end.getEpochSecond(), request.getTimeRange().getEnd().getSeconds());
-        // assert fields, we only have state as a condition
-        Assert.assertEquals(6, request.getCriteria(0).getConditionsCount());
+        // assert criteria
+        Assert.assertEquals("le {\n" +
+                "  op: LOGICAL_OP_AND\n" +
+                "  left {\n" +
+                "    condition {\n" +
+                "      name: \"duration\"\n" +
+                "      op: BINARY_OP_LE\n" +
+                "      value {\n" +
+                "        int {\n" +
+                "          value: 100\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "  right {\n" +
+                "    le {\n" +
+                "      op: LOGICAL_OP_AND\n" +
+                "      left {\n" +
+                "        condition {\n" +
+                "          name: \"duration\"\n" +
+                "          op: BINARY_OP_GE\n" +
+                "          value {\n" +
+                "            int {\n" +
+                "              value: 10\n" +
+                "            }\n" +
+                "          }\n" +
+                "        }\n" +
+                "      }\n" +
+                "      right {\n" +
+                "        le {\n" +
+                "          op: LOGICAL_OP_AND\n" +
+                "          left {\n" +
+                "            condition {\n" +
+                "              name: \"endpoint_id\"\n" +
+                "              op: BINARY_OP_EQ\n" +
+                "              value {\n" +
+                "                str {\n" +
+                "                  value: \"/check_0\"\n" +
+                "                }\n" +
+                "              }\n" +
+                "            }\n" +
+                "          }\n" +
+                "          right {\n" +
+                "            le {\n" +
+                "              op: LOGICAL_OP_AND\n" +
+                "              left {\n" +
+                "                condition {\n" +
+                "                  name: \"service_instance_id\"\n" +
+                "                  op: BINARY_OP_EQ\n" +
+                "                  value {\n" +
+                "                    str {\n" +
+                "                      value: \"service_id_b_1\"\n" +
+                "                    }\n" +
+                "                  }\n" +
+                "                }\n" +
+                "              }\n" +
+                "              right {\n" +
+                "                le {\n" +
+                "                  op: LOGICAL_OP_AND\n" +
+                "                  left {\n" +
+                "                    condition {\n" +
+                "                      name: \"service_id\"\n" +
+                "                      op: BINARY_OP_EQ\n" +
+                "                      value {\n" +
+                "                        str {\n" +
+                "                          value: \"service_id_b\"\n" +
+                "                        }\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  }\n" +
+                "                  right {\n" +
+                "                    le {\n" +
+                "                      op: LOGICAL_OP_AND\n" +
+                "                      left {\n" +
+                "                        condition {\n" +
+                "                          name: \"state\"\n" +
+                "                          op: BINARY_OP_EQ\n" +
+                "                          value {\n" +
+                "                            int {\n" +
+                "                              value: 1\n" +
+                "                            }\n" +
+                "                          }\n" +
+                "                        }\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  }\n" +
+                "                }\n" +
+                "              }\n" +
+                "            }\n" +
+                "          }\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n", request.getCriteria().toString());
         // assert orderBy, by default DESC
         Assert.assertEquals(BanyandbModel.Sort.SORT_ASC, request.getOrderBy().getSort());
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"), parseProjectionList(request.getProjection()));
-        // assert fields
-        assertCollectionEqual(request.getCriteria(0).getConditionsList(), ImmutableList.of(
-                PairQueryCondition.LongQueryCondition.ge("duration", minDuration).build(), // 1 -> duration >= minDuration
-                PairQueryCondition.LongQueryCondition.le("duration", maxDuration).build(), // 2 -> duration <= maxDuration
-                PairQueryCondition.StringQueryCondition.eq("service_id", serviceId).build(), // 3 -> service_id
-                PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId).build(), // 4 -> service_instance_id
-                PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId).build(), // 5 -> endpoint_id
-                PairQueryCondition.LongQueryCondition.eq("state", 1L).build() // 7 -> state
-        ));
     }
 
     @Test
@@ -191,11 +283,20 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         // assert metadata
         Assert.assertEquals("sw", request.getMetadata().getName());
         Assert.assertEquals("default", request.getMetadata().getGroup());
-        Assert.assertEquals(1, request.getCriteria(0).getConditionsCount());
-        // assert fields
-        assertCollectionEqual(request.getCriteria(0).getConditionsList(), ImmutableList.of(
-                PairQueryCondition.StringQueryCondition.eq("trace_id", traceId).build()
-        ));
+        Assert.assertEquals("le {\n" +
+                "  op: LOGICAL_OP_AND\n" +
+                "  left {\n" +
+                "    condition {\n" +
+                "      name: \"trace_id\"\n" +
+                "      op: BINARY_OP_EQ\n" +
+                "      value {\n" +
+                "        str {\n" +
+                "          value: \"1111.222.333\"\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n", request.getCriteria().toString());
     }
 
     @Test

@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import lombok.AccessLevel;
@@ -30,12 +31,9 @@ import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceE
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class AbstractQuery<T> {
     /**
@@ -53,7 +51,7 @@ public abstract class AbstractQuery<T> {
     /**
      * Query conditions.
      */
-    protected final List<PairQueryCondition<?>> conditions;
+    protected final List<LogicalExpression> conditions;
     /**
      * The projections of query result.
      * These should have defined in the schema.
@@ -62,6 +60,10 @@ public abstract class AbstractQuery<T> {
 
     @Getter(AccessLevel.PACKAGE)
     protected final MetadataCache.EntityMetadata metadata;
+    /**
+     * Query criteria.
+     */
+    protected AbstractCriteria criteria;
 
     public AbstractQuery(String group, String name, TimestampRange timestampRange, Set<String> tagProjections) {
         this.group = group;
@@ -73,12 +75,32 @@ public abstract class AbstractQuery<T> {
     }
 
     /**
-     * Fluent API for appending query condition
+     * Fluent API for appending a and
      *
      * @param condition the query condition to be appended
      */
     public AbstractQuery<T> and(PairQueryCondition<?> condition) {
-        this.conditions.add(condition);
+        this.conditions.add(new AutoValue_AbstractQuery_LogicalExpression(BanyandbModel.LogicalExpression.LogicalOp.LOGICAL_OP_AND, condition));
+        return this;
+    }
+
+    /**
+     * Fluent API for appending or
+     *
+     * @param condition the query condition to be appended
+     */
+    public AbstractQuery<T> or(PairQueryCondition<?> condition) {
+        this.conditions.add(new AutoValue_AbstractQuery_LogicalExpression(BanyandbModel.LogicalExpression.LogicalOp.LOGICAL_OP_OR, condition));
+        return this;
+    }
+
+    /**
+     * Fluent API for appending query criteria
+     *
+     * @param criteria the query criteria to be appended
+     */
+    public AbstractQuery<T> criteria(AbstractCriteria criteria) {
+        this.criteria = criteria;
         return this;
     }
 
@@ -95,28 +117,23 @@ public abstract class AbstractQuery<T> {
                 .build();
     }
 
-    protected List<BanyandbModel.Criteria> buildCriteria() throws BanyanDBException {
-        List<BanyandbModel.Criteria> criteriaList = new ArrayList<>();
-        // set conditions grouped by tagFamilyName
-        Map<String, List<PairQueryCondition<?>>> groupedConditions = new HashMap<>();
-        for (final PairQueryCondition<?> condition : conditions) {
-            String tagFamilyName = metadata.findTagInfo(condition.getTagName()).orElseThrow(() ->
-                    InvalidReferenceException.fromInvalidTag(condition.getTagName())
-            ).getTagFamilyName();
-            List<PairQueryCondition<?>> conditionList = groupedConditions.computeIfAbsent(tagFamilyName, key -> new ArrayList<>());
-            conditionList.add(condition);
+    protected Optional<BanyandbModel.Criteria> buildCriteria() {
+        if (criteria != null) {
+            return Optional.of(criteria.build());
         }
-
-        for (final Map.Entry<String, List<PairQueryCondition<?>>> tagFamily : groupedConditions.entrySet()) {
-            final List<BanyandbModel.Condition> conditionList = tagFamily.getValue().stream().map(PairQueryCondition::build)
-                    .collect(Collectors.toList());
-            BanyandbModel.Criteria criteria = BanyandbModel.Criteria
-                    .newBuilder()
-                    .setTagFamilyName(tagFamily.getKey())
-                    .addAllConditions(conditionList).build();
-            criteriaList.add(criteria);
+        if (conditions.isEmpty()) {
+            return Optional.empty();
         }
-        return criteriaList;
+        return Optional.of(conditions.stream()
+                .reduce(null, (criteria, logicalExpression) -> {
+                    BanyandbModel.LogicalExpression.Builder b = BanyandbModel.LogicalExpression.newBuilder();
+                    if (criteria != null) {
+                        b.setRight(criteria);
+                    }
+                    return BanyandbModel.Criteria.newBuilder()
+                            .setLe(b.setOp(logicalExpression.op())
+                                    .setLeft(logicalExpression.cond().build())).build();
+                }, (first, second) -> second));
     }
 
     protected BanyandbModel.TagProjection buildTagProjections() throws BanyanDBException {
@@ -167,5 +184,12 @@ public abstract class AbstractQuery<T> {
     @Getter(AccessLevel.PROTECTED)
     public enum Sort {
         ASC, DESC;
+    }
+
+    @AutoValue
+    abstract static class LogicalExpression {
+        abstract BanyandbModel.LogicalExpression.LogicalOp op();
+
+        abstract PairQueryCondition<?> cond();
     }
 }
