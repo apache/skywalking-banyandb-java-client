@@ -30,7 +30,6 @@ import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -40,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
-@Ignore
 public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
     private MeasureBulkWriteProcessor processor;
 
@@ -76,7 +74,6 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
 
         MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("id", "entity_id"), // tags
                 ImmutableSet.of("total")); // fields
-        client.query(query);
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             MeasureQueryResponse resp = client.query(query);

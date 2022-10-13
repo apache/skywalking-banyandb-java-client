@@ -29,7 +29,6 @@ import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 
-@Ignore
 public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     private StreamBulkWriteProcessor processor;
 
