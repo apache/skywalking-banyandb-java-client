@@ -46,6 +46,7 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
     @Test
     public void testIndexRuleRegistry_createAndGet() throws BanyanDBException {
         IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+        indexRule = indexRule.withAnalyzer(IndexRule.Analyzer.SIMPLE);
         this.registry.create(indexRule);
         IndexRule getIndexRule = this.registry.get("default", "db.instance");
         Assert.assertNotNull(getIndexRule);

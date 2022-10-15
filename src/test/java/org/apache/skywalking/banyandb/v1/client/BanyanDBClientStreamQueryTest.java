@@ -151,7 +151,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         query.and(PairQueryCondition.LongQueryCondition.eq("state", 1L))
                 .and(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
                 .and(PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId))
-                .and(PairQueryCondition.StringQueryCondition.eq("endpoint_id", endpointId))
+                .and(PairQueryCondition.StringQueryCondition.match("endpoint_id", endpointId))
                 .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
                 .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
                 .setOrderBy(new StreamQuery.OrderBy("start_time", AbstractQuery.Sort.ASC));
@@ -200,7 +200,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "          left {\n" +
                 "            condition {\n" +
                 "              name: \"endpoint_id\"\n" +
-                "              op: BINARY_OP_EQ\n" +
+                "              op: BINARY_OP_MATCH\n" +
                 "              value {\n" +
                 "                str {\n" +
                 "                  value: \"/check_0\"\n" +

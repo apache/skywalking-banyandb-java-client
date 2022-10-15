@@ -59,6 +59,10 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
         return toBuilder().setGroup(group).build();
     }
 
+    public final IndexRule withAnalyzer(Analyzer analyzer) {
+        return toBuilder().setAnalyzer(analyzer).build();
+    }
+
     public static IndexRule create(String name, IndexType indexType, IndexLocation indexLocation) {
         return new AutoValue_IndexRule.Builder().setName(name)
                 .setTags(ImmutableList.of(name))
@@ -102,7 +106,10 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
                 .addAllTags(tags())
                 .setLocation(indexLocation().location)
                 .setType(indexType().type);
-
+        Analyzer a = analyzer();
+        if (a != null) {
+            b.setAnalyzer(a.analyzer);
+        }
         if (updatedAt() != null) {
             b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
@@ -112,12 +119,14 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
     public static IndexRule fromProtobuf(BanyandbDatabase.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
         IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
+        Analyzer analyzer = Analyzer.fromProtobuf(pb.getAnalyzer());
         return new AutoValue_IndexRule.Builder()
                 .setGroup(pb.getMetadata().getGroup())
                 .setName(pb.getMetadata().getName())
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
                 .setIndexLocation(indexLocation)
                 .setIndexType(indexType)
+                .setAnalyzer(analyzer)
                 .setTags(ImmutableList.copyOf(pb.getTagsList())).build();
     }
 
@@ -172,6 +181,8 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
                     return SIMPLE;
                 case ANALYZER_STANDARD:
                     return STANDARD;
+                case ANALYZER_UNSPECIFIED:
+                    return null;
                 default:
                     throw new IllegalArgumentException("unrecognized analyzer");
             }
