@@ -23,9 +23,9 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
-import org.apache.skywalking.banyandb.v1.client.grpc.GRPCStreamServiceStatus;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * StreamBulkWriteProcessor works for stream flush.
@@ -52,7 +52,7 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
     }
 
     @Override
-    protected StreamObserver<BanyandbStream.WriteRequest> buildStreamObserver(StreamServiceGrpc.StreamServiceStub stub, GRPCStreamServiceStatus status) {
+    protected StreamObserver<BanyandbStream.WriteRequest> buildStreamObserver(StreamServiceGrpc.StreamServiceStub stub, CompletableFuture<Void> batch) {
         return stub.write(
                 new StreamObserver<BanyandbStream.WriteResponse>() {
                     @Override
@@ -61,13 +61,13 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
 
                     @Override
                     public void onError(Throwable t) {
-                        status.finished();
+                        batch.completeExceptionally(t);
                         log.error("Error occurs in flushing streams", t);
                     }
 
                     @Override
                     public void onCompleted() {
-                        status.finished();
+                        batch.complete(null);
                     }
                 });
     }
