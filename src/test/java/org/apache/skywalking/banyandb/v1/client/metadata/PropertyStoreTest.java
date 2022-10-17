@@ -28,9 +28,6 @@ import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -39,10 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.mock;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*")
 public class PropertyStoreTest extends AbstractBanyanDBClientTest {
     private PropertyStore store;
 

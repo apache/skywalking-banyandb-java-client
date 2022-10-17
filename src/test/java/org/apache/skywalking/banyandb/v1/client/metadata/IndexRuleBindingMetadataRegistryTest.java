@@ -23,17 +23,12 @@ import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*")
 public class IndexRuleBindingMetadataRegistryTest extends AbstractBanyanDBClientTest {
     private IndexRuleBindingMetadataRegistry registry;
 

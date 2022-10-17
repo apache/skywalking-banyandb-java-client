@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.mock;
 
 public class ExceptionTest extends AbstractBanyanDBClientTest {
     @Before

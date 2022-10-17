@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.mock;
 
 public class AbstractBanyanDBClientTest {
     @Rule
