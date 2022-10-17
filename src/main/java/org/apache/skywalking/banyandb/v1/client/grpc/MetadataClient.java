@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client.grpc;
 import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.stub.AbstractBlockingStub;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.NamedSchema;
 
 import java.util.List;
@@ -79,10 +80,10 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      *
      * @param group the group of the schema to be found
      * @param name the name of the schema to be found
-     * @return ture: existed false: absent
+     * @return whether resource exists
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract boolean exist(String group, String name) throws BanyanDBException;
+    public  abstract ResourceExist exist(String group, String name) throws BanyanDBException;
 
     /**
      * List all schemas with the same group name

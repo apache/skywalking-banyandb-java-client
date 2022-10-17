@@ -71,12 +71,12 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     }
 
     @Override
-    public boolean exist(String group, String name) throws BanyanDBException {
+    public ResourceExist exist(String group, String name) throws BanyanDBException {
         BanyandbDatabase.MeasureRegistryServiceExistResponse resp = execute(() ->
                 stub.exist(BanyandbDatabase.MeasureRegistryServiceExistRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
-        return resp.getHasMeasure();
+        return ResourceExist.create(resp.getHasGroup(), resp.getHasMeasure());
     }
 
     @Override

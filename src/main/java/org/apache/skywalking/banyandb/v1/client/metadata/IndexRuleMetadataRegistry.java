@@ -70,12 +70,12 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public boolean exist(String group, String name) throws BanyanDBException {
+    public ResourceExist exist(String group, String name) throws BanyanDBException {
         BanyandbDatabase.IndexRuleRegistryServiceExistResponse resp = execute(() ->
                 stub.exist(BanyandbDatabase.IndexRuleRegistryServiceExistRequest.newBuilder()
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
-        return resp.getHasIndexRule();
+        return ResourceExist.create(resp.getHasGroup(), resp.getHasIndexRule());
     }
 
     @Override
