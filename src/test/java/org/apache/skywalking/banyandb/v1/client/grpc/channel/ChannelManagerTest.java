@@ -43,7 +43,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.mockito.Mockito.mock;
 
 public class ChannelManagerTest {
     @Rule
@@ -51,7 +51,7 @@ public class ChannelManagerTest {
 
     @Test
     public void testAuthority() throws IOException {
-        final ManagedChannel ch = Mockito.mock(ManagedChannel.class);
+        final ManagedChannel ch = mock(ManagedChannel.class);
 
         Mockito.when(ch.authority()).thenReturn("myAuth");
 
@@ -66,12 +66,12 @@ public class ChannelManagerTest {
 
     @Test
     public void channelRefreshShouldSwapChannel() throws IOException {
-        ManagedChannel underlyingChannel1 = Mockito.mock(ManagedChannel.class);
-        ManagedChannel underlyingChannel2 = Mockito.mock(ManagedChannel.class);
+        ManagedChannel underlyingChannel1 = mock(ManagedChannel.class);
+        ManagedChannel underlyingChannel2 = mock(ManagedChannel.class);
 
         // mock executor service to capture the runnable scheduled, so we can invoke it when we want to
         ScheduledExecutorService scheduledExecutorService =
-                Mockito.mock(ScheduledExecutorService.class);
+                mock(ScheduledExecutorService.class);
 
         Mockito.doReturn(null)
                 .when(scheduledExecutorService)

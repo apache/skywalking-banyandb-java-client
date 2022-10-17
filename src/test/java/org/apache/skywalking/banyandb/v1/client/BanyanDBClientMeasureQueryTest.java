@@ -33,11 +33,8 @@ import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -48,11 +45,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.mock;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore("javax.management.*")
 public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
     private final MeasureServiceGrpc.MeasureServiceImplBase measureQueryService =
             mock(MeasureServiceGrpc.MeasureServiceImplBase.class, delegatesTo(

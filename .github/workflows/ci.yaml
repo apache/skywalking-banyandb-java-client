@@ -43,9 +43,17 @@ jobs:
     needs: [ check-license-header ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      matrix:
+        version: [ 8, 17 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.version }}
+          cache: 'maven'
       - name: Build and Test
         run: ./mvnw -q clean verify install
