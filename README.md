@@ -59,7 +59,8 @@ Stream s = Stream.create("default", "sw")
             // create a string tag "trace_id"
             .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
             .addTagSpec(TagFamilySpec.TagSpec.newIntTag("is_error"))
-            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
+             // service_id is not stored, but can be searched through the index
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id").indexedOnly())
             .build())
         .build();
 client.define(s);
@@ -114,7 +115,7 @@ StreamQuery query = new StreamQuery("default", "sw",
         // projection tags which are indexed
         ImmutableSet.of("state", "start_time", "duration", "trace_id"));
 // search for all states
-query.appendCondition(PairQueryCondition.LongQueryCondition.eq("searchable", "state" , 0L));
+query.and(PairQueryCondition.LongQueryCondition.eq("searchable", "state" , 0L));
 // set order by condition
 query.setOrderBy(new StreamQuery.OrderBy("duration", StreamQuery.OrderBy.Type.DESC));
 // set projection for un-indexed tags
@@ -152,7 +153,7 @@ MeasureQuery query = new MeasureQuery("sw_metrics", "service_instance_cpm_day",
 // query max "total" with group by tag "service_id"
 query.maxBy("total", ImmutableSet.of("service_id"));
 // use conditions
-query.appendCondition(PairQueryCondition.StringQueryCondition.eq("default", "service_id", "abc"));
+query.and(PairQueryCondition.StringQueryCondition.eq("default", "service_id", "abc"));
 // send the query request
 client.query(query);
 ```
@@ -184,6 +185,43 @@ query.offset(1);
 query.orderBy("service_id", Sort.DESC);
 ```
 
+### Criteria
+
+Both `StreamQuery` and `MeausreQuery` support the `criteria` flag to filter data.
+`criteria` supports logical expressions and binary condition operations.
+
+The expression `(a=1 and b = 2) or (a=4 and b=5)` could use below operations to support.
+
+```java
+query.criteria(Or.create(
+                And.create(
+                        PairQueryCondition.LongQueryCondition.eq("a", 1L),
+                        PairQueryCondition.LongQueryCondition.eq("b", 1L)),
+                And.create(
+                        PairQueryCondition.LongQueryCondition.eq("a", 4L),
+                        PairQueryCondition.LongQueryCondition.eq("b", 5L)
+                )
+        ));
+```
+
+The client also provides syntactic sugar for using `and` or `or` methods.
+The `criteria` method has a higher priority, overwriting these sugar methods.
+
+> Caveat: mixing up `and` and `or` is not a good practice. `criteria` is a better
+> method to support complex operations.
+
+```java
+query.and(PairQueryCondition.LongQueryCondition.eq("state", 1L))
+        .and(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
+        .and(PairQueryCondition.StringQueryCondition.eq("service_instance_id", serviceInstanceId))
+        .and(PairQueryCondition.StringQueryCondition.match("endpoint_id", endpointId))
+        .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
+        .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
+```
+
+```java
+segmentIds.forEach(id -> query.or(PairQueryCondition.LongQueryCondition.eq("segment_id", id)))
+```
 
 ## Write
 
@@ -221,7 +259,8 @@ StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpoc
     .tag("mq.topic", Value.stringTagValue(topic)) // 11
     .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
-streamBulkWriteProcessor.add(streamWrite);
+CompletableFuture<Void> f = streamBulkWriteProcessor.add(streamWrite);
+f.get(10, TimeUnit.SECONDS);
 ```
 
 ### Measure
@@ -243,23 +282,34 @@ MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", 
     .field("total", TagAndValue.longFieldValue(100))
     .field("value", TagAndValue.longFieldValue(1));
 
-measureBulkWriteProcessor.add(measureWrite);
+CompletableFuture<Void> f = measureBulkWriteProcessor.add(measureWrite);
+f.get(10, TimeUnit.SECONDS);
 ```
 
 ## Property APIs
 
 Property APIs are used to store key-value pairs.
 
-### Create/Update
+### Apply(Create/Update)
 
-`save` will always succeed whenever the property exists or not.
+`apply` will always succeed whenever the property exists or not.
 The old value will be overwritten if already existed, otherwise a new value will be set.
 
 ```java
 Property property = Property.create("default", "sw", "ui_template")
     .addTag(TagAndValue.newStringTag("name", "hello"))
+    .addTag(TagAndValue.newStringTag("state", "successd"))
     .build();
-this.client.save(property);
+this.client.apply(property); //created:true tagsNum:2
+```
+
+The operation supports updating partial tags.
+
+```java
+Property property = Property.create("default", "sw", "ui_template")
+    .addTag(TagAndValue.newStringTag("state", "failed"))
+    .build();
+this.client.apply(property); //created:false tagsNum:1
 ```
 
 ### Query
@@ -270,12 +320,24 @@ Property can be queried via `Client.findProperty`,
 Property gotProperty = this.client.findProperty("default", "sw", "ui_template");
 ```
 
+The query operation could filter tags,
+
+```java
+Property gotProperty = this.client.findProperty("default", "sw", "ui_template", "state");
+```
+
 ### Delete
 
 Property can be deleted by calling `Client.deleteProperty`,
 
 ```java
-this.client.deleteProperty("default", "sw", "ui_template");
+this.client.deleteProperty("default", "sw", "ui_template"); //deleted:true tagsNum:2
+```
+
+The delete operation could remove specific tags instead of the whole property.
+
+```java
+this.client.deleteProperty("default", "sw", "ui_template", "state"); //deleted:true tagsNum:1
 ```
 
 # Compiling project

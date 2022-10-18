@@ -200,8 +200,9 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
         /**
          * Set the tag to indexed_only
          */
-        public void indexedOnly() {
+        public TagSpec indexedOnly() {
             indexedOnly = true;
+            return this;
         }
 
         @Override
