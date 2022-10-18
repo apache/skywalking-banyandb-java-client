@@ -190,6 +190,8 @@ query.orderBy("service_id", Sort.DESC);
 Both `StreamQuery` and `MeausreQuery` support the `criteria` flag to filter data.
 `criteria` supports logical expressions and binary condition operations.
 
+#### Example of `criteria`
+
 The expression `(a=1 and b = 2) or (a=4 and b=5)` could use below operations to support.
 
 ```java
@@ -203,13 +205,18 @@ query.criteria(Or.create(
                 )
         ));
 ```
+The execution order of conditions is from the inside to outside. The deepest condition
+will get executed first.
 
 The client also provides syntactic sugar for using `and` or `or` methods.
 The `criteria` method has a higher priority, overwriting these sugar methods.
 
-> Caveat: mixing up `and` and `or` is not a good practice. `criteria` is a better
-> method to support complex operations.
+> Caveat: Sugar methods CAN NOT handle nested query. `criteria` is the canonical
+> method to take such tasks as above example shows.
 
+#### Example of `and`
+
+When filtering data matches all the conditions, the query can append several `and`:
 ```java
 query.and(PairQueryCondition.LongQueryCondition.eq("state", 1L))
         .and(PairQueryCondition.StringQueryCondition.eq("service_id", serviceId))
@@ -218,6 +225,10 @@ query.and(PairQueryCondition.LongQueryCondition.eq("state", 1L))
         .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
         .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
 ```
+
+#### Example of `or`
+
+When gathering all data matches any of the conditions, the query can combine a series of `or`:
 
 ```java
 segmentIds.forEach(id -> query.or(PairQueryCondition.LongQueryCondition.eq("segment_id", id)))
