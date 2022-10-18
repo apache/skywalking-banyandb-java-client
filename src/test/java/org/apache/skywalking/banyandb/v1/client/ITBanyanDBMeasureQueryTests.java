@@ -35,7 +35,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.awaitility.Awaitility.await;
 
@@ -62,7 +65,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
     }
 
     @Test
-    public void testMeasureQuery() throws BanyanDBException {
+    public void testMeasureQuery() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
         // try to write a metrics
         Instant now = Instant.now();
         Instant begin = now.minus(15, ChronoUnit.MINUTES);
@@ -70,7 +73,12 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
         measureWrite.tag("id", TagAndValue.idTagValue("1")).tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
 
-        processor.add(measureWrite);
+        CompletableFuture<Void> f = processor.add(measureWrite);
+        f.exceptionally(exp -> {
+            Assert.fail(exp.getMessage());
+            return null;
+        });
+        f.get(10, TimeUnit.SECONDS);
 
         MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("id", "entity_id"), // tags
                 ImmutableSet.of("total")); // fields

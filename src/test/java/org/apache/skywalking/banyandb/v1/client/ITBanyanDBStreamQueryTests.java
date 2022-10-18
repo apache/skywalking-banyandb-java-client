@@ -33,7 +33,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.awaitility.Awaitility.await;
 
@@ -85,7 +88,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     }
 
     @Test
-    public void testStreamQuery_TraceID() throws BanyanDBException {
+    public void testStreamQuery_TraceID() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
         // try to write a trace
         String segmentId = "1231.dfd.123123ssf";
         String traceId = "trace_id-xxfff.111323";
@@ -119,7 +122,12 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
-        processor.add(streamWrite);
+        CompletableFuture<Void> f = processor.add(streamWrite);
+        f.exceptionally(exp -> {
+            Assert.fail(exp.getMessage());
+            return null;
+        });
+        f.get(10, TimeUnit.SECONDS);
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
