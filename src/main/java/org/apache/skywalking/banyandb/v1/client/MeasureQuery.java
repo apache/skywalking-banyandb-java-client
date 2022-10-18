@@ -59,6 +59,16 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         this.fieldProjections = fieldProjections;
     }
 
+    @Override
+    public MeasureQuery and(PairQueryCondition<?> condition) {
+        return (MeasureQuery) super.and(condition);
+    }
+
+    @Override
+    public MeasureQuery or(PairQueryCondition<?> condition) {
+        return (MeasureQuery) super.or(condition);
+    }
+
     public MeasureQuery groupBy(Set<String> groupByKeys) {
         Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         this.aggregation = new Aggregation(null, Aggregation.Type.UNSPECIFIED, groupByKeys);
@@ -132,16 +142,6 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     }
 
     /**
-     * Query ID column with given value.
-     *
-     * @param value candidate value of ID
-     */
-    public MeasureQuery andWithID(String value) {
-        this.and(PairQueryCondition.IDQueryCondition.eq(Measure.ID, value));
-        return this;
-    }
-
-    /**
      * @return QueryRequest for gRPC level query.
      */
     BanyandbMeasure.QueryRequest build() throws BanyanDBException {
@@ -189,7 +189,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
             builder.setOrderBy(orderBy.build());
         }
         // add all criteria
-        builder.addAllCriteria(buildCriteria());
+        buildCriteria().ifPresent(builder::setCriteria);
         return builder.build();
     }
 

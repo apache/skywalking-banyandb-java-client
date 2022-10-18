@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * PairQuery represents a query condition, including tag name, operator, and value(s);
  */
-public abstract class PairQueryCondition<T> {
+public abstract class PairQueryCondition<T> extends AbstractCriteria {
     protected final BanyandbModel.Condition.BinaryOp op;
     private final TagAndValue<T> tagAndValue;
 
@@ -34,11 +34,14 @@ public abstract class PairQueryCondition<T> {
         this.tagAndValue = tagAndValue;
     }
 
-    BanyandbModel.Condition build() {
-        return BanyandbModel.Condition.newBuilder()
+    @Override
+    BanyandbModel.Criteria build() {
+        return BanyandbModel.Criteria.newBuilder()
+                .setCondition(BanyandbModel.Condition.newBuilder()
                 .setName(this.tagAndValue.getTagName())
                 .setOp(this.op)
-                .setValue(this.tagAndValue.buildTypedTagValue()).build();
+                .setValue(this.tagAndValue.buildTypedTagValue()).build())
+                .build();
     }
 
     public String getTagName() {
@@ -124,6 +127,7 @@ public abstract class PairQueryCondition<T> {
         public static PairQueryCondition<Long> le(String tagName, Long val) {
             return new LongQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_LE, val);
         }
+
     }
 
     /**
@@ -156,6 +160,18 @@ public abstract class PairQueryCondition<T> {
          */
         public static PairQueryCondition<String> ne(String tagName, String val) {
             return new StringQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_NE, val);
+        }
+
+        /**
+         * Build a query condition for {@link String} type
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_MATCH} as the relation
+         *
+         * @param tagName name of the tag
+         * @param val     value of the tag
+         * @return a query that `String != value`
+         */
+        public static PairQueryCondition<String> match(String tagName, String val) {
+            return new StringQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_MATCH, val);
         }
     }
 

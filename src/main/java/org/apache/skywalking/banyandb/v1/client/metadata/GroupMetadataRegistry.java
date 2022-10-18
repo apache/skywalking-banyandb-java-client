@@ -69,6 +69,15 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     }
 
     @Override
+    public ResourceExist exist(String group, String name) throws BanyanDBException {
+        BanyandbDatabase.GroupRegistryServiceExistResponse resp = execute(() ->
+                stub.exist(BanyandbDatabase.GroupRegistryServiceExistRequest.newBuilder()
+                        .setGroup(name)
+                        .build()));
+        return ResourceExist.create(resp.getHasGroup(), resp.getHasGroup());
+    }
+
+    @Override
     public List<Group> list(String group) throws BanyanDBException {
         BanyandbDatabase.GroupRegistryServiceListResponse resp = execute(() ->
                 stub.list(BanyandbDatabase.GroupRegistryServiceListRequest.newBuilder()

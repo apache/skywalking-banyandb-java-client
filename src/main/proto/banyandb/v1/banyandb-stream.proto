@@ -22,6 +22,7 @@ option java_package = "org.apache.skywalking.banyandb.stream.v1";
 package banyandb.stream.v1;
 
 import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
 import "banyandb/v1/banyandb-common.proto";
 import "banyandb/v1/banyandb-model.proto";
 
@@ -31,7 +32,7 @@ import "banyandb/v1/banyandb-model.proto";
 message Element {
   // element_id could be span_id of a Span or segment_id of a Segment in the context of stream
   string element_id = 1;
-  // timestamp represents
+  // timestamp represents a millisecond
   // 1) either the start time of a Span/Segment,
   // 2) or the timestamp of a log
   google.protobuf.Timestamp timestamp = 2;
@@ -40,7 +41,7 @@ message Element {
   // - duration
   // - service_name
   // - service_instance_id
-  // - end_time_nanoseconds
+  // - end_time_milliseconds
   repeated model.v1.TagFamily tag_families = 3;
 }
 
@@ -53,8 +54,8 @@ message QueryResponse {
 // QueryRequest is the request contract for query.
 message QueryRequest {
   // metadata is required
-  common.v1.Metadata metadata = 1;
-  // time_range is a range query with begin/end time of entities in the timeunit of nanoseconds.
+  common.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
+  // time_range is a range query with begin/end time of entities in the timeunit of milliseconds.
   // In the context of stream, it represents the range of the `startTime` for spans/segments,
   // while in the context of Log, it means the range of the timestamp(s) for logs.
   // it is always recommended to specify time range for performance reason
@@ -66,15 +67,15 @@ message QueryRequest {
   // order_by is given to specify the sort for a field. So far, only fields in the type of Integer are supported
   model.v1.QueryOrder order_by = 5;
   // tag_families are indexed.
-  repeated model.v1.Criteria criteria = 6;
+  model.v1.Criteria criteria = 6;
   // projection can be used to select the key names of the element in the response
-  model.v1.TagProjection projection = 7;
+  model.v1.TagProjection projection = 7 [(validate.rules).message.required = true];
 }
 
 message ElementValue {
   // element_id could be span_id of a Span or segment_id of a Segment in the context of stream
   string element_id = 1;
-  // timestamp_nanoseconds is in the timeunit of nanoseconds. It represents
+  // timestamp is in the timeunit of milliseconds. It represents
   // 1) either the start time of a Span/Segment,
   // 2) or the timestamp of a log
   google.protobuf.Timestamp timestamp = 2;
@@ -84,9 +85,9 @@ message ElementValue {
 
 message WriteRequest {
   // the metadata is only required in the first write.
-  common.v1.Metadata metadata = 1;
+  common.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
   // the element is required.
-  ElementValue element = 2;
+  ElementValue element = 2 [(validate.rules).message.required = true];
 }
 
 message WriteResponse {}

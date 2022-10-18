@@ -23,16 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.AccessLevel;
@@ -59,6 +49,15 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Property;
 import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -318,23 +317,25 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Create or update the property
+     * Apply(Create or update) the property with {@link PropertyStore.Strategy#MERGE}
      *
      * @param property the property to be stored in the BanyanBD
      */
-    public void save(Property property) throws BanyanDBException {
+    public PropertyStore.ApplyResult apply(Property property) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        try {
-            store.get(property.group(), property.name(), property.id());
-            store.update(property);
-        } catch (BanyanDBException ex) {
-            // multiple entity can share a single index rule
-            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
-                store.create(property);
-                return;
-            }
-            throw ex;
-        }
+        return store.apply(property);
+    }
+
+    /**
+     * Apply(Create or update) the property
+     *
+     * @param property the property to be stored in the BanyanBD
+     * @param strategy dedicates how to apply the property
+     */
+    public PropertyStore.ApplyResult apply(Property property, PropertyStore.Strategy strategy) throws
+            BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        return store.apply(property, strategy);
     }
 
     /**
@@ -343,11 +344,12 @@ public class BanyanDBClient implements Closeable {
      * @param group group of the metadata
      * @param name  name of the metadata
      * @param id    identity of the property
+     * @param tags  tags to be returned
      * @return property if it can be found
      */
-    public Property findProperty(String group, String name, String id) throws BanyanDBException {
+    public Property findProperty(String group, String name, String id, String... tags) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.get(group, name, id);
+        return store.get(group, name, id, tags);
     }
 
     /**
@@ -368,11 +370,13 @@ public class BanyanDBClient implements Closeable {
      * @param group group of the metadata
      * @param name  name of the metadata
      * @param id    identity of the property
+     * @param tags  tags to be deleted. If null, the property is deleted
      * @return if this property has been deleted
      */
-    public boolean deleteProperty(String group, String name, String id) throws BanyanDBException {
+    public PropertyStore.DeleteResult deleteProperty(String group, String name, String id, String... tags) throws
+            BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.delete(group, name, id);
+        return store.delete(group, name, id, tags);
     }
 
     /**
@@ -493,7 +497,8 @@ public class BanyanDBClient implements Closeable {
         return m;
     }
 
-    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws BanyanDBException {
+    private List<IndexRule> findIndexRulesByGroupAndBindingName(String group, String bindingName) throws
+            BanyanDBException {
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
 
         IndexRuleBinding irb = irbRegistry.get(group, bindingName);

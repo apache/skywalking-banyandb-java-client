@@ -46,22 +46,18 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
     private final PropertyServiceGrpc.PropertyServiceImplBase propertyServiceImpl = mock(PropertyServiceGrpc.PropertyServiceImplBase.class, delegatesTo(
             new PropertyServiceGrpc.PropertyServiceImplBase() {
                 @Override
-                public void create(BanyandbProperty.CreateRequest request, StreamObserver<BanyandbProperty.CreateResponse> responseObserver) {
+                public void apply(BanyandbProperty.ApplyRequest request, StreamObserver<BanyandbProperty.ApplyResponse> responseObserver) {
                     BanyandbProperty.Property p = request.getProperty().toBuilder()
                             .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
                             .build();
+                    String key = format(p.getMetadata());
+                    BanyandbProperty.Property v = memory.get(key);
                     memory.put(format(p.getMetadata()), p);
-                    responseObserver.onNext(BanyandbProperty.CreateResponse.newBuilder().build());
-                    responseObserver.onCompleted();
-                }
-
-                @Override
-                public void update(BanyandbProperty.UpdateRequest request, StreamObserver<BanyandbProperty.UpdateResponse> responseObserver) {
-                    BanyandbProperty.Property p = request.getProperty().toBuilder()
-                            .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
-                            .build();
-                    memory.put(format(p.getMetadata()), p);
-                    responseObserver.onNext(BanyandbProperty.UpdateResponse.newBuilder().build());
+                    if (v == null) {
+                        responseObserver.onNext(BanyandbProperty.ApplyResponse.newBuilder().setCreated(true).setTagsNum(p.getTagsCount()).build());
+                    } else {
+                        responseObserver.onNext(BanyandbProperty.ApplyResponse.newBuilder().setCreated(false).setTagsNum(p.getTagsCount()).build());
+                    }
                     responseObserver.onCompleted();
                 }
 
@@ -94,11 +90,16 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
     }
 
     @Test
-    public void testPropertyStore_create() throws BanyanDBException {
+    public void testPropertyStore_apply() throws BanyanDBException {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.store.create(property);
+        Assert.assertTrue(this.store.apply(property).created());
+        Assert.assertEquals(memory.size(), 1);
+        property = Property.create("default", "sw", "ui_template")
+                .addTag(TagAndValue.newStringTag("name", "hello1"))
+                .build();
+        Assert.assertFalse(this.store.apply(property).created());
         Assert.assertEquals(memory.size(), 1);
     }
 
@@ -107,7 +108,7 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.store.create(property);
+        Assert.assertTrue(this.store.apply(property).created());
         Property gotProperty = this.store.get("default", "sw", "ui_template");
         Assert.assertNotNull(gotProperty);
         Assert.assertEquals(property, gotProperty);
@@ -119,7 +120,7 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.store.create(property);
+        Assert.assertTrue(this.store.apply(property, PropertyStore.Strategy.REPLACE).created());
         List<Property> listProperties = this.store.list("default", "sw");
         Assert.assertNotNull(listProperties);
         Assert.assertEquals(1, listProperties.size());
@@ -131,8 +132,8 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
         Property property = Property.create("default", "sw", "ui_template")
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
-        this.store.create(property);
-        boolean deleted = this.store.delete("default", "sw", "ui_template");
+        Assert.assertTrue(this.store.apply(property).created());
+        boolean deleted = this.store.delete("default", "sw", "ui_template").deleted();
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, memory.size());
     }

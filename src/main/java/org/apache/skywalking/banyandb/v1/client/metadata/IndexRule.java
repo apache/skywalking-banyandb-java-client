@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
 @AutoValue
@@ -46,10 +47,20 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
      */
     abstract IndexLocation indexLocation();
 
+    /**
+     * analyzer indicates how to analyze the value.
+     */
+    @Nullable
+    abstract Analyzer analyzer();
+
     abstract Builder toBuilder();
 
     public final IndexRule withGroup(String group) {
         return toBuilder().setGroup(group).build();
+    }
+
+    public final IndexRule withAnalyzer(Analyzer analyzer) {
+        return toBuilder().setAnalyzer(analyzer).build();
     }
 
     public static IndexRule create(String name, IndexType indexType, IndexLocation indexLocation) {
@@ -81,6 +92,8 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
 
         abstract Builder setIndexLocation(IndexLocation indexLocation);
 
+        abstract Builder setAnalyzer(Analyzer analyzer);
+
         abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
 
         abstract IndexRule build();
@@ -93,7 +106,10 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
                 .addAllTags(tags())
                 .setLocation(indexLocation().location)
                 .setType(indexType().type);
-
+        Analyzer a = analyzer();
+        if (a != null) {
+            b.setAnalyzer(a.analyzer);
+        }
         if (updatedAt() != null) {
             b.setUpdatedAt(TimeUtils.buildTimestamp(updatedAt()));
         }
@@ -103,12 +119,14 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
     public static IndexRule fromProtobuf(BanyandbDatabase.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
         IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
+        Analyzer analyzer = Analyzer.fromProtobuf(pb.getAnalyzer());
         return new AutoValue_IndexRule.Builder()
                 .setGroup(pb.getMetadata().getGroup())
                 .setName(pb.getMetadata().getName())
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
                 .setIndexLocation(indexLocation)
                 .setIndexType(indexType)
+                .setAnalyzer(analyzer)
                 .setTags(ImmutableList.copyOf(pb.getTagsList())).build();
     }
 
@@ -144,6 +162,29 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
                     return SERIES;
                 default:
                     throw new IllegalArgumentException("unrecognized index location");
+            }
+        }
+    }
+
+    @RequiredArgsConstructor
+    public enum Analyzer {
+        KEYWORD(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_KEYWORD), STANDARD(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_STANDARD),
+        SIMPLE(BanyandbDatabase.IndexRule.Analyzer.ANALYZER_SIMPLE);
+
+        private final BanyandbDatabase.IndexRule.Analyzer analyzer;
+
+        private static Analyzer fromProtobuf(BanyandbDatabase.IndexRule.Analyzer analyzer) {
+            switch (analyzer) {
+                case ANALYZER_KEYWORD:
+                    return KEYWORD;
+                case ANALYZER_SIMPLE:
+                    return SIMPLE;
+                case ANALYZER_STANDARD:
+                    return STANDARD;
+                case ANALYZER_UNSPECIFIED:
+                    return null;
+                default:
+                    throw new IllegalArgumentException("unrecognized analyzer");
             }
         }
     }

@@ -22,6 +22,7 @@ option java_package = "org.apache.skywalking.banyandb.property.v1";
 package banyandb.property.v1;
 
 import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
 import "banyandb/v1/banyandb-common.proto";
 import "banyandb/v1/banyandb-model.proto";
 
@@ -43,30 +44,37 @@ message Property {
   google.protobuf.Timestamp updated_at = 3;
 }
 
-message CreateRequest {
-  banyandb.property.v1.Property property = 1;
+message ApplyRequest {
+  banyandb.property.v1.Property property = 1 [(validate.rules).message.required = true];
+  enum Strategy {
+    STRATEGY_UNSPECIFIED=0;
+    STRATEGY_MERGE=1;
+    STRATEGY_REPLACE=2;
+  }
+  // strategy indicates how to update a property. It defaults to STRATEGY_MERGE
+  Strategy strategy = 2;
 }
 
-message CreateResponse {
-}
-
-message UpdateRequest {
-  banyandb.property.v1.Property property = 1;
-}
-
-message UpdateResponse {
+message ApplyResponse {
+  // created indicates whether the property existed.
+  // True: the property is absent. False: the property existed.
+  bool created = 1;
+  uint32 tags_num = 2;
 }
 
 message DeleteRequest {
-  banyandb.property.v1.Metadata metadata = 1;
+  banyandb.property.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
+  repeated string tags = 2;
 }
 
 message DeleteResponse {
   bool deleted = 1;
+  uint32 tags_num = 2;
 }
 
 message GetRequest {
-  banyandb.property.v1.Metadata metadata = 1;
+  banyandb.property.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
+  repeated string tags = 2;
 }
 
 message GetResponse {
@@ -74,7 +82,9 @@ message GetResponse {
 }
 
 message ListRequest {
-  banyandb.common.v1.Metadata container = 1;
+  banyandb.common.v1.Metadata container = 1 [(validate.rules).message.required = true];
+  repeated string ids = 2;
+  repeated string tags = 3;
 }
 
 message ListResponse {
@@ -82,8 +92,8 @@ message ListResponse {
 }
 
 service PropertyService {
-  rpc Create(CreateRequest) returns (CreateResponse);
-  rpc Update(UpdateRequest) returns (UpdateResponse);
+  // Apply creates a property if it's absent, or update a existed one based on a strategy.
+  rpc Apply(ApplyRequest) returns (ApplyResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);

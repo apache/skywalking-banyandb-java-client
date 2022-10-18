@@ -21,9 +21,9 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.common.collect.ImmutableSet;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
-import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
+import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
 import org.junit.After;
@@ -33,7 +33,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.awaitility.Awaitility.await;
 
@@ -44,7 +47,9 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
         Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2, 0, Duration.ofDays(7))
+                Group.create("default", Catalog.STREAM, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 1),
+                        IntervalRule.create(IntervalRule.Unit.DAY, 7))
         );
         Assert.assertNotNull(expectedGroup);
         Stream expectedStream = Stream.create("default", "sw")
@@ -83,7 +88,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     }
 
     @Test
-    public void testStreamQuery_TraceID() throws BanyanDBException {
+    public void testStreamQuery_TraceID() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
         // try to write a trace
         String segmentId = "1231.dfd.123123ssf";
         String traceId = "trace_id-xxfff.111323";
@@ -117,7 +122,12 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
 
-        processor.add(streamWrite);
+        CompletableFuture<Void> f = processor.add(streamWrite);
+        f.exceptionally(exp -> {
+            Assert.fail(exp.getMessage());
+            return null;
+        });
+        f.get(10, TimeUnit.SECONDS);
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));

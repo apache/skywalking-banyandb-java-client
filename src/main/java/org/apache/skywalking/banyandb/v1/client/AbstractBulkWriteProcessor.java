@@ -18,13 +18,16 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.auto.value.AutoValue;
 import io.grpc.stub.AbstractAsyncStub;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.skywalking.banyandb.v1.client.grpc.GRPCStreamServiceStatus;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Slf4j
 public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf.GeneratedMessageV3,
@@ -51,29 +54,59 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
      *
      * @param writeEntity to add.
      */
-    public void add(AbstractWrite<REQ> writeEntity) {
-        this.buffer.produce(writeEntity);
+    public CompletableFuture<Void> add(AbstractWrite<REQ> writeEntity) {
+        final CompletableFuture<Void> f = new CompletableFuture<>();
+        this.buffer.produce(Holder.create(writeEntity, f));
+        return f;
     }
 
     @Override
     protected void flush(List data) {
-        final GRPCStreamServiceStatus status = new GRPCStreamServiceStatus(false);
+        final CompletableFuture<Void> batch = new CompletableFuture<>();
         final StreamObserver<REQ> writeRequestStreamObserver
-                = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS), status);
+                = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS), batch);
 
         try {
-            data.forEach(write -> {
-                REQ request = ((AbstractWrite<REQ>) write).build();
+            data.forEach(holder -> {
+                Holder h = (Holder) holder;
+                REQ request = ((AbstractWrite<REQ>) h.writeEntity()).build();
                 writeRequestStreamObserver.onNext(request);
             });
         } catch (Throwable t) {
             log.error("Transform and send request to BanyanDB fail.", t);
+            batch.completeExceptionally(t);
         } finally {
             writeRequestStreamObserver.onCompleted();
         }
-
-        status.wait4Finish();
+        batch.whenComplete((ignored, exp) -> {
+            if (exp != null) {
+                data.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
+                        .forEach((Consumer<CompletableFuture<Void>>) it -> it.completeExceptionally(exp));
+                log.error("Failed to execute requests in bulk", exp);
+            } else {
+                log.debug("Succeeded to execute {} requests in bulk", data.size());
+                data.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
+                        .forEach((Consumer<CompletableFuture<Void>>) it -> it.complete(null));
+            }
+        });
+        try {
+            batch.get(30, TimeUnit.SECONDS);
+        } catch (Throwable t) {
+            log.error("Waiting responses from BanyanDB fail.", t);
+        }
     }
 
-    protected abstract StreamObserver<REQ> buildStreamObserver(STUB stub, GRPCStreamServiceStatus status);
+    protected abstract StreamObserver<REQ> buildStreamObserver(STUB stub, CompletableFuture<Void> batch);
+
+    @AutoValue
+    static abstract class Holder {
+        abstract AbstractWrite writeEntity();
+
+        abstract CompletableFuture<Void> future();
+
+        public static <REQ extends com.google.protobuf.GeneratedMessageV3> Holder create(AbstractWrite<REQ> writeEntity, CompletableFuture<Void> future) {
+            return new AutoValue_AbstractBulkWriteProcessor_Holder(writeEntity, future);
+        }
+
+    }
 }

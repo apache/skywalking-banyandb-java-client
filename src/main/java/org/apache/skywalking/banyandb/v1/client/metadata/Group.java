@@ -22,7 +22,6 @@ import com.google.auto.value.AutoValue;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
-import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
 @AutoValue
@@ -37,17 +36,18 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
      */
     abstract int shardNum();
 
-    @Nullable
-    abstract Integer blockNum();
+    abstract IntervalRule blockInterval();
 
-    abstract Duration ttl();
+    abstract IntervalRule segmentInterval();
 
-    public static Group create(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl) {
-        return new AutoValue_Group(null, name, null, catalog, shardNum, blockNum, ttl);
+    abstract IntervalRule ttl();
+
+    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl) {
+        return new AutoValue_Group(null, name, null, catalog, shardNum, blockInterval, segmentInterval, ttl);
     }
 
-    public static Group create(String name, Catalog catalog, int shardNum, int blockNum, Duration ttl, ZonedDateTime updatedAt) {
-        return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, blockNum, ttl);
+    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl, ZonedDateTime updatedAt) {
+        return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, blockInterval, segmentInterval, ttl);
     }
 
     @Override
@@ -58,8 +58,9 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
                 .setCatalog(catalog().getCatalog())
                 .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
                         .setShardNum(shardNum())
-                        .setBlockNum(blockNum())
-                        .setTtl(ttl().format())
+                        .setBlockInterval(blockInterval().serialize())
+                        .setSegmentInterval(segmentInterval().serialize())
+                        .setTtl(ttl().serialize())
                         .build())
                 .build();
     }
@@ -80,7 +81,8 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
                 TimeUtils.parseTimestamp(group.getUpdatedAt()),
                 catalog,
                 group.getResourceOpts().getShardNum(),
-                group.getResourceOpts().getBlockNum(),
-                Duration.parse(group.getResourceOpts().getTtl()));
+                IntervalRule.fromProtobuf(group.getResourceOpts().getBlockInterval()),
+                IntervalRule.fromProtobuf(group.getResourceOpts().getSegmentInterval()),
+                IntervalRule.fromProtobuf(group.getResourceOpts().getTtl()));
     }
 }

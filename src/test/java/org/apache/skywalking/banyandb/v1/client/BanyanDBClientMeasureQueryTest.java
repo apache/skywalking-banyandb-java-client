@@ -103,10 +103,20 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(end.toEpochMilli() / 1000, request.getTimeRange().getEnd().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(end.toEpochMilli() % 1000), request.getTimeRange().getEnd().getNanos());
         // assert fields, we only have state as a condition which should be state
-        Assert.assertEquals(1, request.getCriteriaCount());
-        // assert state
-        Assert.assertEquals(BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, request.getCriteria(0).getConditions(0).getOp());
-        Assert.assertEquals(0L, request.getCriteria(0).getConditions(0).getValue().getInt().getValue());
+        Assert.assertEquals("le {\n" +
+                "  op: LOGICAL_OP_AND\n" +
+                "  left {\n" +
+                "    condition {\n" +
+                "      name: \"entity_id\"\n" +
+                "      op: BINARY_OP_EQ\n" +
+                "      value {\n" +
+                "        str {\n" +
+                "          value: \"abc\"\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}", request.getCriteria().toString().trim());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("default:id", "default:entity_id"),
                 parseProjectionList(request.getTagProjection()));
