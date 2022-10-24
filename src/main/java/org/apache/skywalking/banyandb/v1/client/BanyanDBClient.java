@@ -47,6 +47,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Property;
 import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
+import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 
@@ -512,6 +513,34 @@ public class BanyanDBClient implements Closeable {
             indexRules.add(irRegistry.get(group, rule));
         }
         return indexRules;
+    }
+
+    /**
+     * Check if the given stream exists.
+     *
+     * @param group group of the stream
+     * @param name  name of the stream
+     * @return ResourceExist which indicates whether group and stream exist
+     */
+    public ResourceExist existStream(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new StreamMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
+    }
+
+    /**
+     * Check if the given measure exists.
+     *
+     * @param group group of the measure
+     * @param name  name of the measure
+     * @return ResourceExist which indicates whether group and measure exist
+     */
+    public ResourceExist existMeasure(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new MeasureMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
     }
 
     @Override
