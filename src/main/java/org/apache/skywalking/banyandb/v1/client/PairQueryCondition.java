@@ -188,7 +188,7 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
          * @param val     value of the tag
          * @return a query that `String == value`
          */
-        static PairQueryCondition<String> eq(String tagName, String val) {
+        public static PairQueryCondition<String> eq(String tagName, String val) {
             return new IDQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, val);
         }
     }
