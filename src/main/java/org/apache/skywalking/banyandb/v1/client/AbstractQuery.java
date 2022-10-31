@@ -124,6 +124,9 @@ public abstract class AbstractQuery<T> {
         if (conditions.isEmpty()) {
             return Optional.empty();
         }
+        if (conditions.size() == 1) {
+            return Optional.of(conditions.get(0).cond().build());
+        }
         return Optional.of(conditions.stream()
                 .reduce(null, (criteria, logicalExpression) -> {
                     BanyandbModel.LogicalExpression.Builder b = BanyandbModel.LogicalExpression.newBuilder();

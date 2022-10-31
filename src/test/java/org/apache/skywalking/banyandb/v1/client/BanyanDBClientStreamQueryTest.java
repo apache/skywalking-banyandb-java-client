@@ -112,16 +112,11 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(end.toEpochMilli() / 1000, request.getTimeRange().getEnd().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(end.toEpochMilli() % 1000), request.getTimeRange().getEnd().getNanos());
         // assert criteria
-        Assert.assertEquals("le {\n" +
-                "  op: LOGICAL_OP_AND\n" +
-                "  left {\n" +
-                "    condition {\n" +
-                "      name: \"state\"\n" +
-                "      op: BINARY_OP_EQ\n" +
-                "      value {\n" +
-                "        int {\n" +
-                "        }\n" +
-                "      }\n" +
+        Assert.assertEquals("condition {\n" +
+                "  name: \"state\"\n" +
+                "  op: BINARY_OP_EQ\n" +
+                "  value {\n" +
+                "    int {\n" +
                 "    }\n" +
                 "  }\n" +
                 "}", request.getCriteria().toString().trim());
@@ -283,17 +278,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         // assert metadata
         Assert.assertEquals("sw", request.getMetadata().getName());
         Assert.assertEquals("default", request.getMetadata().getGroup());
-        Assert.assertEquals("le {\n" +
-                "  op: LOGICAL_OP_AND\n" +
-                "  left {\n" +
-                "    condition {\n" +
-                "      name: \"trace_id\"\n" +
-                "      op: BINARY_OP_EQ\n" +
-                "      value {\n" +
-                "        str {\n" +
-                "          value: \"1111.222.333\"\n" +
-                "        }\n" +
-                "      }\n" +
+        Assert.assertEquals("condition {\n" +
+                "  name: \"trace_id\"\n" +
+                "  op: BINARY_OP_EQ\n" +
+                "  value {\n" +
+                "    str {\n" +
+                "      value: \"1111.222.333\"\n" +
                 "    }\n" +
                 "  }\n" +
                 "}\n", request.getCriteria().toString());
