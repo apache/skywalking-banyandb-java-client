@@ -30,13 +30,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Check License Header
-        uses: apache/skywalking-eyes@9bd5feb86b5817aa6072b008f9866a2c3bbc8587
+        uses: apache/skywalking-eyes/header@20da317d1ad158e79e24355fdc28f53370e94c8a
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-license:
+    name: Dependency licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps: 
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "maven"
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+      - name: Check Dependencies' License
+        uses: apache/skywalking-eyes/dependency@20da317d1ad158e79e24355fdc28f53370e94c8a
 
   build:
     name: JDK ${{ matrix.java-version }}
@@ -61,6 +81,6 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    needs: [ build ]
+    needs: [ build, dependency-license ]
     steps:
       - run: echo 'Success'

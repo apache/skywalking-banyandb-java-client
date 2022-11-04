@@ -1,0 +1,2 @@
+License: {Name: GNU General Public License, version 2 (GPL2), with the classpath exception, URL: http://www.gnu.org/software/classpath/license.html, Distribution: repo, Comments: , }
+License: {Name: The MIT License, URL: http://opensource.org/licenses/MIT, Distribution: repo, Comments: , }
