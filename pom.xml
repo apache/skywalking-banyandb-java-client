@@ -39,7 +39,7 @@
     <scm>
         <url>https://github.com/apache/skywalking-banyandb-java-client</url>
         <connection>scm:git:https://github.com/apache/skywalking-banyandb-java-client.git</connection>
-        <developerConnection>scm:git:https://github.com/apache/skywalking-banyandb-java-client.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/apache/skywalking-banyandb-java-client.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
