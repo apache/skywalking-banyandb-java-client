@@ -51,19 +51,8 @@ jobs:
           distribution: "temurin"
           java-version: "8"
           cache: "maven"
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: "1.19"
-      - name: Check Dependencies' Licenses
-        run: |
-          go install github.com/apache/skywalking-eyes/cmd/license-eye@20da317d1ad158e79e24355fdc28f53370e94c8a
-          license-eye dependency resolve --summary ./dist-material/LICENSE.tpl || exit 1
-          if [ ! -z "$(git diff -U0 ./dist-material/LICENSE)" ]; then
-            echo "LICENSE file is not updated correctly"
-            git diff -U0 ./dist-material/LICENSE
-            exit 1
-          fi
+      - name: Check Dependencies' License
+        uses: apache/skywalking-eyes/dependency@20da317d1ad158e79e24355fdc28f53370e94c8a
 
   build:
     name: JDK ${{ matrix.java-version }}
