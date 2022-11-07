@@ -31,7 +31,7 @@ header:
     - 'docker/.env'
     - 'dist'
     - 'licenses'
-    - 'dist-material/release-docs'
+    - 'dist-material'
     - '**/*.md'
     - '**/*.json'
     - '**/*.ftl'
@@ -44,3 +44,20 @@ header:
     - 'NOTICE'
 
   comment: on-failure
+
+dependency:
+  files:
+    - pom.xml
+  licenses:
+    - name: org.slf4j:slf4j-api
+      version: 1.7.36
+      license: Apache-2.0
+    - name: com.google.guava:listenablefuture
+      version: 9999.0-empty-to-avoid-conflict-with-guava
+      license: Apache-2.0
+    - name: build.buf.protoc-gen-validate:pgv-java-stub
+      version: 0.6.13
+      license: Apache-2.0
+    - name: build.buf.protoc-gen-validate:protoc-gen-validate
+      version: 0.6.13
+      license: Apache-2.0
