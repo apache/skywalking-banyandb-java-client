@@ -154,7 +154,6 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         String queue = "queue_2";
         String httpStatusCode = "200";
         String dbType = "SQL";
-        String dbInstance = "127.0.0.1:3306";
 
         StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
@@ -167,7 +166,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
                 .tag("http.method", Value.stringTagValue(null)) // 6
                 .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
                 .tag("db.type", Value.stringTagValue(dbType)) // 8
-                .tag("db.instance", Value.stringTagValue(dbInstance)) // 9
+                .tag("db.instance", null) // 9
                 .tag("mq.broker", Value.stringTagValue(broker)) // 10
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
@@ -182,6 +181,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
             Assert.assertEquals(traceId, request.getElement().getTagFamilies(1).getTags(0).getStr().getValue());
             Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(5).getInt().getValue());
             Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
+            Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(9).getNull(), NullValue.NULL_VALUE);
             Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
         } else {
             Assert.fail();
