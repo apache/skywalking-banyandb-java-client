@@ -66,14 +66,13 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
         // memorize the last offset for the last tag family
         int lastFamilyOffset = 0;
         for (final int tagsPerFamily : this.entityMetadata.getTagFamilyCapacity()) {
-            final BanyandbModel.TagFamilyForWrite.Builder b = BanyandbModel.TagFamilyForWrite.newBuilder();
             boolean firstNonNullTagFound = false;
             Deque<BanyandbModel.TagValue> tags = new LinkedList<>();
             for (int j = tagsPerFamily - 1; j >= 0; j--) {
                 Object obj = this.tags[lastFamilyOffset + j];
                 if (obj == null) {
                     if (firstNonNullTagFound) {
-                        b.addTags(TagAndValue.nullTagValue().serialize());
+                        tags.addFirst(TagAndValue.nullTagValue().serialize());
                     }
                     continue;
                 }
@@ -81,7 +80,7 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
                 tags.addFirst(((Serializable<BanyandbModel.TagValue>) obj).serialize());
             }
             lastFamilyOffset += tagsPerFamily;
-            elemValBuilder.addTagFamilies(b.addAllTags(tags).build());
+            elemValBuilder.addTagFamilies(BanyandbModel.TagFamilyForWrite.newBuilder().addAllTags(tags).build());
         }
         builder.setElement(elemValBuilder);
         return builder.build();
