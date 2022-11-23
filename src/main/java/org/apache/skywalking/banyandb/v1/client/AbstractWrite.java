@@ -19,16 +19,14 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.Timestamp;
+import java.util.Optional;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceException;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
-
-import java.util.Optional;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
     /**
