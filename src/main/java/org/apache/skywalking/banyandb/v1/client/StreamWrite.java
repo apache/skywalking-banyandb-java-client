@@ -46,6 +46,14 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
         this.elementId = elementId;
     }
 
+    /**
+     * Create a StreamWrite without initial timestamp.
+     */
+    public StreamWrite(final String group, final String name, final String elementId) {
+        super(group, name);
+        this.elementId = elementId;
+    }
+
     @Override
     public StreamWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
         return (StreamWrite) super.tag(tagName, tagValue);
