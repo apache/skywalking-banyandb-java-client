@@ -45,7 +45,6 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
      * Timestamp represents the time of current stream
      * in the timeunit of milliseconds.
      */
-    @Setter
     @Getter
     protected long timestamp;
 
