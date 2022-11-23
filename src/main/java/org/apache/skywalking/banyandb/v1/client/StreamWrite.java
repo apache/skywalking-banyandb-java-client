@@ -19,16 +19,14 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.Timestamp;
-
+import java.util.Deque;
+import java.util.LinkedList;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
-
-import java.util.Deque;
-import java.util.LinkedList;
 
 /**
  * StreamWrite represents a write operation, including necessary fields, for {@link
@@ -46,9 +44,21 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
         this.elementId = elementId;
     }
 
+    /**
+     * Create a StreamWrite without initial timestamp.
+     */
+    public StreamWrite(final String group, final String name, final String elementId) {
+        super(group, name);
+        this.elementId = elementId;
+    }
+
     @Override
     public StreamWrite tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
         return (StreamWrite) super.tag(tagName, tagValue);
+    }
+
+    public void setTimestamp(long timestamp) {
+        super.timestamp = timestamp;
     }
 
     /**

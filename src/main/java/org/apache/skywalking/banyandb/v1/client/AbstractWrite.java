@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.Timestamp;
+import java.util.Optional;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -26,8 +27,6 @@ import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceException;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
-
-import java.util.Optional;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
     /**
@@ -45,7 +44,7 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
      * in the timeunit of milliseconds.
      */
     @Getter
-    protected final long timestamp;
+    protected long timestamp;
 
     protected final Object[] tags;
 
@@ -62,6 +61,13 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         this.tags = new Object[this.entityMetadata.getTotalTags()];
     }
 
+    /**
+     * Build a write without initial timestamp.
+     */
+    public AbstractWrite(String group, String name) {
+        this(group, name, 0);
+    }
+
     public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
         final Optional<MetadataCache.TagInfo> tagInfo = this.entityMetadata.findTagInfo(tagName);
         if (!tagInfo.isPresent()) {
@@ -72,6 +78,10 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     }
 
     P build() {
+        if (timestamp <= 0) {
+            throw new IllegalArgumentException("timestamp is invalid.");
+        }
+
         BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
                 .setGroup(this.group).setName(this.name).build();
         Timestamp ts = Timestamp.newBuilder()
