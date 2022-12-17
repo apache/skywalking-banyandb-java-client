@@ -149,6 +149,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 .and(PairQueryCondition.StringQueryCondition.match("endpoint_id", endpointId))
                 .and(PairQueryCondition.LongQueryCondition.ge("duration", minDuration))
                 .and(PairQueryCondition.LongQueryCondition.le("duration", maxDuration))
+                .and(PairQueryCondition.StringArrayQueryCondition.in("trace_id", Lists.newArrayList("aaa", "bbb")))
                 .setOrderBy(new StreamQuery.OrderBy("start_time", AbstractQuery.Sort.ASC));
 
         client.query(query);
@@ -166,11 +167,12 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "  op: LOGICAL_OP_AND\n" +
                 "  left {\n" +
                 "    condition {\n" +
-                "      name: \"duration\"\n" +
-                "      op: BINARY_OP_LE\n" +
+                "      name: \"trace_id\"\n" +
+                "      op: BINARY_OP_IN\n" +
                 "      value {\n" +
-                "        int {\n" +
-                "          value: 100\n" +
+                "        str_array {\n" +
+                "          value: \"aaa\"\n" +
+                "          value: \"bbb\"\n" +
                 "        }\n" +
                 "      }\n" +
                 "    }\n" +
@@ -181,10 +183,10 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "      left {\n" +
                 "        condition {\n" +
                 "          name: \"duration\"\n" +
-                "          op: BINARY_OP_GE\n" +
+                "          op: BINARY_OP_LE\n" +
                 "          value {\n" +
                 "            int {\n" +
-                "              value: 10\n" +
+                "              value: 100\n" +
                 "            }\n" +
                 "          }\n" +
                 "        }\n" +
@@ -194,11 +196,11 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "          op: LOGICAL_OP_AND\n" +
                 "          left {\n" +
                 "            condition {\n" +
-                "              name: \"endpoint_id\"\n" +
-                "              op: BINARY_OP_MATCH\n" +
+                "              name: \"duration\"\n" +
+                "              op: BINARY_OP_GE\n" +
                 "              value {\n" +
-                "                str {\n" +
-                "                  value: \"/check_0\"\n" +
+                "                int {\n" +
+                "                  value: 10\n" +
                 "                }\n" +
                 "              }\n" +
                 "            }\n" +
@@ -208,11 +210,11 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "              op: LOGICAL_OP_AND\n" +
                 "              left {\n" +
                 "                condition {\n" +
-                "                  name: \"service_instance_id\"\n" +
-                "                  op: BINARY_OP_EQ\n" +
+                "                  name: \"endpoint_id\"\n" +
+                "                  op: BINARY_OP_MATCH\n" +
                 "                  value {\n" +
                 "                    str {\n" +
-                "                      value: \"service_id_b_1\"\n" +
+                "                      value: \"/check_0\"\n" +
                 "                    }\n" +
                 "                  }\n" +
                 "                }\n" +
@@ -222,11 +224,11 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "                  op: LOGICAL_OP_AND\n" +
                 "                  left {\n" +
                 "                    condition {\n" +
-                "                      name: \"service_id\"\n" +
+                "                      name: \"service_instance_id\"\n" +
                 "                      op: BINARY_OP_EQ\n" +
                 "                      value {\n" +
                 "                        str {\n" +
-                "                          value: \"service_id_b\"\n" +
+                "                          value: \"service_id_b_1\"\n" +
                 "                        }\n" +
                 "                      }\n" +
                 "                    }\n" +
@@ -236,11 +238,27 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "                      op: LOGICAL_OP_AND\n" +
                 "                      left {\n" +
                 "                        condition {\n" +
-                "                          name: \"state\"\n" +
+                "                          name: \"service_id\"\n" +
                 "                          op: BINARY_OP_EQ\n" +
                 "                          value {\n" +
-                "                            int {\n" +
-                "                              value: 1\n" +
+                "                            str {\n" +
+                "                              value: \"service_id_b\"\n" +
+                "                            }\n" +
+                "                          }\n" +
+                "                        }\n" +
+                "                      }\n" +
+                "                      right {\n" +
+                "                        le {\n" +
+                "                          op: LOGICAL_OP_AND\n" +
+                "                          left {\n" +
+                "                            condition {\n" +
+                "                              name: \"state\"\n" +
+                "                              op: BINARY_OP_EQ\n" +
+                "                              value {\n" +
+                "                                int {\n" +
+                "                                  value: 1\n" +
+                "                                }\n" +
+                "                              }\n" +
                 "                            }\n" +
                 "                          }\n" +
                 "                        }\n" +
@@ -255,7 +273,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}\n", request.getCriteria().toString());
+                "}", request.getCriteria().toString());
         // assert orderBy, by default DESC
         Assert.assertEquals(BanyandbModel.Sort.SORT_ASC, request.getOrderBy().getSort());
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());

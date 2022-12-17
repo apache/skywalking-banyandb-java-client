@@ -38,9 +38,9 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
     BanyandbModel.Criteria build() {
         return BanyandbModel.Criteria.newBuilder()
                 .setCondition(BanyandbModel.Condition.newBuilder()
-                .setName(this.tagAndValue.getTagName())
-                .setOp(this.op)
-                .setValue(this.tagAndValue.buildTypedTagValue()).build())
+                        .setName(this.tagAndValue.getTagName())
+                        .setOp(this.op)
+                        .setValue(this.tagAndValue.buildTypedTagValue()).build())
                 .build();
     }
 
@@ -227,10 +227,11 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
 
         /**
          * Build a query condition for {@link List} of {@link String} as the type
-         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_HAVING} as the relation
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_HAVING} as the relation,
+         * i.e. val is a subset.
          *
          * @param tagName name of the tag
-         * @param val     value of the tag
+         * @param val     value of the tag, a subset of the tagName's value
          * @return a query that `[String] having values`
          */
         public static PairQueryCondition<List<String>> having(String tagName, List<String> val) {
@@ -239,7 +240,8 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
 
         /**
          * Build a query condition for {@link List} of {@link String} as the type
-         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_NOT_HAVING} as the relation
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_NOT_HAVING} as the relation,
+         * i.e. val is not a subset.
          *
          * @param tagName name of the tag
          * @param val     value of the tag
@@ -247,6 +249,32 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
          */
         public static PairQueryCondition<List<String>> notHaving(String tagName, List<String> val) {
             return new StringArrayQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_NOT_HAVING, val);
+        }
+
+        /**
+         * Build a query condition for {@link List} of {@link String} as the type
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_IN} as the relation,
+         * i.e. intersection of the val and the stored tagName's value must not be empty.
+         *
+         * @param tagName name of the tag
+         * @param val     value of the tag
+         * @return a query that `[String] in values`
+         */
+        public static PairQueryCondition<List<String>> in(String tagName, List<String> val) {
+            return new StringArrayQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_IN, val);
+        }
+
+        /**
+         * Build a query condition for {@link List} of {@link String} as the type
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_NOT_IN} as the relation,
+         * i.e. intersection of the val and the stored tagName's value must be empty.
+         *
+         * @param tagName name of the tag
+         * @param val     value of the tag
+         * @return a query that `[String] not in values`
+         */
+        public static PairQueryCondition<List<String>> notIn(String tagName, List<String> val) {
+            return new StringArrayQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_NOT_IN, val);
         }
     }
 
