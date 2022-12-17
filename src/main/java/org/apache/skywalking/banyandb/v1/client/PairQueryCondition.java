@@ -38,9 +38,9 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
     BanyandbModel.Criteria build() {
         return BanyandbModel.Criteria.newBuilder()
                 .setCondition(BanyandbModel.Condition.newBuilder()
-                        .setName(this.tagAndValue.getTagName())
-                        .setOp(this.op)
-                        .setValue(this.tagAndValue.buildTypedTagValue()).build())
+                .setName(this.tagAndValue.getTagName())
+                .setOp(this.op)
+                .setValue(this.tagAndValue.buildTypedTagValue()).build())
                 .build();
     }
 
