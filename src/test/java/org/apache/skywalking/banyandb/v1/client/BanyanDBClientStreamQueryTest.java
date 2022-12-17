@@ -273,7 +273,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}", request.getCriteria().toString());
+                "}\n", request.getCriteria().toString());
         // assert orderBy, by default DESC
         Assert.assertEquals(BanyandbModel.Sort.SORT_ASC, request.getOrderBy().getSort());
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());
