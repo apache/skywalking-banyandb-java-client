@@ -76,6 +76,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.queue"))
                         .build())
                 .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("endpoint_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
         this.client.define(expectedStream);
         Assert.assertNotNull(expectedStream);
@@ -110,15 +111,15 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     @Test
     public void testStreamQuery_Str_In() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
         int size = 2;
-        List<String> traceIDs = new ArrayList<>(size);
+        List<String> endpointIDs = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             StreamWrite streamWrite = writeStream();
-            String segmentID = ((Value.StringTagValue) streamWrite.getTag("trace_id")).getValue();
-            traceIDs.add(segmentID);
+            String segmentID = ((Value.StringTagValue) streamWrite.getTag("endpoint_id")).getValue();
+            endpointIDs.add(segmentID);
         }
 
         StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
-        query.and(PairQueryCondition.StringArrayQueryCondition.in("trace_id", traceIDs));
+        query.and(PairQueryCondition.StringArrayQueryCondition.in("endpoint_id", endpointIDs));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             StreamQueryResponse resp = client.query(query);
@@ -133,7 +134,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         String traceId = "trace_id-" + UUID.randomUUID();
         String serviceId = "webapp_id";
         String serviceInstanceId = "10.0.0.1_id";
-        String endpointId = "home_id";
+        String endpointId = "endpoint_id-" + UUID.randomUUID();
         long latency = 200;
         long state = 1;
         Instant now = Instant.now();
