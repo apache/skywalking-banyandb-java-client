@@ -33,6 +33,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -88,10 +91,46 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     }
 
     @Test
-    public void testStreamQuery_TraceID() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
+    public void testStreamQuery_Str_Eq() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
+        StreamWrite streamWrite = writeStream();
+        long latency = ((Value.LongTagValue) streamWrite.getTag("duration")).getValue();
+        String traceId = ((Value.StringTagValue) streamWrite.getTag("trace_id")).getValue();
+        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
+        query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            StreamQueryResponse resp = client.query(query);
+            Assert.assertNotNull(resp);
+            Assert.assertEquals(1, resp.size());
+            Assert.assertEquals(latency, (Number) resp.getElements().get(0).getTagValue("duration"));
+            Assert.assertEquals(traceId, resp.getElements().get(0).getTagValue("trace_id"));
+        });
+    }
+
+    @Test
+    public void testStreamQuery_Str_In() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
+        int size = 2;
+        List<String> traceIDs = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            StreamWrite streamWrite = writeStream();
+            String segmentID = ((Value.StringTagValue) streamWrite.getTag("trace_id")).getValue();
+            traceIDs.add(segmentID);
+        }
+
+        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
+        query.and(PairQueryCondition.StringArrayQueryCondition.in("trace_id", traceIDs));
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            StreamQueryResponse resp = client.query(query);
+            Assert.assertNotNull(resp);
+            Assert.assertEquals(2, resp.size());
+        });
+    }
+
+    private StreamWrite writeStream() throws ExecutionException, InterruptedException, TimeoutException, BanyanDBException {
         // try to write a trace
-        String segmentId = "1231.dfd.123123ssf";
-        String traceId = "trace_id-xxfff.111323";
+        String segmentId = UUID.randomUUID().toString();
+        String traceId = "trace_id-" + UUID.randomUUID();
         String serviceId = "webapp_id";
         String serviceInstanceId = "10.0.0.1_id";
         String endpointId = "home_id";
@@ -128,16 +167,6 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
             return null;
         });
         f.get(10, TimeUnit.SECONDS);
-
-        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
-        query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
-
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            StreamQueryResponse resp = client.query(query);
-            Assert.assertNotNull(resp);
-            Assert.assertEquals(resp.size(), 1);
-            Assert.assertEquals(latency, (Number) resp.getElements().get(0).getTagValue("duration"));
-            Assert.assertEquals(traceId, resp.getElements().get(0).getTagValue("trace_id"));
-        });
+        return streamWrite;
     }
 }

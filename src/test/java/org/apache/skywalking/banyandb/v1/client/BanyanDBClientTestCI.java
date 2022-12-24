@@ -30,7 +30,7 @@ import java.io.IOException;
 public class BanyanDBClientTestCI {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "a558725fb909e136694aeb2d879dd6a3ae13b6fc";
+    private static final String TAG = "e14acadedd4fe475e4ca7b35d5f40288a632b1fb";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
@@ -43,7 +43,7 @@ public class BanyanDBClientTestCI {
                     "--measure-root-path", "/tmp/banyand-measure-data")
             .withExposedPorts(BANYANDB_PORT)
             .waitingFor(
-                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
+                    Wait.forLogMessage(".*\"Start liaison http server\".*", 1)
             );
 
     protected BanyanDBClient client;

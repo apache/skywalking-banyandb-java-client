@@ -18,8 +18,11 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.Timestamp;
+
 import java.util.Optional;
+
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -75,6 +78,15 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         }
         this.tags[tagInfo.get().getOffset()] = tagValue;
         return this;
+    }
+
+    @VisibleForTesting
+    <T extends Serializable<BanyandbModel.TagValue>> T getTag(String tagName) throws BanyanDBException {
+        final Optional<MetadataCache.TagInfo> tagInfo = this.entityMetadata.findTagInfo(tagName);
+        if (!tagInfo.isPresent()) {
+            throw InvalidReferenceException.fromInvalidTag(tagName);
+        }
+        return (T) this.tags[tagInfo.get().getOffset()];
     }
 
     P build() {
