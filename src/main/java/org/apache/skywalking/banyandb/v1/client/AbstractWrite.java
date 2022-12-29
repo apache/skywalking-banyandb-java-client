@@ -19,6 +19,8 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.Timestamp;
+
+import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
@@ -91,4 +93,20 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     }
 
     protected abstract P build(BanyandbCommon.Metadata metadata, Timestamp ts);
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("group=").append(group).append(", ").append("name=")
+                .append(name).append(", ").append("timestamp=").append(timestamp).append(", ");
+        for (int i = 0; i < this.tags.length; i++) {
+            final int index = i;
+            Map<String, MetadataCache.TagInfo> tagMap = this.entityMetadata.getTagOffset();
+            Optional<String> tagName = tagMap.keySet().stream().filter(name -> tagMap.get(name).getOffset() == index).findAny();
+            if (tagName.isPresent()) {
+                stringBuilder.append(tagName.get()).append("=").append(((Serializable<BanyandbModel.TagValue>) this.tags[i]).serialize()).append(", ");
+            }
+        }
+        return stringBuilder.toString();
+    }
 }
