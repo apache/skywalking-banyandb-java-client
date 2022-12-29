@@ -23,6 +23,7 @@ import io.grpc.stub.AbstractAsyncStub;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -66,11 +67,21 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
         final StreamObserver<REQ> writeRequestStreamObserver
                 = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS), batch);
 
+        List sentData = new ArrayList(data.size());
         try {
             data.forEach(holder -> {
                 Holder h = (Holder) holder;
-                REQ request = ((AbstractWrite<REQ>) h.writeEntity()).build();
+                AbstractWrite<REQ> entity = (AbstractWrite<REQ>) h.writeEntity();
+                REQ request;
+                try {
+                    request = entity.build();
+                } catch (Throwable bt) {
+                    log.error("building the entity fails: {}", entity.toString(), bt);
+                    h.future().completeExceptionally(bt);
+                    return;
+                }
                 writeRequestStreamObserver.onNext(request);
+                sentData.add(h);
             });
         } catch (Throwable t) {
             log.error("Transform and send request to BanyanDB fail.", t);
@@ -80,12 +91,12 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
         }
         batch.whenComplete((ignored, exp) -> {
             if (exp != null) {
-                data.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
+                sentData.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
                         .forEach((Consumer<CompletableFuture<Void>>) it -> it.completeExceptionally(exp));
                 log.error("Failed to execute requests in bulk", exp);
             } else {
                 log.debug("Succeeded to execute {} requests in bulk", data.size());
-                data.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
+                sentData.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
                         .forEach((Consumer<CompletableFuture<Void>>) it -> it.complete(null));
             }
         });
