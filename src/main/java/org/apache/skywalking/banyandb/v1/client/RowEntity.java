@@ -18,27 +18,19 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.protobuf.Timestamp;
+import lombok.Getter;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.protobuf.Timestamp;
-import lombok.Getter;
-import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
-import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
-
 /**
- * RowEntity represents an entity of BanyanDB entity.
+ * RowEntity represents an entity of BanyanDB.
  */
 @Getter
 public class RowEntity {
-    /**
-     * identity of the entity.
-     * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking,
-     * For a metrics data point, it extracted from the {@link org.apache.skywalking.banyandb.v1.client.metadata.Measure#ID} tag.
-     */
-    protected String id;
-
     /**
      * timestamp of the entity in the timeunit of milliseconds.
      */
@@ -50,12 +42,6 @@ public class RowEntity {
      * The family name is thus ignored, since the name should be globally unique for a schema.
      */
     protected final Map<String, Object> tags;
-
-    public static RowEntity create(BanyandbStream.Element element) {
-        final RowEntity rowEntity = new RowEntity(element.getTimestamp(), element.getTagFamiliesList());
-        rowEntity.id = element.getElementId();
-        return rowEntity;
-    }
 
     protected RowEntity(Timestamp ts, List<BanyandbModel.TagFamily> tagFamilyList) {
         timestamp = ts.getSeconds() * 1000 + ts.getNanos() / 1_000_000;

@@ -54,7 +54,6 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
         Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
-                        .addIDTagSpec()
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
@@ -110,8 +109,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
 
         Instant now = Instant.now();
         MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
-        measureWrite.tag("id", TagAndValue.idTagValue("1"))
-                .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
+        measureWrite.tag("entity_id", TagAndValue.stringTagValue("entity_1"))
                 .field("total", TagAndValue.longFieldValue(100))
                 .field("value", TagAndValue.longFieldValue(1));
 
@@ -120,9 +118,8 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
         if (allRequestsDelivered.await(5, TimeUnit.SECONDS)) {
             Assert.assertEquals(1, writeRequestDelivered.size());
             final BanyandbMeasure.WriteRequest request = writeRequestDelivered.get(0);
-            Assert.assertEquals(2, request.getDataPoint().getTagFamilies(0).getTagsCount());
-            Assert.assertEquals("1", request.getDataPoint().getTagFamilies(0).getTags(0).getId().getValue());
-            Assert.assertEquals("entity_1", request.getDataPoint().getTagFamilies(0).getTags(1).getStr().getValue());
+            Assert.assertEquals(1, request.getDataPoint().getTagFamilies(0).getTagsCount());
+            Assert.assertEquals("entity_1", request.getDataPoint().getTagFamilies(0).getTags(0).getStr().getValue());
             Assert.assertEquals(100, request.getDataPoint().getFields(0).getInt().getValue());
             Assert.assertEquals(1, request.getDataPoint().getFields(1).getInt().getValue());
         } else {
