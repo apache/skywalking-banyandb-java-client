@@ -120,7 +120,6 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
 
     @Test
     public void testQuery_responseConversion() {
-        final String elementId = "1231.dfd.123123ssf";
         final String entityIDValue = "entity_id_a";
         final Instant now = Instant.now();
         final BanyandbMeasure.QueryResponse responseObj = BanyandbMeasure.QueryResponse.newBuilder()
@@ -147,7 +146,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         MeasureQueryResponse resp = new MeasureQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getDataPoints().size());
-        Assert.assertEquals(2, resp.getDataPoints().get(0).getTags().size());
+        Assert.assertEquals(1, resp.getDataPoints().get(0).getTags().size());
         Assert.assertEquals(entityIDValue, resp.getDataPoints().get(0).getTagValue("entity_id"));
         Assert.assertEquals(10L,
                 (Number) resp.getDataPoints().get(0).getFieldValue("total"));

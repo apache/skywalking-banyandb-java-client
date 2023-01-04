@@ -22,7 +22,7 @@ import lombok.Getter;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
- * RowEntity represents an entity of BanyanDB entity.
+ * Element represents an entity in a Stream.
  */
 @Getter
 public class Element extends RowEntity {

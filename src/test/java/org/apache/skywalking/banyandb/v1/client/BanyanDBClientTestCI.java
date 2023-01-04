@@ -34,23 +34,22 @@ public class BanyanDBClientTestCI {
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
-    protected static final int BANYANDB_PORT = 17912;
+    protected static final int GRPC_PORT = 17912;
+    protected static final int HTTP_PORT = 17913;
 
     @Rule
     public GenericContainer<?> banyanDB = new GenericContainer<>(
             DockerImageName.parse(IMAGE))
             .withCommand("standalone", "--stream-root-path", "/tmp/banyandb-stream-data",
                     "--measure-root-path", "/tmp/banyand-measure-data")
-            .withExposedPorts(BANYANDB_PORT)
-            .waitingFor(
-                    Wait.forLogMessage(".*Listening to\\*\\*\\*\\* addr::17912 module:LIAISON-GRPC\\n", 1)
-            );
+            .withExposedPorts(GRPC_PORT, HTTP_PORT)
+            .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
 
     protected BanyanDBClient client;
 
     protected void setUpConnection() throws IOException {
         log.info("create BanyanDB client and try to connect");
-        client = new BanyanDBClient(banyanDB.getHost(), banyanDB.getMappedPort(BANYANDB_PORT));
+        client = new BanyanDBClient(banyanDB.getHost(), banyanDB.getMappedPort(GRPC_PORT));
         client.connect();
     }
 
