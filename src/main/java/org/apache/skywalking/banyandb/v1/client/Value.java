@@ -86,17 +86,6 @@ public abstract class Value<T> {
         }
     }
 
-    public static class IDTagValue extends Value<String> implements Serializable<BanyandbModel.TagValue> {
-        private IDTagValue(String value) {
-            super(value);
-        }
-
-        @Override
-        public BanyandbModel.TagValue serialize() {
-            return BanyandbModel.TagValue.newBuilder().setId(BanyandbModel.ID.newBuilder().setValue(value)).build();
-        }
-    }
-
     /**
      * The value of an int64(Long) type tag.
      */
@@ -150,13 +139,6 @@ public abstract class Value<T> {
             return nullTagValue();
         }
         return new StringTagValue(val);
-    }
-
-    static Serializable<BanyandbModel.TagValue> idTagValue(String val) {
-        if (Strings.isNullOrEmpty(val)) {
-            throw new NullPointerException();
-        }
-        return new IDTagValue(val);
     }
 
     /**

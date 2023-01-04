@@ -18,29 +18,26 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.Getter;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 
 /**
- * StreamQueryResponse represents the stream query result.
+ * Element represents an entity in a Stream.
  */
-public class StreamQueryResponse {
-    @Getter
-    private final List<Element> elements;
+@Getter
+public class Element extends RowEntity {
+    /**
+     * identity of the element.
+     * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking,
+     */
+    protected final String id;
 
-    StreamQueryResponse(BanyandbStream.QueryResponse response) {
-        final List<BanyandbStream.Element> elementsList = response.getElementsList();
-        elements = new ArrayList<>(elementsList.size());
-        elementsList.forEach(element -> elements.add(Element.create(element)));
+    public static Element create(BanyandbStream.Element element) {
+        return new Element(element);
     }
 
-    /**
-     * @return size of the response set.
-     */
-    public int size() {
-        return elements.size();
+    private Element(BanyandbStream.Element element) {
+        super(element.getTimestamp(), element.getTagFamiliesList());
+        this.id = element.getElementId();
     }
 }

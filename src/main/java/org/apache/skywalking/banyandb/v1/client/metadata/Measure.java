@@ -32,7 +32,6 @@ import java.util.List;
 
 @AutoValue
 public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
-    public static final String ID = "id";
 
     /**
      * specs of tag families
