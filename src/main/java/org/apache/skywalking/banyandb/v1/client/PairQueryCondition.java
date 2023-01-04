@@ -175,24 +175,6 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
         }
     }
 
-    public static class IDQueryCondition extends PairQueryCondition<String> {
-        private IDQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, String value) {
-            super(op, new TagAndValue.IDTagPair(tagName, value));
-        }
-
-        /**
-         * Build a query condition for {@link String} type
-         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_EQ} as the relation
-         *
-         * @param tagName name of the tag
-         * @param val     value of the tag
-         * @return a query that `String == value`
-         */
-        public static PairQueryCondition<String> eq(String tagName, String val) {
-            return new IDQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_EQ, val);
-        }
-    }
-
     /**
      * StringArrayQueryCondition represents `tag(List of String) $op value` condition.
      */

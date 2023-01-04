@@ -30,7 +30,7 @@ public class Element extends RowEntity {
      * identity of the element.
      * For a trace entity, it is the spanID of a Span or the segmentId of a segment in Skywalking,
      */
-    protected String id;
+    protected final String id;
 
     public static Element create(BanyandbStream.Element element) {
         return new Element(element);
