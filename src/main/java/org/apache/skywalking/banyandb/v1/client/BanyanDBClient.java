@@ -400,6 +400,9 @@ public class BanyanDBClient implements Closeable {
                 throw ex;
             }
         }
+        if (indexRules.isEmpty()) {
+            return;
+        }
 
         List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
 
@@ -432,6 +435,9 @@ public class BanyanDBClient implements Closeable {
                 }
                 throw ex;
             }
+        }
+        if (indexRules.isEmpty()) {
+            return;
         }
 
         List<String> indexRuleNames = indexRules.stream().map(IndexRule::name).collect(Collectors.toList());
