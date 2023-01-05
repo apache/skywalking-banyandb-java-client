@@ -50,7 +50,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         this.setUpConnection();
         Group expectedGroup = this.client.define(Group.create("sw_metric", Catalog.MEASURE, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4), IntervalRule.create(IntervalRule.Unit.DAY, 1), IntervalRule.create(IntervalRule.Unit.DAY, 7)));
         Assert.assertNotNull(expectedGroup);
-        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addIDTagSpec().addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES)).build();
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES)).build();
         client.define(expectedMeasure);
         Assert.assertNotNull(expectedMeasure);
         processor = client.buildMeasureWriteProcessor(1000, 1, 1);
@@ -71,7 +71,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         Instant begin = now.minus(15, ChronoUnit.MINUTES);
 
         MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
-        measureWrite.tag("id", TagAndValue.idTagValue("1")).tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
+        measureWrite.tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
 
         CompletableFuture<Void> f = processor.add(measureWrite);
         f.exceptionally(exp -> {
@@ -80,7 +80,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         });
         f.get(10, TimeUnit.SECONDS);
 
-        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("id", "entity_id"), // tags
+        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("entity_id"), // tags
                 ImmutableSet.of("total")); // fields
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {

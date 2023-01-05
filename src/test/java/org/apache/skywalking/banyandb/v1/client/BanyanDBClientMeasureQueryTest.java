@@ -66,7 +66,6 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")
                 .addTagFamily(TagFamilySpec.create("default")
-                        .addIDTagSpec()
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
@@ -84,7 +83,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
         MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
-                ImmutableSet.of("id", "entity_id"),
+                ImmutableSet.of("entity_id"),
                 ImmutableSet.of("total"));
         query.maxBy("total", ImmutableSet.of("entity_id"));
         // search with conditions
@@ -113,7 +112,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                 "  }\n" +
                 "}", request.getCriteria().toString().trim());
         // assert projections
-        assertCollectionEqual(Lists.newArrayList("default:id", "default:entity_id"),
+        assertCollectionEqual(Lists.newArrayList("default:entity_id"),
                 parseProjectionList(request.getTagProjection()));
         assertCollectionEqual(Lists.newArrayList("total"),
                 request.getFieldProjection().getNamesList());
@@ -121,7 +120,6 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
 
     @Test
     public void testQuery_responseConversion() {
-        final String elementId = "1231.dfd.123123ssf";
         final String entityIDValue = "entity_id_a";
         final Instant now = Instant.now();
         final BanyandbMeasure.QueryResponse responseObj = BanyandbMeasure.QueryResponse.newBuilder()
@@ -132,11 +130,6 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                                 .build())
                         .addTagFamilies(BanyandbModel.TagFamily.newBuilder()
                                 .setName("default")
-                                .addTags(BanyandbModel.Tag.newBuilder()
-                                        .setKey("id")
-                                        .setValue(BanyandbModel.TagValue.newBuilder()
-                                                .setId(BanyandbModel.ID.newBuilder().setValue(elementId).build()).build())
-                                        .build())
                                 .addTags(BanyandbModel.Tag.newBuilder()
                                         .setKey("entity_id")
                                         .setValue(BanyandbModel.TagValue.newBuilder()
@@ -153,9 +146,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         MeasureQueryResponse resp = new MeasureQueryResponse(responseObj);
         Assert.assertNotNull(resp);
         Assert.assertEquals(1, resp.getDataPoints().size());
-        Assert.assertEquals(2, resp.getDataPoints().get(0).getTags().size());
-        Assert.assertEquals(elementId,
-                resp.getDataPoints().get(0).getTagValue("id"));
+        Assert.assertEquals(1, resp.getDataPoints().get(0).getTags().size());
         Assert.assertEquals(entityIDValue, resp.getDataPoints().get(0).getTagValue("entity_id"));
         Assert.assertEquals(10L,
                 (Number) resp.getDataPoints().get(0).getFieldValue("total"));
