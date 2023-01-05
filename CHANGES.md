@@ -2,6 +2,14 @@ Changes by Version
 ==================
 Release Notes.
 
+0.3.0-rc0
+------------------
+
+### Features
+
+* Support in and notIn for stringArray by @lujiajing1126 in https://github.com/apache/skywalking-banyandb-java-client/pull/27
+* Drop invalid entries on writing. by @hanahmily in https://github.com/apache/skywalking-banyandb-java-client/pull/29
+
 
 0.2.0
 ------------------
