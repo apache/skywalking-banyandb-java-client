@@ -37,6 +37,10 @@ message Int {
   int64 value = 1;
 }
 
+message Float {
+  double value = 1;
+}
+
 message StrArray {
   repeated string value = 1;
 }
@@ -67,6 +71,7 @@ message FieldValue {
     model.v1.Str str = 2;
     model.v1.Int int = 3;
     bytes binary_data = 4;
+    model.v1.Float float = 5;
   }
 }
 
