@@ -2,6 +2,14 @@ Changes by Version
 ==================
 Release Notes.
 
+0.3.0-rc1
+------------------
+
+### Features
+* Remove Measure ID by @hanahmily in https://github.com/apache/skywalking-banyandb-java-client/pull/30
+* Drop indexRuleBinding for empty indexRules by @hanahmily in https://github.com/apache/skywalking-banyandb-java-client/pull/31
+
+
 0.3.0-rc0
 ------------------
 
