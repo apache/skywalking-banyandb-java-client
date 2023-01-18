@@ -58,6 +58,8 @@ public class DataPoint extends RowEntity {
                 return null;
             case BINARY_DATA:
                 return fieldValue.getBinaryData().toByteArray();
+            case FLOAT:
+                return fieldValue.getFloat().getValue();
             default:
                 throw new IllegalStateException("illegal type of FieldValue");
         }

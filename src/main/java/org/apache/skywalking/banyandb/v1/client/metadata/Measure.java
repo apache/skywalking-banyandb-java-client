@@ -200,7 +200,8 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
             UNSPECIFIED(BanyandbDatabase.FieldType.FIELD_TYPE_UNSPECIFIED),
             STRING(BanyandbDatabase.FieldType.FIELD_TYPE_STRING),
             INT(BanyandbDatabase.FieldType.FIELD_TYPE_INT),
-            BINARY(BanyandbDatabase.FieldType.FIELD_TYPE_DATA_BINARY);
+            BINARY(BanyandbDatabase.FieldType.FIELD_TYPE_DATA_BINARY),
+            FLOAT(BanyandbDatabase.FieldType.FIELD_TYPE_FLOAT);
 
             private final BanyandbDatabase.FieldType fieldType;
         }
@@ -243,6 +244,9 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
                 case FIELD_TYPE_DATA_BINARY:
                     b = newBinaryField(pb.getName());
                     break;
+                case FIELD_TYPE_FLOAT:
+                    b = newFloatField(pb.getName());
+                    break;
                 default:
                     throw new IllegalArgumentException("unrecognized field type");
             }
@@ -260,6 +264,15 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
             }
 
             return b.build();
+        }
+
+        /**
+         * Create a builder with float type
+         *
+         * @param name name of the field
+         */
+        public static Builder newFloatField(String name) {
+            return new Builder(name, FieldType.FLOAT);
         }
 
         /**

@@ -508,7 +508,16 @@ public class BanyanDBClient implements Closeable {
             BanyanDBException {
         IndexRuleBindingMetadataRegistry irbRegistry = new IndexRuleBindingMetadataRegistry(checkNotNull(this.channel));
 
-        IndexRuleBinding irb = irbRegistry.get(group, bindingName);
+        IndexRuleBinding irb;
+        try {
+            irb = irbRegistry.get(group, bindingName);
+        } catch (BanyanDBException ex) {
+            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
+                return Collections.emptyList();
+            }
+            throw ex;
+        }
+
         if (irb == null) {
             return Collections.emptyList();
         }
@@ -516,7 +525,14 @@ public class BanyanDBClient implements Closeable {
         IndexRuleMetadataRegistry irRegistry = new IndexRuleMetadataRegistry(checkNotNull(this.channel));
         List<IndexRule> indexRules = new ArrayList<>(irb.rules().size());
         for (final String rule : irb.rules()) {
-            indexRules.add(irRegistry.get(group, rule));
+            try {
+                indexRules.add(irRegistry.get(group, rule));
+            } catch (BanyanDBException ex) {
+                if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
+                    continue;
+                }
+                throw ex;
+            }
         }
         return indexRules;
     }

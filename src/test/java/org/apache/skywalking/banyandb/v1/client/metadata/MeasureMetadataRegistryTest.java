@@ -43,6 +43,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newFloatField("sum").compressWithZSTD().encodeWithGorilla().build())
                 .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
         this.client.define(expectedMeasure);
@@ -63,6 +64,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newFloatField("sum").compressWithZSTD().encodeWithGorilla().build())
                 .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
         this.client.define(expectedMeasure);
@@ -81,6 +83,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
+                .addField(Measure.FieldSpec.newFloatField("sum").compressWithZSTD().encodeWithGorilla().build())
                 .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
         this.client.define(expectedMeasure);
