@@ -19,9 +19,11 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 
 @AutoValue
@@ -36,33 +38,54 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
      */
     abstract int shardNum();
 
+    @Nullable
     abstract IntervalRule blockInterval();
 
+    @Nullable
     abstract IntervalRule segmentInterval();
 
+    @Nullable
     abstract IntervalRule ttl();
 
     public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl) {
+        Preconditions.checkArgument(shardNum > 0, "shardNum should more than 0");
+        Preconditions.checkNotNull(blockInterval, "blockInterval is null");
+        Preconditions.checkNotNull(segmentInterval, "segmentInterval is null");
+        Preconditions.checkNotNull(ttl, "ttl is null");
         return new AutoValue_Group(null, name, null, catalog, shardNum, blockInterval, segmentInterval, ttl);
     }
 
     public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl, ZonedDateTime updatedAt) {
+        Preconditions.checkArgument(shardNum > 0, "shardNum should more than 0");
+        Preconditions.checkNotNull(blockInterval, "blockInterval is null");
+        Preconditions.checkNotNull(segmentInterval, "segmentInterval is null");
+        Preconditions.checkNotNull(ttl, "ttl is null");
         return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, blockInterval, segmentInterval, ttl);
     }
 
-    @Override
+    public static Group create(String name) {
+        return new AutoValue_Group(null, name, null, Catalog.UNSPECIFIED, 0, null, null, null);
+    }
+
+    public static Group create(String name, ZonedDateTime updatedAt) {
+        return new AutoValue_Group(null, name, updatedAt, Catalog.UNSPECIFIED, 0, null, null, null);
+    }
+
+        @Override
     public BanyandbCommon.Group serialize() {
-        return BanyandbCommon.Group.newBuilder()
+            BanyandbCommon.Group.Builder builder = BanyandbCommon.Group.newBuilder()
                 // use name as the group
                 .setMetadata(this.buildMetadata().toBuilder())
-                .setCatalog(catalog().getCatalog())
-                .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                .setCatalog(catalog().getCatalog());
+            if (shardNum() > 0) {
+                builder.setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
                         .setShardNum(shardNum())
                         .setBlockInterval(blockInterval().serialize())
                         .setSegmentInterval(segmentInterval().serialize())
                         .setTtl(ttl().serialize())
-                        .build())
-                .build();
+                        .build());
+            }
+            return builder.build();
     }
 
     public static Group fromProtobuf(BanyandbCommon.Group group) {
@@ -75,14 +98,14 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
                 catalog = Catalog.MEASURE;
                 break;
         }
-
+        BanyandbCommon.ResourceOpts opts = group.getResourceOpts();
         return new AutoValue_Group(null,
                 group.getMetadata().getName(),
                 TimeUtils.parseTimestamp(group.getUpdatedAt()),
                 catalog,
-                group.getResourceOpts().getShardNum(),
-                IntervalRule.fromProtobuf(group.getResourceOpts().getBlockInterval()),
-                IntervalRule.fromProtobuf(group.getResourceOpts().getSegmentInterval()),
-                IntervalRule.fromProtobuf(group.getResourceOpts().getTtl()));
+                opts == null ? 0 : opts.getShardNum(),
+                opts == null ? null : IntervalRule.fromProtobuf(opts.getBlockInterval()),
+                opts == null ? null : IntervalRule.fromProtobuf(opts.getSegmentInterval()),
+                opts == null ? null : IntervalRule.fromProtobuf(opts.getTtl()));
     }
 }

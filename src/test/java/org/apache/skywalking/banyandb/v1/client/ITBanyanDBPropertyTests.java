@@ -20,9 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
-import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
-import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
 import org.apache.skywalking.banyandb.v1.client.metadata.Property;
 import org.junit.After;
 import org.junit.Assert;
@@ -38,11 +36,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
-        Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4),
-                        IntervalRule.create(IntervalRule.Unit.DAY, 1),
-                        IntervalRule.create(IntervalRule.Unit.DAY, 7))
-        );
+        Group expectedGroup = this.client.define(Group.create("default"));
         Assert.assertNotNull(expectedGroup);
     }
 
