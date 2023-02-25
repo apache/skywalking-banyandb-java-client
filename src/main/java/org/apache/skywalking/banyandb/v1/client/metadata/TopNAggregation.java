@@ -65,7 +65,7 @@ public abstract class TopNAggregation extends NamedSchema<BanyandbDatabase.TopNA
 
         abstract TopNAggregation.Builder setUpdatedAt(ZonedDateTime updatedAt);
 
-        abstract TopNAggregation.Builder setLruSize(int lruSize);
+        public abstract TopNAggregation.Builder setLruSize(int lruSize);
 
         public abstract TopNAggregation.Builder setCriteria(AbstractCriteria criteria);
 
@@ -79,7 +79,7 @@ public abstract class TopNAggregation extends NamedSchema<BanyandbDatabase.TopNA
 
         public abstract TopNAggregation.Builder setGroupByTagNames(List<String> groupByTagNames);
 
-        abstract TopNAggregation.Builder setSourceMeasureName(String sourceMeasureName);
+        public abstract TopNAggregation.Builder setSourceMeasureName(String sourceMeasureName);
 
         public abstract TopNAggregation build();
     }
