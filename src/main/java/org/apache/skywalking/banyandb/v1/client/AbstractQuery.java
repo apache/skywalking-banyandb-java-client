@@ -186,7 +186,7 @@ public abstract class AbstractQuery<T> {
     @RequiredArgsConstructor
     @Getter(AccessLevel.PROTECTED)
     public enum Sort {
-        ASC, DESC;
+        UNSPECIFIED, ASC, DESC;
     }
 
     @AutoValue

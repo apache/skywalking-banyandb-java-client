@@ -29,7 +29,7 @@ public abstract class And extends LogicalExpression {
     }
 
     @Override
-    BanyandbModel.Criteria build() {
+    public BanyandbModel.Criteria build() {
         return BanyandbModel.Criteria.newBuilder()
                 .setLe(BanyandbModel.LogicalExpression.newBuilder()
                         .setLeft(left().build())

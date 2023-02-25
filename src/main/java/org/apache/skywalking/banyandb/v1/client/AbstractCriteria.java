@@ -21,7 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
 public abstract class AbstractCriteria {
-    abstract BanyandbModel.Criteria build();
+    public abstract BanyandbModel.Criteria build();
 }
 
 abstract class LogicalExpression extends AbstractCriteria {

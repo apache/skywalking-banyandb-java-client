@@ -32,6 +32,7 @@ import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServic
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.database.v1.TopNAggregationRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.Rule;
 
@@ -253,6 +254,58 @@ public class AbstractBanyanDBClientTest {
                         }
                     }));
 
+    // measure registry
+    protected Map<String, BanyandbDatabase.TopNAggregation> topNAggregationRegistry;
+
+    private final TopNAggregationRegistryServiceGrpc.TopNAggregationRegistryServiceImplBase topNAggregationRegistryServiceImpl =
+            mock(TopNAggregationRegistryServiceGrpc.TopNAggregationRegistryServiceImplBase.class, delegatesTo(
+                    new TopNAggregationRegistryServiceGrpc.TopNAggregationRegistryServiceImplBase() {
+                        @Override
+                        public void create(BanyandbDatabase.TopNAggregationRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.TopNAggregationRegistryServiceCreateResponse> responseObserver) {
+                            BanyandbDatabase.TopNAggregation aggr = request.getTopNAggregation().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .build();
+                            topNAggregationRegistry.put(aggr.getMetadata().getName(), aggr);
+                            responseObserver.onNext(BanyandbDatabase.TopNAggregationRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void update(BanyandbDatabase.TopNAggregationRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.TopNAggregationRegistryServiceUpdateResponse> responseObserver) {
+                            BanyandbDatabase.TopNAggregation aggr = request.getTopNAggregation().toBuilder()
+                                    .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .build();
+                            topNAggregationRegistry.put(aggr.getMetadata().getName(), aggr);
+                            responseObserver.onNext(BanyandbDatabase.TopNAggregationRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void delete(BanyandbDatabase.TopNAggregationRegistryServiceDeleteRequest request, StreamObserver<BanyandbDatabase.TopNAggregationRegistryServiceDeleteResponse> responseObserver) {
+                            BanyandbDatabase.TopNAggregation oldMeasure = topNAggregationRegistry.remove(request.getMetadata().getName());
+                            responseObserver.onNext(BanyandbDatabase.TopNAggregationRegistryServiceDeleteResponse.newBuilder()
+                                    .setDeleted(oldMeasure != null)
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void get(BanyandbDatabase.TopNAggregationRegistryServiceGetRequest request, StreamObserver<BanyandbDatabase.TopNAggregationRegistryServiceGetResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.TopNAggregationRegistryServiceGetResponse.newBuilder()
+                                    .setTopNAggregation(topNAggregationRegistry.get(request.getMetadata().getName()))
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+
+                        @Override
+                        public void list(BanyandbDatabase.TopNAggregationRegistryServiceListRequest request, StreamObserver<BanyandbDatabase.TopNAggregationRegistryServiceListResponse> responseObserver) {
+                            responseObserver.onNext(BanyandbDatabase.TopNAggregationRegistryServiceListResponse.newBuilder()
+                                    .addAllTopNAggregation(topNAggregationRegistry.values())
+                                    .build());
+                            responseObserver.onCompleted();
+                        }
+                    }));
+
     protected final MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
 
     protected BanyanDBClient client;
@@ -307,6 +360,13 @@ public class AbstractBanyanDBClientTest {
         return b -> {
             AbstractBanyanDBClientTest.this.measureRegistry = new HashMap<>();
             serviceRegistry.addService(measureRegistryServiceImpl);
+        };
+    }
+
+    protected SetupFunction bindTopNAggregationRegistry() {
+        return b -> {
+            AbstractBanyanDBClientTest.this.topNAggregationRegistry = new HashMap<>();
+            serviceRegistry.addService(topNAggregationRegistryServiceImpl);
         };
     }
 }

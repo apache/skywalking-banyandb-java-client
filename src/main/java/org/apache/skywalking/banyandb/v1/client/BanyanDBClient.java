@@ -50,6 +50,8 @@ import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
 import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregation;
+import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregationMetadataRegistry;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -318,6 +320,16 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Define a new TopNAggregation
+     *
+     * @param topNAggregation the topN rule to be created
+     */
+    public void define(TopNAggregation topNAggregation) throws BanyanDBException {
+        TopNAggregationMetadataRegistry registry = new TopNAggregationMetadataRegistry(checkNotNull(this.channel));
+        registry.create(topNAggregation);
+    }
+
+    /**
      * Apply(Create or update) the property with {@link PropertyStore.Strategy#MERGE}
      *
      * @param property the property to be stored in the BanyanBD
@@ -471,6 +483,20 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Try to find the TopNAggregation from the BanyanDB with given group and name.
+     *
+     * @param group group of the TopNAggregation
+     * @param name  name of the TopNAggregation
+     * @return TopNAggregation if found. Otherwise, null is returned.
+     */
+    public TopNAggregation findTopNAggregation(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new TopNAggregationMetadataRegistry(checkNotNull(this.channel)).get(group, name);
+    }
+
+    /**
      * Try to find the stream from the BanyanDB with given group and name.
      *
      * @param group group of the stream
@@ -563,6 +589,20 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
         return new MeasureMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
+    }
+
+    /**
+     * Check if the given TopNAggregation exists.
+     *
+     * @param group group of the TopNAggregation
+     * @param name  name of the TopNAggregation
+     * @return ResourceExist which indicates whether group and TopNAggregation exist
+     */
+    public ResourceExist existTopNAggregation(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new TopNAggregationMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
     }
 
     @Override
