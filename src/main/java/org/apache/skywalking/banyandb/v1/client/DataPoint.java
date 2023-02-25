@@ -40,7 +40,7 @@ public class DataPoint extends RowEntity {
         super(dataPoint.getTimestamp(), dataPoint.getTagFamiliesList());
         this.fields = new HashMap<>(dataPoint.getFieldsCount());
         for (BanyandbMeasure.DataPoint.Field f : dataPoint.getFieldsList()) {
-            this.fields.put(f.getName(), convertToJavaType(f.getValue()));
+            this.fields.put(f.getName(), convertFileValueToJavaType(f.getValue()));
         }
     }
 
@@ -48,7 +48,7 @@ public class DataPoint extends RowEntity {
         return (T) this.fields.get(fieldName);
     }
 
-    private Object convertToJavaType(BanyandbModel.FieldValue fieldValue) {
+    static Object convertFileValueToJavaType(BanyandbModel.FieldValue fieldValue) {
         switch (fieldValue.getValueCase()) {
             case INT:
                 return fieldValue.getInt().getValue();

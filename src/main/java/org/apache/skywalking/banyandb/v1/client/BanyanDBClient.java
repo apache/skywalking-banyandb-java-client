@@ -268,6 +268,22 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Query TopN according to given conditions
+     *
+     * @param topNQuery condition for query
+     * @return hint topN.
+     */
+    public TopNQueryResponse query(TopNQuery topNQuery) throws BanyanDBException {
+        checkState(this.measureServiceStub != null, "measure service is null");
+
+        final BanyandbMeasure.TopNResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
+                this.measureServiceBlockingStub
+                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                        .topN(topNQuery.build()));
+        return new TopNQueryResponse(response);
+    }
+
+    /**
      * Query measures according to given conditions
      *
      * @param measureQuery condition for query

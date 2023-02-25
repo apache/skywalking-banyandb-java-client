@@ -217,7 +217,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
             MIN(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_MIN),
             COUNT(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_COUNT),
             SUM(BanyandbModel.AggregationFunction.AGGREGATION_FUNCTION_SUM);
-            private final BanyandbModel.AggregationFunction function;
+            final BanyandbModel.AggregationFunction function;
         }
     }
 }
