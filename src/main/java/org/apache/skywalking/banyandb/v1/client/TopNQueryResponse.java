@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import com.google.common.base.Splitter;
 import com.google.protobuf.Timestamp;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TopNQueryResponse {
+    private static final char SEPARATOR = '|';
     @Getter
     private final List<TopNList> topNLists;
 
@@ -54,7 +56,8 @@ public class TopNQueryResponse {
             this.timestamp = ts.getSeconds() * 1000 + ts.getNanos() / 1_000_000;
             this.items = new ArrayList<>(itemsList.size());
             for (final BanyandbMeasure.TopNList.Item item : itemsList) {
-                this.items.add(new Item(item.getName(), DataPoint.convertFileValueToJavaType(item.getValue())));
+                this.items.add(new Item(Splitter.on(SEPARATOR).splitToList(item.getName()),
+                        DataPoint.convertFileValueToJavaType(item.getValue())));
             }
         }
     }
@@ -62,7 +65,7 @@ public class TopNQueryResponse {
     @RequiredArgsConstructor
     @Getter
     public static class Item {
-        private final String name;
+        private final List<String> groupByTagValues;
         private final Object value;
     }
 }
