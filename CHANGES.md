@@ -2,6 +2,19 @@ Changes by Version
 ==================
 Release Notes.
 
+0.3.1
+------------------
+
+### Features
+* Tweak Group builders for property operations by @hanahmily in https://github.com/apache/skywalking-banyandb-java-client/pull/36
+
+
+0.3.0
+------------------
+
+### Features
+* Introduce the Float field type by @hanahmily in https://github.com/apache/skywalking-banyandb-java-client/pull/34
+
 0.3.0-rc1
 ------------------
 
