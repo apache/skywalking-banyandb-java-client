@@ -361,8 +361,22 @@ public class BanyanDBClient implements Closeable {
      * @return all properties belonging to the group and the name
      */
     public List<Property> findProperties(String group, String name) throws BanyanDBException {
+        return findProperties(group, name, null, null);
+
+    }
+
+    /**
+     * List Properties
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param ids   identities of the properties
+     * @param tags  tags to be returned
+     * @return all properties belonging to the group and the name
+     */
+    public List<Property> findProperties(String group, String name, List<String> ids, List<String> tags) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.list(group, name);
+        return store.list(group, name, ids, tags);
     }
 
     /**
