@@ -121,7 +121,7 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
                 .addTag(TagAndValue.newStringTag("name", "hello"))
                 .build();
         Assert.assertTrue(this.store.apply(property, PropertyStore.Strategy.REPLACE).created());
-        List<Property> listProperties = this.store.list("default", "sw");
+        List<Property> listProperties = this.store.list("default", "sw", null, null);
         Assert.assertNotNull(listProperties);
         Assert.assertEquals(1, listProperties.size());
         Assert.assertEquals(listProperties.get(0), property);

@@ -97,14 +97,20 @@ public class PropertyStore {
         return Property.fromProtobuf(resp.getProperty());
     }
 
-    public List<Property> list(String group, String name) throws BanyanDBException {
+    public List<Property> list(String group, String name, List<String> ids, List<String> tags) throws BanyanDBException {
+        BanyandbProperty.ListRequest.Builder builder = BanyandbProperty.ListRequest.newBuilder()
+                .setContainer(BanyandbCommon.Metadata.newBuilder()
+                .setGroup(group)
+                .setName(name)
+                .build());
+        if (ids != null && ids.size() > 0) {
+            builder.addAllIds(ids);
+        }
+        if (tags != null && tags.size() > 0) {
+            builder.addAllTags(tags);
+        }
         BanyandbProperty.ListResponse resp = HandleExceptionsWith.callAndTranslateApiException(() ->
-                this.stub.list(BanyandbProperty.ListRequest.newBuilder()
-                        .setContainer(BanyandbCommon.Metadata.newBuilder()
-                                .setGroup(group)
-                                .setName(name)
-                                .build())
-                        .build()));
+                this.stub.list(builder.build()));
 
         return resp.getPropertyList().stream().map(Property::fromProtobuf).collect(Collectors.toList());
     }
