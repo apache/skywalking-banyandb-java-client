@@ -28,6 +28,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -100,4 +102,30 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
             Assert.assertEquals(property2, gotProperty);
         });
     }
+
+    @Test
+    public void test_PropertyList() throws BanyanDBException {
+        Property property = Property.create("default", "sw", "id1")
+                .addTag(TagAndValue.newStringTag("name", "bar"))
+                .build();
+        Assert.assertTrue(this.client.apply(property).created());
+        property = Property.create("default", "sw", "id2")
+                .addTag(TagAndValue.newStringTag("name", "foo"))
+                .build();
+        Assert.assertTrue(this.client.apply(property).created());
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<Property> gotProperties = client.findProperties("default", "sw");
+            Assert.assertEquals(2, gotProperties.size());
+        });
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<Property> gotProperties = client.findProperties("default", "sw", Arrays.asList("id1", "id2"), null);
+            Assert.assertEquals(2, gotProperties.size());
+        });
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<Property> gotProperties = client.findProperties("default", "sw", Arrays.asList("id2"), null);
+            Assert.assertEquals(1, gotProperties.size());
+        });
+    }
+
 }
