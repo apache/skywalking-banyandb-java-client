@@ -18,17 +18,18 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.common.base.Splitter;
 import com.google.protobuf.Timestamp;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TopNQueryResponse {
-    private static final char SEPARATOR = '|';
     @Getter
     private final List<TopNList> topNLists;
 
@@ -56,8 +57,7 @@ public class TopNQueryResponse {
             this.timestamp = ts.getSeconds() * 1000 + ts.getNanos() / 1_000_000;
             this.items = new ArrayList<>(itemsList.size());
             for (final BanyandbMeasure.TopNList.Item item : itemsList) {
-                this.items.add(new Item(Splitter.on(SEPARATOR).splitToList(item.getName()),
-                        DataPoint.convertFileValueToJavaType(item.getValue())));
+                this.items.add(Item.parseFrom(item));
             }
         }
     }
@@ -65,7 +65,16 @@ public class TopNQueryResponse {
     @RequiredArgsConstructor
     @Getter
     public static class Item {
-        private final List<String> groupByTagValues;
+        private final Map<String, TagAndValue<?>> tagValuesMap;
         private final Object value;
+
+        static Item parseFrom(BanyandbMeasure.TopNList.Item item) {
+            final Object fieldValue = DataPoint.convertFileValueToJavaType(item.getValue());
+            final Map<String, TagAndValue<?>> map = new HashMap<>(item.getEntityCount());
+            for (final BanyandbModel.Tag tag : item.getEntityList()) {
+                map.put(tag.getKey(), TagAndValue.fromProtobuf(tag));
+            }
+            return new Item(map, fieldValue);
+        }
     }
 }

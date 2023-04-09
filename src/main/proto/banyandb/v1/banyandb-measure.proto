@@ -100,12 +100,12 @@ message QueryRequest {
   model.v1.QueryOrder order_by = 12;
 }
 
-//TopNList contains a series of topN items
+// TopNList contains a series of topN items
 message TopNList {
   // timestamp is in the timeunit of milliseconds.
   google.protobuf.Timestamp timestamp = 1;
   message Item {
-    string name = 1;
+    repeated model.v1.Tag entity = 1;
     model.v1.FieldValue value = 2;
   }
   // items contains top-n items in a list
