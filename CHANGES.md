@@ -2,6 +2,12 @@ Changes by Version
 ==================
 Release Notes.
 
+0.4.0
+------------------
+
+### Features
+* Support new TopN query protocol
+
 0.3.1
 ------------------
 
