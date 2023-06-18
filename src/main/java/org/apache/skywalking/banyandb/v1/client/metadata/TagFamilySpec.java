@@ -98,9 +98,6 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
                 case TAG_TYPE_DATA_BINARY:
                     builder.addTagSpec(TagFamilySpec.TagSpec.newBinaryTag(tagName));
                     break;
-                case TAG_TYPE_ID:
-                    builder.addTagSpec(TagFamilySpec.TagSpec.newIDTag(tagName));
-                    break;
                 default:
                     throw new IllegalStateException("unrecognized tag type");
             }
@@ -183,16 +180,6 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
         }
 
         /**
-         * create a ID tag spec
-         *
-         * @param name the name of the tag
-         * @return a binary array tag spec
-         */
-        private static TagSpec newIDTag(final String name) {
-            return new TagSpec(name, TagType.ID);
-        }
-
-        /**
          * Set the tag to indexed_only
          */
         public TagSpec indexedOnly() {
@@ -215,8 +202,7 @@ public abstract class TagFamilySpec implements Serializable<BanyandbDatabase.Tag
             STRING(BanyandbDatabase.TagType.TAG_TYPE_STRING),
             INT_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_INT_ARRAY),
             STRING_ARRAY(BanyandbDatabase.TagType.TAG_TYPE_STRING_ARRAY),
-            BINARY(BanyandbDatabase.TagType.TAG_TYPE_DATA_BINARY),
-            ID(BanyandbDatabase.TagType.TAG_TYPE_ID);
+            BINARY(BanyandbDatabase.TagType.TAG_TYPE_DATA_BINARY);
 
             @Getter(AccessLevel.PRIVATE)
             private final BanyandbDatabase.TagType tagType;
