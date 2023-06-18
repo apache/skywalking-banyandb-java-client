@@ -254,7 +254,7 @@ the order of tags must exactly be the same with that defined in the schema.
 And the non-existing tags must be fulfilled (with NullValue) instead of compacting all non-null tag values.
 
 ```java
-StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
     .tag("data_binary", Value.binaryTagValue(byteData))
     .tag("trace_id", Value.stringTagValue(traceId)) // 0
     .tag("state", Value.longTagValue(state)) // 1
@@ -287,7 +287,7 @@ A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then 
 
 ```java
 Instant now = Instant.now();
-MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
+MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
     measureWrite.tag("id", TagAndValue.idTagValue("1"))
     .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
     .field("total", TagAndValue.longFieldValue(100))
