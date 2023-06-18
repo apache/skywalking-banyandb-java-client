@@ -74,8 +74,6 @@ public class RowEntity {
                 return tagValue.getStrArray().getValueList();
             case BINARY_DATA:
                 return tagValue.getBinaryData().toByteArray();
-            case ID:
-                return tagValue.getId().getValue();
             default:
                 throw new IllegalStateException("illegal type of TagValue");
         }

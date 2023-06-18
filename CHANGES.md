@@ -7,6 +7,7 @@ Release Notes.
 
 ### Features
 * Support new TopN query protocol
+* Remove ID type of TAG
 
 0.3.1
 ------------------
