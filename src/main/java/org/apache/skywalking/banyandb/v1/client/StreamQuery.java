@@ -23,6 +23,7 @@ import java.util.Set;
 import lombok.Setter;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
 /**
  * StreamQuery is the high-level query API for the stream model.
@@ -63,13 +64,16 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     }
 
     @Override
-    BanyandbStream.QueryRequest build() throws BanyanDBException {
+    BanyandbStream.QueryRequest build(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException {
+        if (entityMetadata == null) {
+            throw new IllegalArgumentException("entity metadata is null");
+        }
         final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder()
                 .setMetadata(buildMetadata());
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         }
-        builder.setProjection(buildTagProjections());
+        builder.setProjection(buildTagProjections(entityMetadata));
         buildCriteria().ifPresent(builder::setCriteria);
         builder.setOffset(offset);
         builder.setLimit(limit);

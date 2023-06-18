@@ -106,7 +106,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = new StreamWrite("default", "sw", segmentId, now.toEpochMilli())
+        StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
                 .tag("state", Value.longTagValue(state)) // 1

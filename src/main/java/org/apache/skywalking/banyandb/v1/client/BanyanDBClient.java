@@ -126,6 +126,11 @@ public class BanyanDBClient implements Closeable {
     private final ReentrantLock connectionEstablishLock;
 
     /**
+     * Client local metadata cache.
+     */
+    private final MetadataCache metadataCache;
+
+    /**
      * Create a BanyanDB client instance with a default options.
      *
      * @param host IP or domain name
@@ -147,6 +152,7 @@ public class BanyanDBClient implements Closeable {
         this.port = port;
         this.options = options;
         this.connectionEstablishLock = new ReentrantLock();
+        this.metadataCache = new MetadataCache();
     }
 
     /**
@@ -251,6 +257,14 @@ public class BanyanDBClient implements Closeable {
         return new MeasureBulkWriteProcessor(this.measureServiceStub, maxBulkSize, flushInterval, concurrency);
     }
 
+    public MeasureWrite createMeasureWrite(String group, String name, long timestamp) {
+        return new MeasureWrite(this.metadataCache.findMetadata(group, name), timestamp);
+    }
+
+    public StreamWrite createStreamWrite(String group, String name, final String elementId, long timestamp) {
+        return new StreamWrite(this.metadataCache.findMetadata(group, name), elementId, timestamp);
+    }
+
     /**
      * Query streams according to given conditions
      *
@@ -263,7 +277,7 @@ public class BanyanDBClient implements Closeable {
         final BanyandbStream.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.streamServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                        .query(streamQuery.build()));
+                        .query(streamQuery.build(this.metadataCache.findMetadata(streamQuery.group, streamQuery.name))));
         return new StreamQueryResponse(response);
     }
 
@@ -295,7 +309,7 @@ public class BanyanDBClient implements Closeable {
         final BanyandbMeasure.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.measureServiceBlockingStub
                         .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                        .query(measureQuery.build()));
+                        .query(measureQuery.build(this.metadataCache.findMetadata(measureQuery.group, measureQuery.name))));
         return new MeasureQueryResponse(response);
     }
 
@@ -320,7 +334,7 @@ public class BanyanDBClient implements Closeable {
         StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
         streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
-        MetadataCache.INSTANCE.register(stream);
+        this.metadataCache.register(stream);
     }
 
     /**
@@ -332,7 +346,7 @@ public class BanyanDBClient implements Closeable {
         MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
         measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
-        MetadataCache.INSTANCE.register(measure);
+        this.metadataCache.register(measure);
     }
 
     /**
@@ -539,7 +553,7 @@ public class BanyanDBClient implements Closeable {
 
         Stream s = new StreamMetadataRegistry(checkNotNull(this.channel)).get(group, name);
         s = s.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
-        MetadataCache.INSTANCE.register(s);
+        this.metadataCache.register(s);
         return s;
     }
 
@@ -556,7 +570,7 @@ public class BanyanDBClient implements Closeable {
 
         Measure m = new MeasureMetadataRegistry(checkNotNull(this.channel)).get(group, name);
         m = m.withIndexRules(findIndexRulesByGroupAndBindingName(group, IndexRuleBinding.defaultBindingRule(name)));
-        MetadataCache.INSTANCE.register(m);
+        this.metadataCache.register(m);
         return m;
     }
 

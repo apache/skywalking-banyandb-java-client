@@ -25,6 +25,7 @@ import lombok.Setter;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
 import java.util.Set;
 
@@ -142,7 +143,11 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
     /**
      * @return QueryRequest for gRPC level query.
      */
-    BanyandbMeasure.QueryRequest build() throws BanyanDBException {
+    @Override
+    BanyandbMeasure.QueryRequest build(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException {
+        if (entityMetadata == null) {
+            throw new IllegalArgumentException("entity metadata is null");
+        }
         final BanyandbMeasure.QueryRequest.Builder builder = BanyandbMeasure.QueryRequest.newBuilder();
         builder.setMetadata(buildMetadata());
         if (timestampRange != null) {
@@ -150,9 +155,9 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         } else {
             builder.setTimeRange(TimestampRange.MAX_RANGE);
         }
-        BanyandbModel.TagProjection tagProjections = buildTagProjections();
+        BanyandbModel.TagProjection tagProjections = buildTagProjections(entityMetadata);
         if (tagProjections.getTagFamiliesCount() > 0) {
-            builder.setTagProjection(buildTagProjections());
+            builder.setTagProjection(buildTagProjections(entityMetadata));
         }
         if (!fieldProjections.isEmpty()) {
             builder.setFieldProjection(BanyandbMeasure.QueryRequest.FieldProjection.newBuilder()
@@ -161,7 +166,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         }
         if (this.aggregation != null) {
             BanyandbMeasure.QueryRequest.GroupBy.Builder groupByBuilder = BanyandbMeasure.QueryRequest.GroupBy.newBuilder()
-                    .setTagProjection(buildTagProjections(this.aggregation.groupByTagsProjection));
+                    .setTagProjection(buildTagProjections(entityMetadata, this.aggregation.groupByTagsProjection));
             if (Strings.isNullOrEmpty(this.aggregation.fieldName)) {
                 if (this.aggregation.aggregationType != Aggregation.Type.UNSPECIFIED) {
                     throw new IllegalArgumentException("field name cannot be null or empty if aggregation is specified");

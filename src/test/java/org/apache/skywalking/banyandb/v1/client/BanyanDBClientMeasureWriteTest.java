@@ -108,7 +108,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
         serviceRegistry.addService(serviceImpl);
 
         Instant now = Instant.now();
-        MeasureWrite measureWrite = new MeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
+        MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
         measureWrite.tag("entity_id", TagAndValue.stringTagValue("entity_1"))
                 .field("total", TagAndValue.longFieldValue(100))
                 .field("value", TagAndValue.longFieldValue(1));
