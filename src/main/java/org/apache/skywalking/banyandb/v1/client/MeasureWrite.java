@@ -23,6 +23,7 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 import java.util.Deque;
@@ -35,8 +36,8 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
      */
     private final Object[] fields;
 
-    public MeasureWrite(final String group, final String name, long timestamp) {
-        super(group, name, timestamp);
+    MeasureWrite(MetadataCache.EntityMetadata entityMetadata, long timestamp) {
+        super(entityMetadata, timestamp);
         this.fields = new Object[this.entityMetadata.getTotalFields()];
     }
 

@@ -26,6 +26,7 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 /**
@@ -39,16 +40,16 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
     @Getter
     private final String elementId;
 
-    public StreamWrite(final String group, final String name, final String elementId, long timestamp) {
-        super(group, name, timestamp);
+    StreamWrite(MetadataCache.EntityMetadata entityMetadata, final String elementId, long timestamp) {
+        super(entityMetadata, timestamp);
         this.elementId = elementId;
     }
 
     /**
      * Create a StreamWrite without initial timestamp.
      */
-    public StreamWrite(final String group, final String name, final String elementId) {
-        super(group, name);
+    StreamWrite(MetadataCache.EntityMetadata entityMetadata, final String elementId) {
+        super(entityMetadata);
         this.elementId = elementId;
     }
 

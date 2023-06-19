@@ -22,6 +22,7 @@ import com.google.protobuf.Timestamp;
 
 import java.util.Map;
 import java.util.Optional;
+
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -31,16 +32,6 @@ import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
-    /**
-     * Group name of the current entity
-     */
-    @Getter
-    protected final String group;
-    /**
-     * Owner name of the current entity
-     */
-    @Getter
-    protected final String name;
     /**
      * Timestamp represents the time of current stream
      * in the timeunit of milliseconds.
@@ -52,22 +43,20 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
 
     protected final MetadataCache.EntityMetadata entityMetadata;
 
-    public AbstractWrite(String group, String name, long timestamp) {
-        this.group = group;
-        this.name = name;
-        this.timestamp = timestamp;
-        this.entityMetadata = MetadataCache.INSTANCE.findMetadata(group, name);
-        if (this.entityMetadata == null) {
+    public AbstractWrite(MetadataCache.EntityMetadata entityMetadata, long timestamp) {
+        if (entityMetadata == null) {
             throw new IllegalArgumentException("metadata not found");
         }
+        this.entityMetadata = entityMetadata;
+        this.timestamp = timestamp;
         this.tags = new Object[this.entityMetadata.getTotalTags()];
     }
 
     /**
-     * Build a write without initial timestamp.
+     * Build a write request without initial timestamp.
      */
-    public AbstractWrite(String group, String name) {
-        this(group, name, 0);
+    AbstractWrite(MetadataCache.EntityMetadata entityMetadata) {
+        this(entityMetadata, 0);
     }
 
     public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
@@ -85,7 +74,7 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         }
 
         BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
-                .setGroup(this.group).setName(this.name).build();
+                .setGroup(entityMetadata.getGroup()).setName(entityMetadata.getName()).build();
         Timestamp ts = Timestamp.newBuilder()
                 .setSeconds(timestamp / 1000)
                 .setNanos((int) (timestamp % 1000 * 1_000_000)).build();
@@ -97,8 +86,8 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("group=").append(group).append(", ").append("name=")
-                .append(name).append(", ").append("timestamp=").append(timestamp).append(", ");
+        stringBuilder.append("group=").append(entityMetadata.getGroup()).append(", ").append("name=")
+                .append(entityMetadata.getName()).append(", ").append("timestamp=").append(timestamp).append(", ");
         for (int i = 0; i < this.tags.length; i++) {
             final int index = i;
             Map<String, MetadataCache.TagInfo> tagMap = this.entityMetadata.getTagOffset();

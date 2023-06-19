@@ -27,12 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public enum MetadataCache {
-    INSTANCE;
-
+public class MetadataCache {
     private final Map<String, EntityMetadata> cache;
 
-    MetadataCache() {
+    public MetadataCache() {
         this.cache = new CopyOnWriteMap<>();
     }
 
@@ -67,7 +65,7 @@ public enum MetadataCache {
                 tagInfo.put(s.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
             }
         }
-        return new EntityMetadata(totalTags, 0, tagFamilyCapacity,
+        return new EntityMetadata(s.group(), s.name(), totalTags, 0, tagFamilyCapacity,
                 Collections.unmodifiableMap(tagInfo),
                 Collections.emptyMap());
     }
@@ -89,13 +87,15 @@ public enum MetadataCache {
         for (int i = 0; i < m.fields().size(); i++) {
             fieldOffset.put(m.fields().get(i).getName(), i);
         }
-        return new EntityMetadata(totalTags, m.fields().size(), tagFamilyCapacity,
+        return new EntityMetadata(m.group(), m.name(), totalTags, m.fields().size(), tagFamilyCapacity,
                 Collections.unmodifiableMap(tagOffset), Collections.unmodifiableMap(fieldOffset));
     }
 
     @Getter
     @RequiredArgsConstructor
     public static class EntityMetadata {
+        private final String group;
+        private final String name;
         private final int totalTags;
 
         private final int totalFields;

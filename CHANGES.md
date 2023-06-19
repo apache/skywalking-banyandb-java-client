@@ -8,6 +8,7 @@ Release Notes.
 ### Features
 * Support new TopN query protocol
 * Remove ID type of TAG
+* Make the global singleton MetadataCache client-local
 
 0.3.1
 ------------------

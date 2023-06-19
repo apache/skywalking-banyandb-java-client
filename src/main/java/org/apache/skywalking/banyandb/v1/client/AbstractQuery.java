@@ -58,8 +58,6 @@ public abstract class AbstractQuery<T> {
      */
     protected final Set<String> tagProjections;
 
-    @Getter(AccessLevel.PACKAGE)
-    protected final MetadataCache.EntityMetadata metadata;
     /**
      * Query criteria.
      */
@@ -71,7 +69,6 @@ public abstract class AbstractQuery<T> {
         this.timestampRange = timestampRange;
         this.conditions = new ArrayList<>(10);
         this.tagProjections = tagProjections;
-        this.metadata = MetadataCache.INSTANCE.findMetadata(this.group, this.name);
     }
 
     /**
@@ -108,7 +105,7 @@ public abstract class AbstractQuery<T> {
      * @return QueryRequest for gRPC level query.
      * @throws BanyanDBException thrown from entity build, e.g. invalid reference to non-exist fields or tags.
      */
-    abstract T build() throws BanyanDBException;
+    abstract T build(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException;
 
     protected BanyandbCommon.Metadata buildMetadata() {
         return BanyandbCommon.Metadata.newBuilder()
@@ -139,14 +136,14 @@ public abstract class AbstractQuery<T> {
                 }, (first, second) -> second));
     }
 
-    protected BanyandbModel.TagProjection buildTagProjections() throws BanyanDBException {
-        return this.buildTagProjections(this.tagProjections);
+    protected BanyandbModel.TagProjection buildTagProjections(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException {
+        return this.buildTagProjections(entityMetadata, this.tagProjections);
     }
 
-    protected BanyandbModel.TagProjection buildTagProjections(Iterable<String> tagProjections) throws BanyanDBException {
+    protected BanyandbModel.TagProjection buildTagProjections(MetadataCache.EntityMetadata entityMetadata, Iterable<String> tagProjections) throws BanyanDBException {
         final ListMultimap<String, String> projectionMap = ArrayListMultimap.create();
         for (final String tagName : tagProjections) {
-            final Optional<MetadataCache.TagInfo> tagInfo = this.metadata.findTagInfo(tagName);
+            final Optional<MetadataCache.TagInfo> tagInfo = entityMetadata.findTagInfo(tagName);
             if (!tagInfo.isPresent()) {
                 throw InvalidReferenceException.fromInvalidTag(tagName);
             }
