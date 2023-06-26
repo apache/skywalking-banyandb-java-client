@@ -275,6 +275,18 @@ public class BanyanDBClient implements Closeable {
      * @param group     the group of the stream
      * @param name      the name of the stream
      * @param elementId the primary key of the stream
+     * @return the request to be built
+     */
+    public StreamWrite createStreamWrite(String group, String name, final String elementId) {
+        return new StreamWrite(this.metadataCache.findMetadata(group, name), elementId);
+    }
+
+    /**
+     * Build a StreamWrite request.
+     *
+     * @param group     the group of the stream
+     * @param name      the name of the stream
+     * @param elementId the primary key of the stream
      * @param timestamp the timestamp of the stream
      * @return the request to be built
      */
