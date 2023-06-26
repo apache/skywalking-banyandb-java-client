@@ -9,6 +9,7 @@ Release Notes.
 * Support new TopN query protocol
 * Remove ID type of TAG
 * Make the global singleton MetadataCache client-local
+* Add createStreamWrite API to allow late timestamp set
 
 0.3.1
 ------------------
