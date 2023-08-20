@@ -74,7 +74,7 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         }
 
         BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
-                .setGroup(entityMetadata.getGroup()).setName(entityMetadata.getName()).build();
+                .setGroup(entityMetadata.getGroup()).setName(entityMetadata.getName()).setModRevision(entityMetadata.getModRevision()).build();
         Timestamp ts = Timestamp.newBuilder()
                 .setSeconds(timestamp / 1000)
                 .setNanos((int) (timestamp % 1000 * 1_000_000)).build();

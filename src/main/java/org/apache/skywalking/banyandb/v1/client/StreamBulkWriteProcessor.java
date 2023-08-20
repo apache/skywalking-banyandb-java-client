@@ -21,10 +21,16 @@ package org.apache.skywalking.banyandb.v1.client;
 import io.grpc.stub.StreamObserver;
 
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import javax.annotation.concurrent.ThreadSafe;
+
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -34,29 +40,50 @@ import java.util.concurrent.CompletableFuture;
 @ThreadSafe
 public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<BanyandbStream.WriteRequest,
         StreamServiceGrpc.StreamServiceStub> {
+    private final BanyanDBClient client;
+
     /**
      * Create the processor.
      *
-     * @param serviceStub   stub for gRPC call.
+     * @param client        the client
      * @param maxBulkSize   the max bulk size for the flush operation
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second.
      * @param concurrency   the number of concurrency would run for the flush max.
      */
     protected StreamBulkWriteProcessor(
-            final StreamServiceGrpc.StreamServiceStub serviceStub,
+            final BanyanDBClient client,
             final int maxBulkSize,
             final int flushInterval,
             final int concurrency) {
-        super(serviceStub, "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
+        super(client.getStreamServiceStub(), "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
+        this.client = client;
     }
 
     @Override
     protected StreamObserver<BanyandbStream.WriteRequest> buildStreamObserver(StreamServiceGrpc.StreamServiceStub stub, CompletableFuture<Void> batch) {
         return stub.write(
                 new StreamObserver<BanyandbStream.WriteResponse>() {
+                    private final Set<String> schemaExpired = new HashSet<>();
+
                     @Override
                     public void onNext(BanyandbStream.WriteResponse writeResponse) {
+                        switch (writeResponse.getStatus()) {
+                            case STATUS_EXPIRED_REVISION:
+                                BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
+                                String schemaKey = metadata.getGroup() + "." + metadata.getName();
+                                if (!schemaExpired.contains(schemaKey)) {
+                                    log.warn("The schema {} is expired, trying update the schema...", schemaKey);
+                                    try {
+                                        client.findStream(metadata.getGroup(), metadata.getName());
+                                        schemaExpired.add(schemaKey);
+                                    } catch (BanyanDBException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
+                                break;
+                            default:
+                        }
                     }
 
                     @Override

@@ -52,6 +52,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
         Assert.assertNotNull(actualMeasure);
         Assert.assertEquals(expectedMeasure, actualMeasure);
         Assert.assertNotNull(actualMeasure.updatedAt());
+        Assert.assertNotNull(actualMeasure.modRevision());
     }
 
     @Test
@@ -71,6 +72,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
         List<Measure> actualMeasures = new MeasureMetadataRegistry(this.channel).list("sw_metric");
         Assert.assertNotNull(actualMeasures);
         Assert.assertEquals(1, actualMeasures.size());
+        actualMeasures.forEach(measure -> Assert.assertNotNull(measure.modRevision()));
     }
 
     @Test
@@ -87,7 +89,7 @@ public class MeasureMetadataRegistryTest extends AbstractBanyanDBClientTest {
                 .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
                 .build();
         this.client.define(expectedMeasure);
-        boolean deleted = new MeasureMetadataRegistry(this.channel).delete("sw_metric", "service_cpm_minute");
+        boolean deleted = this.client.delete(expectedMeasure);
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, measureRegistry.size());
     }

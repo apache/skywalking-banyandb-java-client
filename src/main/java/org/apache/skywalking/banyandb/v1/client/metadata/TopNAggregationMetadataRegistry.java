@@ -35,11 +35,12 @@ public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregat
     }
 
     @Override
-    public void create(TopNAggregation payload) throws BanyanDBException {
+    public long create(TopNAggregation payload) throws BanyanDBException {
         execute(() ->
                 stub.create(BanyandbDatabase.TopNAggregationRegistryServiceCreateRequest.newBuilder()
                         .setTopNAggregation(payload.serialize())
                         .build()));
+        return DEFAULT_MOD_REVISION;
     }
 
     @Override

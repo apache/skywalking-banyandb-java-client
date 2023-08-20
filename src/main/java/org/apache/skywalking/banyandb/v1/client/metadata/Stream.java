@@ -20,8 +20,13 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.v1.client.util.IgnoreHashEquals;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
+
+import javax.annotation.Nullable;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -40,14 +45,26 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     abstract ImmutableList<String> entityRelativeTags();
 
     /**
+     * last updated revision
+     * This field can only be set by the server.
+     */
+    @Nullable
+    @IgnoreHashEquals
+    abstract Long modRevision();
+
+    /**
      * index rules bound to the stream
      */
     public abstract ImmutableList<IndexRule> indexRules();
 
-    abstract Builder toBuilder();
+    public abstract Builder toBuilder();
 
     public final Stream withIndexRules(List<IndexRule> indexRules) {
         return toBuilder().addIndexes(indexRules).build();
+    }
+
+    public final Stream withModRevision(long modRevision) {
+        return toBuilder().setModRevision(modRevision).build();
     }
 
     public static Stream.Builder create(String group, String name) {
@@ -63,6 +80,8 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
         abstract Builder setName(String name);
 
         abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
+
+        abstract Builder setModRevision(Long modRevision);
 
         abstract ImmutableList.Builder<TagFamilySpec> tagFamiliesBuilder();
 
@@ -104,8 +123,12 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
             metadataTagFamilySpecs.add(spec.serialize());
         }
 
+        BanyandbCommon.Metadata metadata = buildMetadata();
+        if (this.modRevision() != null) {
+            metadata = buildMetadata(this.modRevision());
+        }
         BanyandbDatabase.Stream.Builder b = BanyandbDatabase.Stream.newBuilder()
-                .setMetadata(buildMetadata())
+                .setMetadata(metadata)
                 .addAllTagFamilies(metadataTagFamilySpecs)
                 .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityRelativeTags()).build());
 
@@ -118,6 +141,7 @@ public abstract class Stream extends NamedSchema<BanyandbDatabase.Stream> {
     public static Stream fromProtobuf(final BanyandbDatabase.Stream pb) {
         Stream.Builder s = Stream.create(pb.getMetadata().getGroup(), pb.getMetadata().getName())
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
+                .setModRevision(pb.getMetadata().getModRevision())
                 .setEntityRelativeTags(pb.getEntity().getTagNamesList());
         // build tag family spec
         for (int i = 0; i < pb.getTagFamiliesCount(); i++) {

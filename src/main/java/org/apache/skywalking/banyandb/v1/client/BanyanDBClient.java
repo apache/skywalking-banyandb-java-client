@@ -28,6 +28,8 @@ import io.grpc.stub.StreamObserver;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
@@ -36,6 +38,9 @@ import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.DataLossException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.InternalException;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidArgumentException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -58,6 +63,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -198,26 +204,67 @@ public class BanyanDBClient implements Closeable {
      * Perform a single write with given entity.
      *
      * @param streamWrite the entity to be written
+     * @return a future of write result
      */
-    public void write(StreamWrite streamWrite) {
+    public CompletableFuture<Void> write(StreamWrite streamWrite) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
+        CompletableFuture<Void> future = new CompletableFuture<>();
         final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
                 = this.streamServiceStub
                 .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
                 .write(
                         new StreamObserver<BanyandbStream.WriteResponse>() {
+                            private BanyanDBException responseException;
+
                             @Override
                             public void onNext(BanyandbStream.WriteResponse writeResponse) {
+                                switch (writeResponse.getStatus()) {
+                                    case STATUS_RECEIVE_ERROR:
+                                        responseException = new DataLossException(
+                                                "Receive data error", null, Status.Code.DATA_LOSS, true);
+                                        break;
+                                    case STATUS_INVALID_TIMESTAMP:
+                                        responseException = new InvalidArgumentException(
+                                                "Invalid timestamp: " + streamWrite.getTimestamp(), null, Status.Code.INVALID_ARGUMENT, false);
+                                        break;
+                                    case STATUS_INVALID_METADATA:
+                                        responseException = new InvalidArgumentException(
+                                                "Invalid metadata: " + streamWrite.entityMetadata, null, Status.Code.INVALID_ARGUMENT, false);
+                                        break;
+                                    case STATUS_EXPIRED_REVISION:
+                                        BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
+                                        log.warn("The schema {}.{} is expired, trying update the schema...",
+                                                metadata.getGroup(), metadata.getName());
+                                        try {
+                                            BanyanDBClient.this.findStream(metadata.getGroup(), metadata.getName());
+                                        } catch (BanyanDBException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                        responseException = new InvalidArgumentException(
+                                                "Expired revision: " + metadata.getModRevision(), null, Status.Code.INVALID_ARGUMENT, true);
+                                        break;
+                                    case STATUS_INTERNAL_ERROR:
+                                        responseException = new InternalException(
+                                                "Internal error occurs in server", null, Status.Code.INTERNAL, true);
+                                        break;
+                                    default:
+                                }
                             }
 
                             @Override
                             public void onError(Throwable throwable) {
                                 log.error("Error occurs in flushing streams.", throwable);
+                                future.completeExceptionally(throwable);
                             }
 
                             @Override
                             public void onCompleted() {
+                                if (responseException == null) {
+                                    future.complete(null);
+                                } else {
+                                    future.completeExceptionally(responseException);
+                                }
                             }
                         });
         try {
@@ -225,6 +272,7 @@ public class BanyanDBClient implements Closeable {
         } finally {
             writeRequestStreamObserver.onCompleted();
         }
+        return future;
     }
 
     /**
@@ -239,7 +287,7 @@ public class BanyanDBClient implements Closeable {
     public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        return new StreamBulkWriteProcessor(this.streamServiceStub, maxBulkSize, flushInterval, concurrency);
+        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency);
     }
 
     /**
@@ -254,7 +302,7 @@ public class BanyanDBClient implements Closeable {
     public MeasureBulkWriteProcessor buildMeasureWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
         checkState(this.measureServiceStub != null, "measure service is null");
 
-        return new MeasureBulkWriteProcessor(this.measureServiceStub, maxBulkSize, flushInterval, concurrency);
+        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency);
     }
 
     /**
@@ -361,9 +409,26 @@ public class BanyanDBClient implements Closeable {
      */
     public void define(Stream stream) throws BanyanDBException {
         StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
-        streamRegistry.create(stream);
+        long modRevision = streamRegistry.create(stream);
         defineIndexRules(stream, stream.indexRules());
+
+        stream = stream.withModRevision(modRevision);
         this.metadataCache.register(stream);
+    }
+
+    /**
+     * Delete a stream
+     *
+     * @param stream the stream to be deleted
+     * @return true if the stream is deleted successfully
+     */
+    public boolean delete(Stream stream) throws BanyanDBException {
+        StreamMetadataRegistry streamRegistry = new StreamMetadataRegistry(checkNotNull(this.channel));
+        if (streamRegistry.delete(stream.group(), stream.name())) {
+            this.metadataCache.unregister(stream);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -373,9 +438,26 @@ public class BanyanDBClient implements Closeable {
      */
     public void define(Measure measure) throws BanyanDBException {
         MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
-        measureRegistry.create(measure);
+        long modRevision = measureRegistry.create(measure);
         defineIndexRules(measure, measure.indexRules());
+
+        measure = measure.withModRevision(modRevision);
         this.metadataCache.register(measure);
+    }
+
+    /**
+     * Delete a measure
+     *
+     * @param measure the measure to be deleted
+     * @return true if the measure is deleted successfully
+     */
+    public boolean delete(Measure measure) throws BanyanDBException {
+        MeasureMetadataRegistry measureRegistry = new MeasureMetadataRegistry(checkNotNull(this.channel));
+        if (measureRegistry.delete(measure.group(), measure.name())) {
+            this.metadataCache.unregister(measure);
+            return true;
+        }
+        return false;
     }
 
     /**

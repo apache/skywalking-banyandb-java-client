@@ -211,6 +211,7 @@ message StreamRegistryServiceCreateRequest {
 }
 
 message StreamRegistryServiceCreateResponse {
+  int64 mod_revision = 1;
 }
 
 message StreamRegistryServiceUpdateRequest {
@@ -218,6 +219,7 @@ message StreamRegistryServiceUpdateRequest {
 }
 
 message StreamRegistryServiceUpdateResponse {
+  int64 mod_revision = 1;
 }
 
 message StreamRegistryServiceDeleteRequest {
@@ -382,6 +384,7 @@ message MeasureRegistryServiceCreateRequest {
 }
 
 message MeasureRegistryServiceCreateResponse {
+  int64 mod_revision = 1;
 }
 
 message MeasureRegistryServiceUpdateRequest {
@@ -389,6 +392,7 @@ message MeasureRegistryServiceUpdateRequest {
 }
 
 message MeasureRegistryServiceUpdateResponse {
+  int64 mod_revision = 1;
 }
 
 message MeasureRegistryServiceDeleteRequest {

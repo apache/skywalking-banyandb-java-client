@@ -2,6 +2,13 @@ Changes by Version
 ==================
 Release Notes.
 
+0.5.0
+------------------
+
+### Features
+
+* Add mod revision check to write requests
+
 0.4.0
 ------------------
 

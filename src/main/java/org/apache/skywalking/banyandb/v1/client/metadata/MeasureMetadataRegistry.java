@@ -36,11 +36,12 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     }
 
     @Override
-    public void create(final Measure payload) throws BanyanDBException {
-        execute(() ->
+    public long create(final Measure payload) throws BanyanDBException {
+        BanyandbDatabase.MeasureRegistryServiceCreateResponse resp = execute(() ->
                 stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
                         .setMeasure(payload.serialize())
                         .build()));
+        return resp.getModRevision();
     }
 
     @Override

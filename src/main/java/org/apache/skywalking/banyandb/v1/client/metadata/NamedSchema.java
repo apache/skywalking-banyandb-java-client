@@ -60,4 +60,13 @@ public abstract class NamedSchema<P extends GeneratedMessageV3> {
             return BanyandbCommon.Metadata.newBuilder().setName(name()).setGroup(group()).build();
         }
     }
+
+    protected BanyandbCommon.Metadata buildMetadata(long modRevision) {
+        BanyandbCommon.Metadata.Builder builder =
+                BanyandbCommon.Metadata.newBuilder().setName(name()).setModRevision(modRevision);
+        if (!Strings.isNullOrEmpty(group())) {
+            builder.setGroup(group());
+        }
+        return builder.build();
+    }
 }

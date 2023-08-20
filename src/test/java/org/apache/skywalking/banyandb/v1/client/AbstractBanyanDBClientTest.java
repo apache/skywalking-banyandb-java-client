@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
@@ -156,13 +157,18 @@ public class AbstractBanyanDBClientTest {
     private final StreamRegistryServiceGrpc.StreamRegistryServiceImplBase streamRegistryServiceImpl =
             mock(StreamRegistryServiceGrpc.StreamRegistryServiceImplBase.class, delegatesTo(
                     new StreamRegistryServiceGrpc.StreamRegistryServiceImplBase() {
+                        private final AtomicLong revisionGenerator = new AtomicLong(0);
+
                         @Override
                         public void create(BanyandbDatabase.StreamRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceCreateResponse> responseObserver) {
                             BanyandbDatabase.Stream s = request.getStream().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setMetadata(request.getStream().getMetadata().toBuilder()
+                                            .setModRevision(revisionGenerator.incrementAndGet())
+                                            .build())
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceCreateResponse.newBuilder().setModRevision(s.getMetadata().getModRevision()).build());
                             responseObserver.onCompleted();
                         }
 
@@ -170,9 +176,12 @@ public class AbstractBanyanDBClientTest {
                         public void update(BanyandbDatabase.StreamRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.StreamRegistryServiceUpdateResponse> responseObserver) {
                             BanyandbDatabase.Stream s = request.getStream().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setMetadata(request.getStream().getMetadata().toBuilder()
+                                            .setModRevision(revisionGenerator.incrementAndGet())
+                                            .build())
                                     .build();
                             streamRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.StreamRegistryServiceUpdateResponse.newBuilder().setModRevision(s.getMetadata().getModRevision()).build());
                             responseObserver.onCompleted();
                         }
 
@@ -208,13 +217,18 @@ public class AbstractBanyanDBClientTest {
     private final MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase measureRegistryServiceImpl =
             mock(MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase.class, delegatesTo(
                     new MeasureRegistryServiceGrpc.MeasureRegistryServiceImplBase() {
+                        private final AtomicLong revisionGenerator = new AtomicLong(0);
+
                         @Override
                         public void create(BanyandbDatabase.MeasureRegistryServiceCreateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceCreateResponse> responseObserver) {
                             BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setMetadata(request.getMeasure().getMetadata().toBuilder()
+                                            .setModRevision(revisionGenerator.incrementAndGet())
+                                            .build())
                                     .build();
                             measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceCreateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceCreateResponse.newBuilder().setModRevision(s.getMetadata().getModRevision()).build());
                             responseObserver.onCompleted();
                         }
 
@@ -222,9 +236,12 @@ public class AbstractBanyanDBClientTest {
                         public void update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest request, StreamObserver<BanyandbDatabase.MeasureRegistryServiceUpdateResponse> responseObserver) {
                             BanyandbDatabase.Measure s = request.getMeasure().toBuilder()
                                     .setUpdatedAt(TimeUtils.buildTimestamp(ZonedDateTime.now()))
+                                    .setMetadata(request.getMeasure().getMetadata().toBuilder()
+                                            .setModRevision(revisionGenerator.incrementAndGet())
+                                            .build())
                                     .build();
                             measureRegistry.put(s.getMetadata().getName(), s);
-                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceUpdateResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbDatabase.MeasureRegistryServiceUpdateResponse.newBuilder().setModRevision(s.getMetadata().getModRevision()).build());
                             responseObserver.onCompleted();
                         }
 
