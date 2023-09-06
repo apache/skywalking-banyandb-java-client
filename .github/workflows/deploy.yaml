@@ -17,9 +17,12 @@
 name: Deploy Snapshot
 
 on:
+  pull_request:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 18 * * *'  # TimeZone: UTC 0
 
 concurrency:
   group: deploy-${{ github.ref }}
