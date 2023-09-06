@@ -74,6 +74,59 @@ jobs:
       - name: Build and Test
         run: ./mvnw -q clean verify install
 
+  publish-oap-docker:
+    name: Publish OAP Docker
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-deploy-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-deploy-
+      - name: Maven Install
+        run: |
+          ./mvnw --batch-mode --settings maven-settings.xml clean install \
+                 -Dmaven.test.skip -Dcheckstyle.skip
+      - name: Clone OAP repo
+        run: |
+          git config --global url.https://github.com/.insteadOf git://github.com/
+          git clone --recurse-submodules https://github.com/apache/skywalking.git
+      - name: Replace OAP banyandb-java-client version
+        working-directory: ./skywalking
+        run: sed -i 's/banyandb-java-client.version>0.4.0/banyandb-java-client.version>0.5.0-SNAPSHOT/g' oap-server-bom/pom.xml
+      - name: Cat OAP banyandb-java-client version
+        working-directory: ./skywalking
+        run: grep "banyandb-java-client.version" oap-server-bom/pom.xml
+      - name: Set environment variables
+        working-directory: ./skywalking
+        run: |
+            echo "HUB=ghcr.io/apache/skywalking-banyandb-java-client" >> $GITHUB_ENV
+            echo "DOCKER_REGISTRY=ghcr.io/apache/skywalking-banyandb-java-client" >> $GITHUB_ENV
+            echo "DOCKER_USERNAME=${{ github.actor }}" >> $GITHUB_ENV
+            echo "DOCKER_PASSWORD=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+            echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Build and push docker images
+        working-directory: ./skywalking
+        run: make build.all docker.push
+
   ci:
     name: CI
     runs-on: ubuntu-latest
