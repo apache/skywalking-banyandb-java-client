@@ -69,7 +69,7 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
                     @Override
                     public void onNext(BanyandbStream.WriteResponse writeResponse) {
                         switch (writeResponse.getStatus()) {
-                            case STATUS_EXPIRED_REVISION:
+                            case STATUS_EXPIRED_SCHEMA:
                                 BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
                                 String schemaKey = metadata.getGroup() + "." + metadata.getName();
                                 if (!schemaExpired.contains(schemaKey)) {

@@ -38,7 +38,6 @@ import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.DataLossException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.InternalException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidArgumentException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
@@ -220,19 +219,15 @@ public class BanyanDBClient implements Closeable {
                             @Override
                             public void onNext(BanyandbStream.WriteResponse writeResponse) {
                                 switch (writeResponse.getStatus()) {
-                                    case STATUS_RECEIVE_ERROR:
-                                        responseException = new DataLossException(
-                                                "Receive data error", null, Status.Code.DATA_LOSS, true);
-                                        break;
                                     case STATUS_INVALID_TIMESTAMP:
                                         responseException = new InvalidArgumentException(
                                                 "Invalid timestamp: " + streamWrite.getTimestamp(), null, Status.Code.INVALID_ARGUMENT, false);
                                         break;
-                                    case STATUS_INVALID_METADATA:
+                                    case STATUS_NOT_FOUND:
                                         responseException = new InvalidArgumentException(
                                                 "Invalid metadata: " + streamWrite.entityMetadata, null, Status.Code.INVALID_ARGUMENT, false);
                                         break;
-                                    case STATUS_EXPIRED_REVISION:
+                                    case STATUS_EXPIRED_SCHEMA:
                                         BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
                                         log.warn("The schema {}.{} is expired, trying update the schema...",
                                                 metadata.getGroup(), metadata.getName());

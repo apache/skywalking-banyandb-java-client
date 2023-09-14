@@ -23,6 +23,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
@@ -107,6 +108,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
             Assert.assertEquals("entity_1", request.getDataPoint().getTagFamilies(0).getTags(0).getStr().getValue());
             Assert.assertEquals(100, request.getDataPoint().getFields(0).getInt().getValue());
             Assert.assertEquals(1, request.getDataPoint().getFields(1).getInt().getValue());
+            Assert.assertTrue(request.getMessageId() > 0);
         } else {
             Assert.fail();
         }
@@ -160,6 +162,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
             Assert.assertEquals("entity_1", request.getDataPoint().getTagFamilies(0).getTags(0).getStr().getValue());
             Assert.assertEquals(100, request.getDataPoint().getFields(0).getInt().getValue());
             Assert.assertEquals(1, request.getDataPoint().getFields(1).getInt().getValue());
+            Assert.assertTrue(request.getMessageId() > 0);
         } else {
             Assert.fail();
         }
@@ -183,11 +186,12 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
                             responseObserver.onNext(
                                     BanyandbMeasure.WriteResponse.newBuilder()
                                             .setMetadata(request.getMetadata())
-                                            .setStatus(BanyandbMeasure.Status.STATUS_EXPIRED_REVISION)
+                                            .setStatus(BanyandbModel.Status.STATUS_EXPIRED_SCHEMA)
+                                            .setMessageId(request.getMessageId())
                                             .build());
                         } else {
                             writeRequestDelivered.add(request);
-                            responseObserver.onNext(BanyandbMeasure.WriteResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbMeasure.WriteResponse.newBuilder().setMessageId(request.getMessageId()).build());
                         }
                     }
 
