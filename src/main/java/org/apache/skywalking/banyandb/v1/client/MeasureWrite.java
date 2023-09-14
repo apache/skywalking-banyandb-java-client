@@ -93,6 +93,7 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
         }
 
         builder.setDataPoint(datapointValueBuilder);
+        builder.setMessageId(System.nanoTime());
         return builder.build();
     }
 }

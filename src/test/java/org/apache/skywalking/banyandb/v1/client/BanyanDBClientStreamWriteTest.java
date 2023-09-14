@@ -25,6 +25,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
@@ -247,6 +248,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
             Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(5).getInt().getValue());
             Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
             Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
+            Assert.assertTrue(request.getMessageId() > 0);
         } else {
             Assert.fail();
         }
@@ -341,6 +343,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
             Assert.assertEquals(latency, request.getElement().getTagFamilies(1).getTags(5).getInt().getValue());
             Assert.assertEquals(request.getElement().getTagFamilies(1).getTags(7).getNull(), NullValue.NULL_VALUE);
             Assert.assertEquals(queue, request.getElement().getTagFamilies(1).getTags(12).getStr().getValue());
+            Assert.assertTrue(request.getMessageId() > 0);
         } else {
             Assert.fail();
         }
@@ -364,11 +367,12 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
                             responseObserver.onNext(
                                     BanyandbStream.WriteResponse.newBuilder()
                                             .setMetadata(request.getMetadata())
-                                            .setStatus(BanyandbStream.Status.STATUS_EXPIRED_REVISION)
+                                            .setStatus(BanyandbModel.Status.STATUS_EXPIRED_SCHEMA)
+                                            .setMessageId(request.getMessageId())
                                             .build());
                         } else {
                             writeRequestDelivered.add(request);
-                            responseObserver.onNext(BanyandbStream.WriteResponse.newBuilder().build());
+                            responseObserver.onNext(BanyandbStream.WriteResponse.newBuilder().setMessageId(request.getMessageId()).build());
                         }
                     }
 

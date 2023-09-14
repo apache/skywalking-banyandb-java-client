@@ -68,7 +68,7 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
             @Override
             public void onNext(BanyandbMeasure.WriteResponse writeResponse) {
                 switch (writeResponse.getStatus()) {
-                    case STATUS_EXPIRED_REVISION:
+                    case STATUS_EXPIRED_SCHEMA:
                         BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
                         String schemaKey = metadata.getGroup() + "." + metadata.getName();
                         if (!schemaExpired.contains(schemaKey)) {

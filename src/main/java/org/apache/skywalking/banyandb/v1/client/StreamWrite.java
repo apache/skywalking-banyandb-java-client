@@ -94,6 +94,7 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
             elemValBuilder.addTagFamilies(BanyandbModel.TagFamilyForWrite.newBuilder().addAllTags(tags).build());
         }
         builder.setElement(elemValBuilder);
+        builder.setMessageId(System.nanoTime());
         return builder.build();
     }
 }
