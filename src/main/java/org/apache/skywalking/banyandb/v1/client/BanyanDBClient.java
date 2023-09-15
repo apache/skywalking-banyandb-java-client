@@ -234,7 +234,9 @@ public class BanyanDBClient implements Closeable {
                                         try {
                                             BanyanDBClient.this.findStream(metadata.getGroup(), metadata.getName());
                                         } catch (BanyanDBException e) {
-                                            throw new RuntimeException(e);
+                                            String warnMessage = String.format("Failed to refresh the stream schema %s.%s",
+                                                    metadata.getGroup(), metadata.getName());
+                                            log.warn(warnMessage, e);
                                         }
                                         responseException = new InvalidArgumentException(
                                                 "Expired revision: " + metadata.getModRevision(), null, Status.Code.INVALID_ARGUMENT, true);
