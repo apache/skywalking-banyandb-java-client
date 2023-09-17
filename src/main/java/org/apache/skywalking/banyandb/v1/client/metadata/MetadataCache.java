@@ -39,9 +39,17 @@ public class MetadataCache {
         return stream;
     }
 
+    public EntityMetadata unregister(Stream stream) {
+        return this.cache.remove(formatKey(stream.group(), stream.name()));
+    }
+
     public Measure register(Measure measure) {
         this.cache.put(formatKey(measure.group(), measure.name()), parse(measure));
         return measure;
+    }
+
+    public EntityMetadata unregister(Measure measure) {
+        return this.cache.remove(formatKey(measure.group(), measure.name()));
     }
 
     public EntityMetadata findMetadata(String group, String name) {
@@ -65,7 +73,7 @@ public class MetadataCache {
                 tagInfo.put(s.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
             }
         }
-        return new EntityMetadata(s.group(), s.name(), totalTags, 0, tagFamilyCapacity,
+        return new EntityMetadata(s.group(), s.name(), s.modRevision(), totalTags, 0, tagFamilyCapacity,
                 Collections.unmodifiableMap(tagInfo),
                 Collections.emptyMap());
     }
@@ -87,7 +95,7 @@ public class MetadataCache {
         for (int i = 0; i < m.fields().size(); i++) {
             fieldOffset.put(m.fields().get(i).getName(), i);
         }
-        return new EntityMetadata(m.group(), m.name(), totalTags, m.fields().size(), tagFamilyCapacity,
+        return new EntityMetadata(m.group(), m.name(), m.modRevision(), totalTags, m.fields().size(), tagFamilyCapacity,
                 Collections.unmodifiableMap(tagOffset), Collections.unmodifiableMap(fieldOffset));
     }
 
@@ -96,6 +104,7 @@ public class MetadataCache {
     public static class EntityMetadata {
         private final String group;
         private final String name;
+        private final long modRevision;
         private final int totalTags;
 
         private final int totalFields;

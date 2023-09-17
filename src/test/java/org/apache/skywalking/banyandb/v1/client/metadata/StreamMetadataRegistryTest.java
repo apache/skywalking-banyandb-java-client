@@ -54,6 +54,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
         Assert.assertNotNull(actualStream);
         Assert.assertEquals(expectedStream, actualStream);
         Assert.assertNotNull(actualStream.updatedAt());
+        Assert.assertNotNull(actualStream.modRevision());
     }
 
     @Test
@@ -74,6 +75,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
         List<Stream> actualStreams = new StreamMetadataRegistry(this.channel).list("default");
         Assert.assertNotNull(actualStreams);
         Assert.assertEquals(1, actualStreams.size());
+        actualStreams.forEach(stream -> Assert.assertNotNull(stream.modRevision()));
     }
 
     @Test
@@ -91,7 +93,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
                 .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
                 .build();
         this.client.define(expectedStream);
-        boolean deleted = new StreamMetadataRegistry(this.channel).delete("default", "sw");
+        boolean deleted = this.client.delete(expectedStream);
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, streamRegistry.size());
     }

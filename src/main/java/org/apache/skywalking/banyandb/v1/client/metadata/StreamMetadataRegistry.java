@@ -36,11 +36,12 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     }
 
     @Override
-    public void create(Stream payload) throws BanyanDBException {
-        execute(() ->
+    public long create(Stream payload) throws BanyanDBException {
+        BanyandbDatabase.StreamRegistryServiceCreateResponse resp = execute(() ->
                 stub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
                         .setStream(payload.serialize())
                         .build()));
+        return resp.getModRevision();
     }
 
     @Override

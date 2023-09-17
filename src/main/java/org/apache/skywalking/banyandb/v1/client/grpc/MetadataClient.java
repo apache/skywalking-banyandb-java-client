@@ -33,6 +33,8 @@ import java.util.List;
  * @param <S> NamedSchema: Java implementation (POJO) which can be serialized to P
  */
 public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P extends GeneratedMessageV3, S extends NamedSchema<P>> {
+    public static final long DEFAULT_MOD_REVISION = 0;
+
     protected final STUB stub;
 
     protected MetadataClient(STUB stub) {
@@ -43,9 +45,10 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * Create a schema
      *
      * @param payload the schema to be created
+     * @return the mod revision of the schema
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract void create(S payload) throws BanyanDBException;
+    public abstract long create(S payload) throws BanyanDBException;
 
     /**
      * Update the schema

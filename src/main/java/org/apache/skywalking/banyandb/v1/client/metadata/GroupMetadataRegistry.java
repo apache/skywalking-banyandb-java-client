@@ -36,10 +36,11 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     }
 
     @Override
-    public void create(Group payload) throws BanyanDBException {
+    public long create(Group payload) throws BanyanDBException {
         execute(() -> stub.create(BanyandbDatabase.GroupRegistryServiceCreateRequest.newBuilder()
                 .setGroup(payload.serialize())
                 .build()));
+        return DEFAULT_MOD_REVISION;
     }
 
     @Override

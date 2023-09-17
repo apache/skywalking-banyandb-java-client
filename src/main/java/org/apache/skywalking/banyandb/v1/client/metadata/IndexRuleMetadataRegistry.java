@@ -35,11 +35,12 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     }
 
     @Override
-    public void create(IndexRule payload) throws BanyanDBException {
+    public long create(IndexRule payload) throws BanyanDBException {
         execute(() ->
                 stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
                         .setIndexRule(payload.serialize())
                         .build()));
+        return DEFAULT_MOD_REVISION;
     }
 
     @Override

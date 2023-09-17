@@ -81,7 +81,7 @@ Measure m = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1
         .setEntityRelativeTags("entity_id")
         // define a tag family "default"
         .addTagFamily(TagFamilySpec.create("default")
-            .addTagSpec(TagFamilySpec.TagSpec.newIDTag("id"))
+            .addTagSpec(TagFamilySpec.TagSpec.newStringTag("id"))
             .addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id"))
             .build())
         // define field specs
@@ -280,7 +280,7 @@ The writing procedure for `Measure` is similar to the above described process an
 
 ```java
 // build a MeasureBulkWriteProcessor from client
-MeasureBulkWriteProcessor bulkWriteProcessor = client.buildMeasureWriteProcessor(maxBulkSize, flushInterval, concurrency);
+MeasureBulkWriteProcessor measureBulkWriteProcessor = client.buildMeasureWriteProcessor(maxBulkSize, flushInterval, concurrency);
 ```
 
 A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then build the `MeasureWrite` object and send with bulk processor,
@@ -288,7 +288,7 @@ A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then 
 ```java
 Instant now = Instant.now();
 MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
-    measureWrite.tag("id", TagAndValue.idTagValue("1"))
+    measureWrite.tag("id", TagAndValue.stringTagValue("1"))
     .tag("entity_id", TagAndValue.stringTagValue("entity_1"))
     .field("total", TagAndValue.longFieldValue(100))
     .field("value", TagAndValue.longFieldValue(1));

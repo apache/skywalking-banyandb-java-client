@@ -20,10 +20,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+
+import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.v1.client.util.IgnoreHashEquals;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import java.time.ZonedDateTime;
@@ -54,6 +59,14 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     abstract Duration interval();
 
     /**
+     * last updated revision
+     * This field can only be set by the server.
+     */
+    @Nullable
+    @IgnoreHashEquals
+    abstract Long modRevision();
+
+    /**
      * index rules bound to the stream
      */
     public abstract ImmutableList<IndexRule> indexRules();
@@ -63,6 +76,10 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
     public final Measure withIndexRules(List<IndexRule> indexRules) {
         return toBuilder().addIndexes(indexRules)
                 .build();
+    }
+
+    public final Measure withModRevision(Long modRevision) {
+        return toBuilder().setModRevision(modRevision).build();
     }
 
     public static Measure.Builder create(String group, String name, Duration interval) {
@@ -80,6 +97,8 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
         abstract Measure.Builder setName(String name);
 
         abstract Measure.Builder setUpdatedAt(ZonedDateTime updatedAt);
+
+        abstract Measure.Builder setModRevision(Long modRevision);
 
         abstract ImmutableList.Builder<TagFamilySpec> tagFamiliesBuilder();
 
@@ -127,6 +146,7 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
         final Measure.Builder m = Measure.create(pb.getMetadata().getGroup(), pb.getMetadata().getName(),
                         Duration.parse(pb.getInterval()))
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
+                .setModRevision(pb.getMetadata().getModRevision())
                 .setEntityRelativeTags(pb.getEntity().getTagNamesList());
 
         // build tag family spec
@@ -154,9 +174,13 @@ public abstract class Measure extends NamedSchema<BanyandbDatabase.Measure> {
             fs.add(spec.serialize());
         }
 
+        BanyandbCommon.Metadata metadata = buildMetadata();
+        if (this.modRevision() != null) {
+            metadata = buildMetadata(this.modRevision());
+        }
         BanyandbDatabase.Measure.Builder b = BanyandbDatabase.Measure.newBuilder()
                 .setInterval(interval().format())
-                .setMetadata(buildMetadata())
+                .setMetadata(metadata)
                 .addAllTagFamilies(tfs)
                 .addAllFields(fs)
                 .setEntity(BanyandbDatabase.Entity.newBuilder().addAllTagNames(entityRelativeTags()).build());
