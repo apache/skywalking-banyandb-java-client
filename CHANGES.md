@@ -8,6 +8,7 @@ Release Notes.
 ### Features
 
 * Add mod revision check to write requests
+* Add TTL to property.
 
 0.4.0
 ------------------

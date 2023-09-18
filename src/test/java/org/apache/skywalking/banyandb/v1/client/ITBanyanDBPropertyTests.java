@@ -22,6 +22,7 @@ import io.grpc.Status;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
 import org.apache.skywalking.banyandb.v1.client.metadata.Property;
+import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -126,6 +127,18 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
             List<Property> gotProperties = client.findProperties("default", "sw", Arrays.asList("id2"), null);
             Assert.assertEquals(1, gotProperties.size());
         });
+    }
+
+    @Test
+    public void test_PropertyKeepAlive() throws BanyanDBException {
+        Property property = Property.create("default", "sw", "id1")
+                .setTtl("30m")
+                .addTag(TagAndValue.newStringTag("name", "bar"))
+                .build();
+        PropertyStore.ApplyResult resp = this.client.apply(property);
+        Assert.assertTrue(resp.created());
+        Assert.assertTrue(resp.leaseId() > 0);
+        this.client.keepAliveProperty(resp.leaseId());
     }
 
 }

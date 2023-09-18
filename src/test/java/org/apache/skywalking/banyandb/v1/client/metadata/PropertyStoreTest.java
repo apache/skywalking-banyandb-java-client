@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
+import com.google.common.base.Strings;
 import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
 import org.apache.skywalking.banyandb.property.v1.PropertyServiceGrpc;
@@ -32,8 +33,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.mock;
@@ -42,6 +45,8 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
     private PropertyStore store;
 
     private Map<String, BanyandbProperty.Property> memory;
+
+    private Set<Long> leasePool;
 
     private final PropertyServiceGrpc.PropertyServiceImplBase propertyServiceImpl = mock(PropertyServiceGrpc.PropertyServiceImplBase.class, delegatesTo(
             new PropertyServiceGrpc.PropertyServiceImplBase() {
@@ -53,10 +58,16 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
                     String key = format(p.getMetadata());
                     BanyandbProperty.Property v = memory.get(key);
                     memory.put(format(p.getMetadata()), p);
+                    BanyandbProperty.ApplyResponse.Builder builder = BanyandbProperty.ApplyResponse.newBuilder().setTagsNum(p.getTagsCount());
+                    if (!Strings.isNullOrEmpty(p.getTtl())) {
+                        long leaseId = System.currentTimeMillis();
+                        leasePool.add(leaseId);
+                        builder.setLeaseId(leaseId);
+                    }
                     if (v == null) {
-                        responseObserver.onNext(BanyandbProperty.ApplyResponse.newBuilder().setCreated(true).setTagsNum(p.getTagsCount()).build());
+                        responseObserver.onNext(builder.setCreated(true).build());
                     } else {
-                        responseObserver.onNext(BanyandbProperty.ApplyResponse.newBuilder().setCreated(false).setTagsNum(p.getTagsCount()).build());
+                        responseObserver.onNext(builder.setCreated(false).build());
                     }
                     responseObserver.onCompleted();
                 }
@@ -80,12 +91,22 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
                     responseObserver.onNext(BanyandbProperty.ListResponse.newBuilder().addAllProperty(memory.values()).build());
                     responseObserver.onCompleted();
                 }
+
+                public void keepAlive(BanyandbProperty.KeepAliveRequest request, StreamObserver<BanyandbProperty.KeepAliveResponse> responseObserver) {
+                    if (!leasePool.contains(request.getLeaseId())) {
+                        responseObserver.onError(new RuntimeException("lease not found"));
+                    } else {
+                        responseObserver.onNext(BanyandbProperty.KeepAliveResponse.newBuilder().build());
+                    }
+                    responseObserver.onCompleted();
+                }
             }));
 
     @Before
     public void setUp() throws IOException {
         super.setUp(bindService(propertyServiceImpl));
         this.memory = new HashMap<>();
+        this.leasePool = new HashSet<>();
         this.store = new PropertyStore(this.channel);
     }
 
@@ -136,6 +157,18 @@ public class PropertyStoreTest extends AbstractBanyanDBClientTest {
         boolean deleted = this.store.delete("default", "sw", "ui_template").deleted();
         Assert.assertTrue(deleted);
         Assert.assertEquals(0, memory.size());
+    }
+
+    @Test
+    public void testPropertyStore_keepAlive() throws BanyanDBException {
+        Property property = Property.create("default", "sw", "ui_template")
+                .addTag(TagAndValue.newStringTag("name", "hello"))
+                .setTtl("30m")
+                .build();
+        PropertyStore.ApplyResult resp = this.store.apply(property);
+        Assert.assertTrue(resp.created());
+        Assert.assertTrue(resp.leaseId() > 0);
+        this.store.keepAlive(resp.leaseId());
     }
 
     static String format(BanyandbProperty.Metadata metadata) {

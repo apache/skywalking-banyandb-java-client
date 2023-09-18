@@ -19,12 +19,15 @@
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
 import org.apache.skywalking.banyandb.v1.client.TagAndValue;
+import org.apache.skywalking.banyandb.v1.client.util.IgnoreHashEquals;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
+import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,19 +38,32 @@ public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
 
     public abstract ImmutableList<TagAndValue<?>> tags();
 
+    @Nullable
+    public abstract String ttl();
+
+    @Nullable
+    @IgnoreHashEquals
+    public abstract Long leaseId();
+
     @Override
     public BanyandbProperty.Property serialize() {
         List<BanyandbModel.Tag> tags = new ArrayList<>(this.tags().size());
         for (final TagAndValue<?> tagAndValue : this.tags()) {
             tags.add(tagAndValue.build());
         }
-        return BanyandbProperty.Property.newBuilder()
+        BanyandbProperty.Property.Builder builder = BanyandbProperty.Property.newBuilder()
                 .setMetadata(BanyandbProperty.Metadata.newBuilder()
                         .setId(id())
                         .setContainer(buildMetadata())
                         .build())
-                .addAllTags(tags)
-                .build();
+                .addAllTags(tags);
+        if (!Strings.isNullOrEmpty(ttl())) {
+            builder.setTtl(ttl());
+        }
+        if (leaseId() != null) {
+            builder.setLeaseId(leaseId());
+        }
+        return builder.build();
     }
 
     public static Builder create(String group, String name, String id) {
@@ -59,6 +75,12 @@ public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
                         pb.getMetadata().getContainer().getName(),
                         pb.getMetadata().getId())
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()));
+        if (!Strings.isNullOrEmpty(pb.getTtl())) {
+            b.setTtl(pb.getTtl());
+        }
+        if (pb.getLeaseId() > 0) {
+            b.setLeaseId(pb.getLeaseId());
+        }
 
         // build tag family spec
         for (int i = 0; i < pb.getTagsCount(); i++) {
@@ -84,6 +106,10 @@ public abstract class Property extends NamedSchema<BanyandbProperty.Property> {
             tagsBuilder().add(tagAndValue);
             return this;
         }
+
+        public abstract Builder setTtl(String ttl);
+
+        abstract Builder setLeaseId(long leaseId);
 
         public abstract Property build();
     }

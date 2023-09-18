@@ -323,6 +323,23 @@ Property property = Property.create("default", "sw", "ui_template")
 this.client.apply(property); //created:false tagsNum:1
 ```
 
+The property supports setting TTL.
+
+```java
+Property property = Property.create("default", "sw", "temp_date")
+    .addTag(TagAndValue.newStringTag("state", "failed"))
+    .ttl("30m")
+    .build();
+this.client.apply(property); //created:false tagsNum:1 lease_id:1
+```
+The property's TTL can be extended by calling `Client.keepAliveProperty`,
+
+```java
+this.client.keepAliveProperty(1); //lease_id:1
+```
+
+The property's live time is reset to 30 minutes.
+
 ### Query
 
 Property can be queried via `Client.findProperty`,

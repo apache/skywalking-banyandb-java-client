@@ -34,6 +34,7 @@ message Metadata {
   string id = 2;
 }
 
+
 // Property stores the user defined data
 message Property {
   // metadata is the identity of a property
@@ -42,6 +43,13 @@ message Property {
   repeated model.v1.Tag tags = 2;
   // updated_at indicates when the property is updated
   google.protobuf.Timestamp updated_at = 3;
+  // readonly. lease_id is the ID of the lease that attached to key.
+  int64 lease_id = 4;
+  // ttl indicates the time to live of the property.
+  // It's a string in the format of "1h", "2m", "3s", "1500ms".
+  // It defaults to 0s, which means the property never expires.
+  // The minimum allowed ttl is 1s.
+  string ttl = 5;
 }
 
 message ApplyRequest {
@@ -60,6 +68,7 @@ message ApplyResponse {
   // True: the property is absent. False: the property existed.
   bool created = 1;
   uint32 tags_num = 2;
+  int64 lease_id = 3;
 }
 
 message DeleteRequest {
@@ -91,10 +100,17 @@ message ListResponse {
   repeated banyandb.property.v1.Property property = 1;
 }
 
+message KeepAliveRequest {
+  int64 lease_id = 1;
+}
+
+message KeepAliveResponse {}
+
 service PropertyService {
   // Apply creates a property if it's absent, or update a existed one based on a strategy.
   rpc Apply(ApplyRequest) returns (ApplyResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);
+  rpc KeepAlive(KeepAliveRequest) returns (KeepAliveResponse);
 }
