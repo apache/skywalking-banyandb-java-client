@@ -326,7 +326,7 @@ this.client.apply(property); //created:false tagsNum:1
 The property supports setting TTL.
 
 ```java
-Property property = Property.create("default", "sw", "ui_template")
+Property property = Property.create("default", "sw", "temp_date")
     .addTag(TagAndValue.newStringTag("state", "failed"))
     .ttl("30m")
     .build();
