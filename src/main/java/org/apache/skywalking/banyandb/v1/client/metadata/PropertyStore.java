@@ -57,7 +57,7 @@ public class PropertyStore {
                 .build();
         BanyandbProperty.ApplyResponse resp = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.stub.apply(r));
-        return new AutoValue_PropertyStore_ApplyResult(resp.getCreated(), resp.getTagsNum());
+        return new AutoValue_PropertyStore_ApplyResult(resp.getCreated(), resp.getTagsNum(), resp.getLeaseId());
     }
 
     public DeleteResult delete(String group, String name, String id, String... tags) throws BanyanDBException {
@@ -115,6 +115,14 @@ public class PropertyStore {
         return resp.getPropertyList().stream().map(Property::fromProtobuf).collect(Collectors.toList());
     }
 
+    public void keepAlive(long leaseId) throws BanyanDBException {
+        BanyandbProperty.KeepAliveRequest req = BanyandbProperty.KeepAliveRequest.newBuilder()
+                .setLeaseId(leaseId)
+                .build();
+        HandleExceptionsWith.callAndTranslateApiException(() ->
+                this.stub.keepAlive(req));
+    }
+
     public enum Strategy {
         MERGE, REPLACE
     }
@@ -124,6 +132,8 @@ public class PropertyStore {
         public abstract boolean created();
 
         public abstract int tagsNum();
+
+        public abstract long leaseId();
     }
 
     @AutoValue

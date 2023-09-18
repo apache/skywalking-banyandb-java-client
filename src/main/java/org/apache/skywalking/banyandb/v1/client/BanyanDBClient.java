@@ -545,6 +545,16 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Keep alive the property
+     *
+     * @param leaseId lease id of the property
+     */
+    public void keepAliveProperty(long leaseId) throws BanyanDBException {
+        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
+        store.keepAlive(leaseId);
+    }
+
+    /**
      * Bind index rule to the stream
      *
      * @param stream     the subject of index rule binding
