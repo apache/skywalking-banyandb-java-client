@@ -354,7 +354,7 @@ public class AbstractBanyanDBClientTest {
         this.channel = grpcCleanup.register(
                 InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        client = new BanyanDBClient("127.0.0.1", s.getPort());
+        client = new BanyanDBClient(String.format("127.0.0.1:%d", s.getPort()));
         client.connect(this.channel);
     }
 

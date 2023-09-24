@@ -29,9 +29,7 @@ import io.grpc.ForwardingClientCallListener;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
-import io.grpc.NameResolverRegistry;
 import io.grpc.Status;
-import io.grpc.internal.DnsNameResolverProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,22 +55,18 @@ public class ChannelManager extends ManagedChannel {
     private final ScheduledExecutorService executor;
     @VisibleForTesting
     final AtomicReference<Entry> entryRef = new AtomicReference<>();
-    private final String authority;
 
     public static ChannelManager create(ChannelManagerSettings settings, ChannelFactory channelFactory)
             throws IOException {
         return new ChannelManager(settings, channelFactory, Executors.newSingleThreadScheduledExecutor());
     }
 
-    public ChannelManager(ChannelManagerSettings settings, ChannelFactory channelFactory, ScheduledExecutorService executor) throws IOException {
+    ChannelManager(ChannelManagerSettings settings, ChannelFactory channelFactory, ScheduledExecutorService executor) throws IOException {
         this.settings = settings;
         this.channelFactory = channelFactory;
         this.executor = executor;
 
-        NameResolverRegistry.getDefaultRegistry().register(new DnsNameResolverProvider());
-
         entryRef.set(new Entry(channelFactory.create()));
-        authority = entryRef.get().channel.authority();
 
         this.executor.scheduleAtFixedRate(
                 this::refreshSafely,
@@ -92,16 +86,17 @@ public class ChannelManager extends ManagedChannel {
 
     void refresh() throws IOException {
         Entry entry = entryRef.get();
-        if (entry.needReconnect) {
-            if (entry.isConnected(entry.reconnectCount.incrementAndGet() > this.settings.forceReconnectionThreshold())) {
-                // Reconnect to the same server is automatically done by GRPC
-                // clear the flags
-                entry.reset();
-            } else {
-                Entry replacedEntry = entryRef.getAndSet(new Entry(this.channelFactory.create()));
-                replacedEntry.shutdown();
-            }
+        if (!entry.needReconnect) {
+            return;
         }
+        if (entry.isConnected(entry.reconnectCount.incrementAndGet() > this.settings.forceReconnectionThreshold())) {
+            // Reconnect to the same server is automatically done by GRPC
+            // clear the flags
+            entry.reset();
+            return;
+        }
+        Entry replacedEntry = entryRef.getAndSet(new Entry(this.channelFactory.create()));
+        replacedEntry.shutdown();
     }
 
     @Override
@@ -157,7 +152,7 @@ public class ChannelManager extends ManagedChannel {
 
     @Override
     public String authority() {
-        return this.authority;
+        return this.entryRef.get().channel.authority();
     }
 
     @RequiredArgsConstructor
@@ -192,7 +187,7 @@ public class ChannelManager extends ManagedChannel {
 
         @Override
         public String authority() {
-            return authority;
+            return ChannelManager.this.authority();
         }
     }
 

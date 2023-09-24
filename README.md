@@ -14,14 +14,21 @@ The client implement for SkyWalking BanyanDB in Java.
 
 ## Create a client
 
-Create a `BanyanDBClient` with host, port and then use `connect()` to establish a connection.
+Create a `BanyanDBClient` with the server's several addresses and then use `connect()` to establish a connection.
 
 ```java
 // use `default` group
-client = new BanyanDBClient("127.0.0.1", 17912);
+BanyanDBClient client = new BanyanDBClient("banyandb.svc:17912", "10.0.12.9:17912");
 // to send any request, a connection to the server must be estabilished
 client.connect();
 ```
+
+These addresses are either IP addresses or DNS names. If DNS names are used, the client will resolve the DNS name to
+IP addresses and use them to connect to the server. The client will periodically refresh the IP addresses of the DNS
+name. The refresh interval can be configured by `resolveDNSInterval` option.
+
+The client will try to connect to the server in a round-robin manner. The client will periodically refresh the server
+addresses. The refresh interval can be configured by `refreshInterval` option.
 
 Besides, you may pass a customized options while building a `BanyanDBClient`. Supported
 options are listed below,
@@ -32,6 +39,7 @@ options are listed below,
 | maxInboundMessageSize      | Max inbound message size                                             | 1024 * 1024 * 50 (~50MB) |
 | deadline                   | Threshold of gRPC blocking query, unit is second                     | 30 (seconds)             |
 | refreshInterval            | Refresh interval for the gRPC channel, unit is second                | 30 (seconds)             |
+| resolveDNSInterval         | DNS resolve interval, unit is second                                 | 30 (minutes)             |
 | forceReconnectionThreshold | Threshold of force gRPC reconnection if network issue is encountered | 1                        |
 | forceTLS                   | Force use TLS for gRPC                                               | false                    |
 | sslTrustCAPath             | SSL: Trusted CA Path                                                 |                          |

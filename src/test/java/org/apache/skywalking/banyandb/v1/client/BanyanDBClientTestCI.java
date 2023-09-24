@@ -49,7 +49,7 @@ public class BanyanDBClientTestCI {
 
     protected void setUpConnection() throws IOException {
         log.info("create BanyanDB client and try to connect");
-        client = new BanyanDBClient(banyanDB.getHost(), banyanDB.getMappedPort(GRPC_PORT));
+        client = new BanyanDBClient(String.format("%s:%d", banyanDB.getHost(), banyanDB.getMappedPort(GRPC_PORT)));
         client.connect();
     }
 
