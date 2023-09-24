@@ -28,7 +28,6 @@ import io.grpc.stub.StreamObserver;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
@@ -59,7 +58,9 @@ import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregationMetadata
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -83,14 +84,8 @@ import static com.google.common.base.Preconditions.checkState;
  */
 @Slf4j
 public class BanyanDBClient implements Closeable {
-    /**
-     * The hostname of BanyanDB server.
-     */
-    private final String host;
-    /**
-     * The port of BanyanDB server.
-     */
-    private final int port;
+
+    private final String[] targets;
     /**
      * Options for server connection.
      */
@@ -138,23 +133,24 @@ public class BanyanDBClient implements Closeable {
     /**
      * Create a BanyanDB client instance with a default options.
      *
-     * @param host IP or domain name
-     * @param port Server port
+     * @param targets server targets
      */
-    public BanyanDBClient(String host, int port) {
-        this(host, port, new Options());
+    public BanyanDBClient(String... targets) {
+        this(targets, new Options());
     }
 
     /**
      * Create a BanyanDB client instance with a customized options.
      *
-     * @param host    IP or domain name
-     * @param port    Server port
+     * @param targets server targets
      * @param options customized options
      */
-    public BanyanDBClient(String host, int port, Options options) {
-        this.host = host;
-        this.port = port;
+    public BanyanDBClient(String[] targets, Options options) {
+        String[] tt = Preconditions.checkNotNull(targets, "targets");
+        checkState(tt.length > 0, "targets' size must be more than 1");
+        tt = Arrays.stream(tt).filter(t -> !Strings.isNullOrEmpty(t)).toArray(size -> new String[size]);
+        checkState(tt.length > 0, "valid targets' size must be more than 1");
+        this.targets = tt;
         this.options = options;
         this.connectionEstablishLock = new ReentrantLock();
         this.metadataCache = new MetadataCache();
@@ -169,8 +165,12 @@ public class BanyanDBClient implements Closeable {
         connectionEstablishLock.lock();
         try {
             if (!isConnected) {
+                URI[] addresses = new URI[this.targets.length];
+                for (int i = 0; i < this.targets.length; i++) {
+                        addresses[i] = URI.create("//" + this.targets[i]);
+                }
                 this.channel = ChannelManager.create(this.options.buildChannelManagerSettings(),
-                        new DefaultChannelFactory(this.host, this.port, this.options));
+                        new DefaultChannelFactory(addresses, this.options));
                 streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
                 measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);

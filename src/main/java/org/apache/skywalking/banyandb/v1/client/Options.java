@@ -46,6 +46,10 @@ public class Options {
      */
     private long forceReconnectionThreshold = 1;
     /**
+     * Threshold of resolving the DNS
+     */
+    private long resolveDNSInterval = 30 * 60;
+    /**
      * Force use TLS for gRPC
      * Default is false
      */

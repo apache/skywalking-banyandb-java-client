@@ -9,6 +9,9 @@ Release Notes.
 
 * Add mod revision check to write requests
 * Add TTL to property.
+* Support setting multiple server addresses 
+* Support DNS name resolution
+* Support round-robin load balancing
 
 0.4.0
 ------------------
