@@ -166,11 +166,11 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
-                .tag("state", Value.longTagValue(state)) // 1
+                .tag("state", Value.longTagValue((long) state)) // 1
                 .tag("service_id", Value.stringTagValue(serviceId)) // 2
                 .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
                 .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
-                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("duration", Value.longTagValue((long) latency)) // 5
                 .tag("http.method", Value.stringTagValue(null)) // 6
                 .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
                 .tag("db.type", Value.stringTagValue(dbType)) // 8
@@ -224,11 +224,11 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
-                .tag("state", Value.longTagValue(state)) // 1
+                .tag("state", Value.longTagValue((long) state)) // 1
                 .tag("service_id", Value.stringTagValue(serviceId)) // 2
                 .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
                 .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
-                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("duration", Value.longTagValue((long) latency)) // 5
                 .tag("http.method", Value.stringTagValue(null)) // 6
                 .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
                 .tag("db.type", Value.stringTagValue(dbType)) // 8
@@ -269,7 +269,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         int latency = 200;
         int state = 1;
         Instant now = Instant.now();
-        byte[] byteData = new byte[] {14};
+        byte[] byteData = new byte[]{14};
         String broker = "172.16.10.129:9092";
         String topic = "topic_1";
         String queue = "queue_2";
@@ -280,11 +280,11 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
-                .tag("state", Value.longTagValue(state)) // 1
+                .tag("state", Value.longTagValue((long) state)) // 1
                 .tag("service_id", Value.stringTagValue(serviceId)) // 2
                 .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
                 .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
-                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("duration", Value.longTagValue((long) latency)) // 5
                 .tag("http.method", Value.stringTagValue(null)) // 6
                 .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
                 .tag("db.type", Value.stringTagValue(dbType)) // 8
@@ -320,11 +320,11 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
         streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
-                .tag("state", Value.longTagValue(state)) // 1
+                .tag("state", Value.longTagValue((long) state)) // 1
                 .tag("service_id", Value.stringTagValue(serviceId)) // 2
                 .tag("service_instance_id", Value.stringTagValue(serviceInstanceId)) // 3
                 .tag("endpoint_id", Value.stringTagValue(endpointId)) // 4
-                .tag("duration", Value.longTagValue(latency)) // 5
+                .tag("duration", Value.longTagValue((long) latency)) // 5
                 .tag("http.method", Value.stringTagValue(null)) // 6
                 .tag("status_code", Value.stringTagValue(httpStatusCode)) // 7
                 .tag("db.type", Value.stringTagValue(dbType)) // 8
