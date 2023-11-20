@@ -147,7 +147,10 @@ public abstract class Value<T> {
      * @param val payload
      * @return Anonymous tag with numeric payload
      */
-    public static Serializable<BanyandbModel.TagValue> longTagValue(long val) {
+    public static Serializable<BanyandbModel.TagValue> longTagValue(Long val) {
+        if (val == null) {
+            return nullTagValue();
+        }
         return new LongTagValue(val);
     }
 
@@ -158,6 +161,9 @@ public abstract class Value<T> {
      * @return Anonymous tag with string array payload
      */
     public static Serializable<BanyandbModel.TagValue> stringArrayTagValue(List<String> val) {
+        if (val == null) {
+            return nullTagValue();
+        }
         return new StringArrayTagValue(val);
     }
 
@@ -168,6 +174,9 @@ public abstract class Value<T> {
      * @return Anonymous tag with binary payload
      */
     public static Serializable<BanyandbModel.TagValue> binaryTagValue(byte[] bytes) {
+        if (bytes == null) {
+            return nullTagValue();
+        }
         return new BinaryTagValue(ByteString.copyFrom(bytes));
     }
 
@@ -178,6 +187,9 @@ public abstract class Value<T> {
      * @return Anonymous tag with numeric array payload
      */
     public static Serializable<BanyandbModel.TagValue> longArrayTag(List<Long> val) {
+        if (val == null) {
+            return nullTagValue();
+        }
         return new LongArrayTagValue(val);
     }
 
