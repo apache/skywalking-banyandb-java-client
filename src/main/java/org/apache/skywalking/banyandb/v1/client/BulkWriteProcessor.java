@@ -47,7 +47,7 @@ public abstract class BulkWriteProcessor implements Closeable {
      */
     protected BulkWriteProcessor(String processorName, int maxBulkSize, int flushInterval, int concurrency) {
         this.flushInterval = flushInterval;
-        this.buffer = new DataCarrier(processorName, maxBulkSize, concurrency);
+        this.buffer = new DataCarrier(processorName, concurrency, maxBulkSize);
         Properties properties = new Properties();
         properties.put("maxBulkSize", maxBulkSize);
         properties.put("flushInterval", flushInterval);

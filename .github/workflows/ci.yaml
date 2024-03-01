@@ -55,13 +55,13 @@ jobs:
         uses: apache/skywalking-eyes/dependency@20da317d1ad158e79e24355fdc28f53370e94c8a
 
   build:
-    name: JDK ${{ matrix.java-version }}
+    name: JDK ${{ matrix.version }} Build and Test
     needs: [ check-license-header ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       matrix:
-        version: [ 8, 11, 17 ]
+        version: [ 8, 11, 17, 21 ]
     steps:
       - uses: actions/checkout@v3
         with:

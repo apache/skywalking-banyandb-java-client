@@ -2,6 +2,18 @@ Changes by Version
 ==================
 Release Notes.
 
+0.6.0
+------------------
+
+### Features
+
+* Support JDK21 build. Upgrade lombok version to 1.18.30.
+
+### Bugs
+
+* Fix the number of channel and the channel size in the BulkWriteProcessor.
+
+
 0.5.0
 ------------------
 
