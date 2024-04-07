@@ -81,7 +81,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("start_time"))
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("duration"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         this.client.define(expectedStream);
     }

@@ -28,9 +28,9 @@ import java.io.IOException;
 
 @Slf4j
 public class BanyanDBClientTestCI {
-    private static final String REGISTRY = "ghcr.io";
+    private static final String REGISTRY = "docker.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "f3abf75e66695f3c9fcae3138ad55e7a9d74f39a";
+    private static final String TAG = "v0.0.0-dev";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 

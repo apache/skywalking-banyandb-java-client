@@ -47,7 +47,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
         Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4),
+                Group.create("default", Catalog.STREAM, 2,
                         IntervalRule.create(IntervalRule.Unit.DAY, 1),
                         IntervalRule.create(IntervalRule.Unit.DAY, 7))
         );
@@ -72,7 +72,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.topic"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.queue"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         this.client.define(expectedStream);
         Assert.assertNotNull(expectedStream);

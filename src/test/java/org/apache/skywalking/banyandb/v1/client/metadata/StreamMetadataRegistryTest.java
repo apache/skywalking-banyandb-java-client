@@ -46,7 +46,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         this.client.define(expectedStream);
         Assert.assertTrue(streamRegistry.containsKey("sw"));
@@ -69,7 +69,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         client.define(expectedStream);
         List<Stream> actualStreams = new StreamMetadataRegistry(this.channel).list("default");
@@ -90,7 +90,7 @@ public class StreamMetadataRegistryTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         this.client.define(expectedStream);
         boolean deleted = this.client.delete(expectedStream);

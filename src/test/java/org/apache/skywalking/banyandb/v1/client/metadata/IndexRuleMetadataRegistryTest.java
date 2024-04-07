@@ -38,14 +38,14 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
 
     @Test
     public void testIndexRuleRegistry_create() throws BanyanDBException {
-        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED);
         this.registry.create(indexRule);
         Assert.assertEquals(indexRuleRegistry.size(), 1);
     }
 
     @Test
     public void testIndexRuleRegistry_createAndGet() throws BanyanDBException {
-        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED);
         indexRule = indexRule.withAnalyzer(IndexRule.Analyzer.SIMPLE);
         this.registry.create(indexRule);
         IndexRule getIndexRule = this.registry.get("default", "db.instance");
@@ -56,7 +56,7 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
 
     @Test
     public void testIndexRuleRegistry_createAndList() throws BanyanDBException {
-        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED);
         this.registry.create(indexRule);
         List<IndexRule> listIndexRule = this.registry.list("default");
         Assert.assertNotNull(listIndexRule);
@@ -66,7 +66,7 @@ public class IndexRuleMetadataRegistryTest extends AbstractBanyanDBClientTest {
 
     @Test
     public void testIndexRuleRegistry_createAndDelete() throws BanyanDBException {
-        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES);
+        IndexRule indexRule = IndexRule.create("default", "db.instance", IndexRule.IndexType.INVERTED);
         this.registry.create(indexRule);
         boolean deleted = this.registry.delete("default", "db.instance");
         Assert.assertTrue(deleted);
