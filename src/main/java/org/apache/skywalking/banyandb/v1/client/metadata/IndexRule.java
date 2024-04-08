@@ -27,6 +27,7 @@ import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 @AutoValue
 public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> {
@@ -41,11 +42,6 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
      * indexType determine the index structure under the hood
      */
     abstract IndexType indexType();
-
-    /**
-     * indexLocation indicates where to store index.
-     */
-    abstract IndexLocation indexLocation();
 
     /**
      * analyzer indicates how to analyze the value.
@@ -63,20 +59,18 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
         return toBuilder().setAnalyzer(analyzer).build();
     }
 
-    public static IndexRule create(String name, IndexType indexType, IndexLocation indexLocation) {
+    public static IndexRule create(String name, IndexType indexType) {
         return new AutoValue_IndexRule.Builder().setName(name)
                 .setTags(ImmutableList.of(name))
                 .setIndexType(indexType)
-                .setIndexLocation(indexLocation)
                 .build();
     }
 
     @VisibleForTesting
-    static IndexRule create(String group, String name, IndexType indexType, IndexLocation indexLocation) {
+    static IndexRule create(String group, String name, IndexType indexType) {
         return new AutoValue_IndexRule.Builder().setGroup(group).setName(name)
                 .setTags(ImmutableList.of(name))
                 .setIndexType(indexType)
-                .setIndexLocation(indexLocation)
                 .build();
     }
 
@@ -90,8 +84,6 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
 
         abstract Builder setIndexType(IndexType indexType);
 
-        abstract Builder setIndexLocation(IndexLocation indexLocation);
-
         abstract Builder setAnalyzer(Analyzer analyzer);
 
         abstract Builder setUpdatedAt(ZonedDateTime updatedAt);
@@ -104,7 +96,6 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
         final BanyandbDatabase.IndexRule.Builder b = BanyandbDatabase.IndexRule.newBuilder()
                 .setMetadata(buildMetadata())
                 .addAllTags(tags())
-                .setLocation(indexLocation().location)
                 .setType(indexType().type);
         Analyzer a = analyzer();
         if (a != null) {
@@ -118,13 +109,11 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
 
     public static IndexRule fromProtobuf(BanyandbDatabase.IndexRule pb) {
         IndexType indexType = IndexType.fromProtobuf(pb.getType());
-        IndexLocation indexLocation = IndexLocation.fromProtobuf(pb.getLocation());
         Analyzer analyzer = Analyzer.fromProtobuf(pb.getAnalyzer());
         return new AutoValue_IndexRule.Builder()
                 .setGroup(pb.getMetadata().getGroup())
                 .setName(pb.getMetadata().getName())
                 .setUpdatedAt(TimeUtils.parseTimestamp(pb.getUpdatedAt()))
-                .setIndexLocation(indexLocation)
                 .setIndexType(indexType)
                 .setAnalyzer(analyzer)
                 .setTags(ImmutableList.copyOf(pb.getTagsList())).build();
@@ -132,37 +121,15 @@ public abstract class IndexRule extends NamedSchema<BanyandbDatabase.IndexRule> 
 
     @RequiredArgsConstructor
     public enum IndexType {
-        TREE(BanyandbDatabase.IndexRule.Type.TYPE_TREE), INVERTED(BanyandbDatabase.IndexRule.Type.TYPE_INVERTED);
+        INVERTED(BanyandbDatabase.IndexRule.Type.TYPE_INVERTED);
 
         private final BanyandbDatabase.IndexRule.Type type;
 
         private static IndexType fromProtobuf(BanyandbDatabase.IndexRule.Type type) {
-            switch (type) {
-                case TYPE_TREE:
-                    return TREE;
-                case TYPE_INVERTED:
-                    return INVERTED;
-                default:
-                    throw new IllegalArgumentException("unrecognized index type");
+            if (Objects.requireNonNull(type) == BanyandbDatabase.IndexRule.Type.TYPE_INVERTED) {
+                return INVERTED;
             }
-        }
-    }
-
-    @RequiredArgsConstructor
-    public enum IndexLocation {
-        SERIES(BanyandbDatabase.IndexRule.Location.LOCATION_SERIES), GLOBAL(BanyandbDatabase.IndexRule.Location.LOCATION_GLOBAL);
-
-        private final BanyandbDatabase.IndexRule.Location location;
-
-        private static IndexLocation fromProtobuf(BanyandbDatabase.IndexRule.Location loc) {
-            switch (loc) {
-                case LOCATION_GLOBAL:
-                    return GLOBAL;
-                case LOCATION_SERIES:
-                    return SERIES;
-                default:
-                    throw new IllegalArgumentException("unrecognized index location");
-            }
+            throw new IllegalArgumentException("unrecognized index type");
         }
     }
 

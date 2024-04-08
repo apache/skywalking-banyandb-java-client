@@ -99,7 +99,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.topic"))
                         .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.queue"))
                         .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.GLOBAL))
+                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
                 .build();
         this.client.define(stream);
     }

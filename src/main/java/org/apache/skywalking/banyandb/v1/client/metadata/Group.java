@@ -39,36 +39,31 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
     abstract int shardNum();
 
     @Nullable
-    abstract IntervalRule blockInterval();
-
-    @Nullable
     abstract IntervalRule segmentInterval();
 
     @Nullable
     abstract IntervalRule ttl();
 
-    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl) {
+    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule segmentInterval, IntervalRule ttl) {
         Preconditions.checkArgument(shardNum > 0, "shardNum should more than 0");
-        Preconditions.checkNotNull(blockInterval, "blockInterval is null");
         Preconditions.checkNotNull(segmentInterval, "segmentInterval is null");
         Preconditions.checkNotNull(ttl, "ttl is null");
-        return new AutoValue_Group(null, name, null, catalog, shardNum, blockInterval, segmentInterval, ttl);
+        return new AutoValue_Group(null, name, null, catalog, shardNum, segmentInterval, ttl);
     }
 
-    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule blockInterval, IntervalRule segmentInterval, IntervalRule ttl, ZonedDateTime updatedAt) {
+    public static Group create(String name, Catalog catalog, int shardNum, IntervalRule segmentInterval, IntervalRule ttl, ZonedDateTime updatedAt) {
         Preconditions.checkArgument(shardNum > 0, "shardNum should more than 0");
-        Preconditions.checkNotNull(blockInterval, "blockInterval is null");
         Preconditions.checkNotNull(segmentInterval, "segmentInterval is null");
         Preconditions.checkNotNull(ttl, "ttl is null");
-        return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, blockInterval, segmentInterval, ttl);
+        return new AutoValue_Group(null, name, updatedAt, catalog, shardNum, segmentInterval, ttl);
     }
 
     public static Group create(String name) {
-        return new AutoValue_Group(null, name, null, Catalog.UNSPECIFIED, 0, null, null, null);
+        return new AutoValue_Group(null, name, null, Catalog.UNSPECIFIED, 0, null, null);
     }
 
     public static Group create(String name, ZonedDateTime updatedAt) {
-        return new AutoValue_Group(null, name, updatedAt, Catalog.UNSPECIFIED, 0, null, null, null);
+        return new AutoValue_Group(null, name, updatedAt, Catalog.UNSPECIFIED, 0, null, null);
     }
 
         @Override
@@ -80,7 +75,6 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
             if (shardNum() > 0) {
                 builder.setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
                         .setShardNum(shardNum())
-                        .setBlockInterval(blockInterval().serialize())
                         .setSegmentInterval(segmentInterval().serialize())
                         .setTtl(ttl().serialize())
                         .build());
@@ -104,7 +98,6 @@ public abstract class Group extends NamedSchema<BanyandbCommon.Group> {
                 TimeUtils.parseTimestamp(group.getUpdatedAt()),
                 catalog,
                 opts == null ? 0 : opts.getShardNum(),
-                opts == null ? null : IntervalRule.fromProtobuf(opts.getBlockInterval()),
                 opts == null ? null : IntervalRule.fromProtobuf(opts.getSegmentInterval()),
                 opts == null ? null : IntervalRule.fromProtobuf(opts.getTtl()));
     }

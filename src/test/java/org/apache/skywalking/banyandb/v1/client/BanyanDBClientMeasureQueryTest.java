@@ -70,7 +70,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                         .build())
                 .addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build())
                 .addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build())
-                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES))
+                .addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED))
                 .build();
         client.define(m);
     }

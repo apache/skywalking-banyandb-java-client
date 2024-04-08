@@ -8,6 +8,7 @@ Release Notes.
 ### Features
 
 * Support JDK21 build. Upgrade lombok version to 1.18.30.
+* Bump up the API of BanyanDB Server.
 
 ### Bugs
 

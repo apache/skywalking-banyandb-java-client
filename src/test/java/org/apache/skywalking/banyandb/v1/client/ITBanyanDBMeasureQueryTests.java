@@ -48,9 +48,9 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
-        Group expectedGroup = this.client.define(Group.create("sw_metric", Catalog.MEASURE, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4), IntervalRule.create(IntervalRule.Unit.DAY, 1), IntervalRule.create(IntervalRule.Unit.DAY, 7)));
+        Group expectedGroup = this.client.define(Group.create("sw_metric", Catalog.MEASURE, 2, IntervalRule.create(IntervalRule.Unit.HOUR, 4), IntervalRule.create(IntervalRule.Unit.DAY, 7)));
         Assert.assertNotNull(expectedGroup);
-        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED, IndexRule.IndexLocation.SERIES)).build();
+        Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED)).build();
         client.define(expectedMeasure);
         Assert.assertNotNull(expectedMeasure);
         processor = client.buildMeasureWriteProcessor(1000, 1, 1);
