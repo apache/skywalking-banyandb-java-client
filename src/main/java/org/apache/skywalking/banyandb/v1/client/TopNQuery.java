@@ -20,7 +20,6 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.base.Preconditions;
 import lombok.Setter;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
@@ -29,7 +28,7 @@ import java.util.List;
 
 @Setter
 public class TopNQuery {
-    private final String group;
+    private final List<String> groups;
     private final String name;
     private final TimestampRange timestampRange;
     private final int number;
@@ -40,10 +39,10 @@ public class TopNQuery {
      */
     private List<PairQueryCondition<?>> conditions;
 
-    public TopNQuery(String group, String name, TimestampRange timestampRange, int number, AbstractQuery.Sort sort) {
+    public TopNQuery(List<String> groups, String name, TimestampRange timestampRange, int number, AbstractQuery.Sort sort) {
         Preconditions.checkArgument(sort != AbstractQuery.Sort.UNSPECIFIED);
         Preconditions.checkArgument(number > 0);
-        this.group = group;
+        this.groups = groups;
         this.name = name;
         this.timestampRange = timestampRange;
         this.number = number;
@@ -52,7 +51,8 @@ public class TopNQuery {
 
     BanyandbMeasure.TopNRequest build() throws BanyanDBException {
         BanyandbMeasure.TopNRequest.Builder bld = BanyandbMeasure.TopNRequest.newBuilder()
-                .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
+                .setName(name)
+                .addAllGroups(groups)
                 .setTimeRange(timestampRange.build())
                 .setTopN(number)
                 .setFieldValueSort(AbstractQuery.Sort.DESC == sort ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);

@@ -348,11 +348,18 @@ public class BanyanDBClient implements Closeable {
     public StreamQueryResponse query(StreamQuery streamQuery) throws BanyanDBException {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        final BanyandbStream.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
-                this.streamServiceBlockingStub
-                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                        .query(streamQuery.build(this.metadataCache.findMetadata(streamQuery.group, streamQuery.name))));
-        return new StreamQueryResponse(response);
+        for (String group : streamQuery.groups) {
+            MetadataCache.EntityMetadata em = this.metadataCache.findMetadata(group, streamQuery.name);
+            if (em != null) {
+                final BanyandbStream.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
+                        this.streamServiceBlockingStub
+                                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                                .query(streamQuery.build(em)));
+                return new StreamQueryResponse(response);
+            }
+
+        }
+        throw new RuntimeException("No metadata found for the query");
     }
 
     /**
@@ -379,13 +386,18 @@ public class BanyanDBClient implements Closeable {
      */
     public MeasureQueryResponse query(MeasureQuery measureQuery) throws BanyanDBException {
         checkState(this.streamServiceStub != null, "measure service is null");
-
-        final BanyandbMeasure.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
-                this.measureServiceBlockingStub
-                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                        .query(measureQuery.build(this.metadataCache.findMetadata(measureQuery.group, measureQuery.name))));
-        return new MeasureQueryResponse(response);
-    }
+        for (String group : measureQuery.groups) {
+            MetadataCache.EntityMetadata em = this.metadataCache.findMetadata(group, measureQuery.name);
+                    if (em != null) {
+                        final BanyandbMeasure.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
+                                this.measureServiceBlockingStub
+                                        .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                                        .query(measureQuery.build(em)));
+                        return new MeasureQueryResponse(response);
+                    }
+        }
+            throw new RuntimeException("No metadata found for the query");
+   }
 
     /**
      * Define a new group and attach to the current client.

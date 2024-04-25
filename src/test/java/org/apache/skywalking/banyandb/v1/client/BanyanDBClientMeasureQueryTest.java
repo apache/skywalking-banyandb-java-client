@@ -81,7 +81,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        MeasureQuery query = new MeasureQuery("sw_metric", "service_cpm_minute",
+        MeasureQuery query = new MeasureQuery(List.of("sw_metric"), "service_cpm_minute",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("entity_id"),
                 ImmutableSet.of("total"));
@@ -94,8 +94,8 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
 
         final BanyandbMeasure.QueryRequest request = requestCaptor.getValue();
         // assert metadata
-        Assert.assertEquals("service_cpm_minute", request.getMetadata().getName());
-        Assert.assertEquals("sw_metric", request.getMetadata().getGroup());
+        Assert.assertEquals("service_cpm_minute", request.getName());
+        Assert.assertEquals("sw_metric", request.getGroups(0));
         // assert timeRange, both seconds and the nanos
         Assert.assertEquals(begin.toEpochMilli() / 1000, request.getTimeRange().getBegin().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(begin.toEpochMilli() % 1000), request.getTimeRange().getBegin().getNanos());
