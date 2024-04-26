@@ -19,11 +19,11 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.BindableService;
+import io.grpc.ForwardingServerBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.internal.AbstractServerImplBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import io.grpc.util.MutableHandlerRegistry;
@@ -359,7 +359,7 @@ public class AbstractBanyanDBClientTest {
     }
 
     protected interface SetupFunction {
-        void apply(AbstractServerImplBuilder<?> builder);
+        void apply(ForwardingServerBuilder<?> builder);
     }
 
     protected SetupFunction bindStreamRegistry() {

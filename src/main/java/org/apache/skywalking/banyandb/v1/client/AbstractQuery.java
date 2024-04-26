@@ -24,7 +24,6 @@ import com.google.common.collect.ListMultimap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidReferenceException;
@@ -39,7 +38,7 @@ public abstract class AbstractQuery<T> {
     /**
      * Group of the current entity
      */
-    protected final String group;
+    protected final List<String> groups;
     /**
      * Owner name of the current entity
      */
@@ -63,8 +62,8 @@ public abstract class AbstractQuery<T> {
      */
     protected AbstractCriteria criteria;
 
-    public AbstractQuery(String group, String name, TimestampRange timestampRange, Set<String> tagProjections) {
-        this.group = group;
+    public AbstractQuery(List<String> groups, String name, TimestampRange timestampRange, Set<String> tagProjections) {
+        this.groups = groups;
         this.name = name;
         this.timestampRange = timestampRange;
         this.conditions = new ArrayList<>(10);
@@ -106,13 +105,6 @@ public abstract class AbstractQuery<T> {
      * @throws BanyanDBException thrown from entity build, e.g. invalid reference to non-exist fields or tags.
      */
     abstract T build(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException;
-
-    protected BanyandbCommon.Metadata buildMetadata() {
-        return BanyandbCommon.Metadata.newBuilder()
-                .setGroup(group)
-                .setName(name)
-                .build();
-    }
 
     protected Optional<BanyandbModel.Criteria> buildCriteria() {
         if (criteria != null) {

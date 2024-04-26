@@ -18,6 +18,7 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import java.util.List;
 import java.util.Set;
 
 import lombok.Setter;
@@ -43,14 +44,14 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
      */
     private OrderBy orderBy;
 
-    public StreamQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> projections) {
-        super(group, name, timestampRange, projections);
+    public StreamQuery(final List<String> groups, final String name, final TimestampRange timestampRange, final Set<String> projections) {
+        super(groups, name, timestampRange, projections);
         this.offset = 0;
         this.limit = 20;
     }
 
-    public StreamQuery(final String group, final String name, final Set<String> projections) {
-        this(group, name, null, projections);
+    public StreamQuery(final List<String> groups, final String name, final Set<String> projections) {
+        this(groups, name, null, projections);
     }
 
     @Override
@@ -68,8 +69,9 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         if (entityMetadata == null) {
             throw new IllegalArgumentException("entity metadata is null");
         }
-        final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder()
-                .setMetadata(buildMetadata());
+        final BanyandbStream.QueryRequest.Builder builder = BanyandbStream.QueryRequest.newBuilder();
+        builder.setName(this.name);
+        builder.addAllGroups(this.groups);
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         }

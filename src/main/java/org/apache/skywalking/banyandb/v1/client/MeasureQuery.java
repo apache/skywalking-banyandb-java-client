@@ -27,6 +27,7 @@ import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -49,12 +50,12 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     private OrderBy orderBy;
 
-    public MeasureQuery(final String group, final String name, final Set<String> tagProjections, final Set<String> fieldProjections) {
-        this(group, name, null, tagProjections, fieldProjections);
+    public MeasureQuery(final List<String> groups, final String name, final Set<String> tagProjections, final Set<String> fieldProjections) {
+        this(groups, name, null, tagProjections, fieldProjections);
     }
 
-    public MeasureQuery(final String group, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
-        super(group, name, timestampRange, tagProjections);
+    public MeasureQuery(final  List<String> groups, final String name, final TimestampRange timestampRange, final Set<String> tagProjections, final Set<String> fieldProjections) {
+        super(groups, name, timestampRange, tagProjections);
         this.fieldProjections = fieldProjections;
     }
 
@@ -149,7 +150,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
             throw new IllegalArgumentException("entity metadata is null");
         }
         final BanyandbMeasure.QueryRequest.Builder builder = BanyandbMeasure.QueryRequest.newBuilder();
-        builder.setMetadata(buildMetadata());
+        builder.setName(this.name);
+        builder.addAllGroups(this.groups);
         if (timestampRange != null) {
             builder.setTimeRange(timestampRange.build());
         } else {

@@ -92,7 +92,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        StreamQuery query = new StreamQuery("default", "sw",
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for all states
@@ -104,8 +104,8 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
 
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
-        Assert.assertEquals("sw", request.getMetadata().getName());
-        Assert.assertEquals("default", request.getMetadata().getGroup());
+        Assert.assertEquals("sw", request.getName());
+        Assert.assertEquals("default", request.getGroups(0));
         // assert timeRange, both seconds and the nanos
         Assert.assertEquals(begin.toEpochMilli() / 1000, request.getTimeRange().getBegin().getSeconds());
         Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(begin.toEpochMilli() % 1000), request.getTimeRange().getBegin().getNanos());
@@ -139,7 +139,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         long minDuration = 10;
         long maxDuration = 100;
 
-        StreamQuery query = new StreamQuery("default", "sw",
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for the successful states
@@ -157,8 +157,8 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
-        Assert.assertEquals("sw", request.getMetadata().getName());
-        Assert.assertEquals("default", request.getMetadata().getGroup());
+        Assert.assertEquals("sw", request.getName());
+        Assert.assertEquals("default", request.getGroups(0));
         // assert timeRange
         Assert.assertEquals(begin.getEpochSecond(), request.getTimeRange().getBegin().getSeconds());
         Assert.assertEquals(end.getEpochSecond(), request.getTimeRange().getEnd().getSeconds());
@@ -286,7 +286,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
         String traceId = "1111.222.333";
 
-        StreamQuery query = new StreamQuery("default", "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         client.query(query);
@@ -294,8 +294,8 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
         final BanyandbStream.QueryRequest request = requestCaptor.getValue();
         // assert metadata
-        Assert.assertEquals("sw", request.getMetadata().getName());
-        Assert.assertEquals("default", request.getMetadata().getGroup());
+        Assert.assertEquals("sw", request.getName());
+        Assert.assertEquals("default", request.getGroups(0));
         Assert.assertEquals("condition {\n" +
                 "  name: \"trace_id\"\n" +
                 "  op: BINARY_OP_EQ\n" +
