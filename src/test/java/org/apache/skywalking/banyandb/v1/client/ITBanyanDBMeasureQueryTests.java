@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
@@ -35,7 +36,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -81,7 +81,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         });
         f.get(10, TimeUnit.SECONDS);
 
-        MeasureQuery query = new MeasureQuery(List.of("sw_metric"), "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("entity_id"), // tags
+        MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metric"), "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("entity_id"), // tags
                 ImmutableSet.of("total")); // fields
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {

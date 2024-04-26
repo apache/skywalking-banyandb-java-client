@@ -81,7 +81,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        MeasureQuery query = new MeasureQuery(List.of("sw_metric"), "service_cpm_minute",
+        MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metric"), "service_cpm_minute",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("entity_id"),
                 ImmutableSet.of("total"));

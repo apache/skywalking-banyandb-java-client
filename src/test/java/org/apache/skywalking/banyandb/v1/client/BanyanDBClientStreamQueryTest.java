@@ -92,7 +92,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
 
         Instant end = Instant.now();
         Instant begin = end.minus(15, ChronoUnit.MINUTES);
-        StreamQuery query = new StreamQuery(List.of("default"), "sw",
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for all states
@@ -139,7 +139,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         long minDuration = 10;
         long maxDuration = 100;
 
-        StreamQuery query = new StreamQuery(List.of("default"), "sw",
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
                 new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
                 ImmutableSet.of("state", "start_time", "duration", "trace_id"));
         // search for the successful states
@@ -286,7 +286,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
         String traceId = "1111.222.333";
 
-        StreamQuery query = new StreamQuery(List.of("default"), "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("state", "start_time", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         client.query(query);

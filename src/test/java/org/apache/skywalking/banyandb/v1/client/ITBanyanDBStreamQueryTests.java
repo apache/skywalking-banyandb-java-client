@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
 import org.apache.skywalking.banyandb.v1.client.metadata.Group;
@@ -33,7 +34,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +130,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         });
         f.get(10, TimeUnit.SECONDS);
 
-        StreamQuery query = new StreamQuery(List.of("default"), "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {

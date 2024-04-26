@@ -118,7 +118,7 @@ For example,
 Instant end = Instant.now();
 Instant begin = end.minus(15, ChronoUnit.MINUTES);
 // with stream schema, group=default, name=sw
-StreamQuery query = new StreamQuery(List.of("default"), "sw",
+StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
         new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
         // projection tags which are indexed
         ImmutableSet.of("state", "start_time", "duration", "trace_id"));
@@ -154,7 +154,7 @@ For `Measure`, it is similar to the `Stream`,
 Instant end = Instant.now();
 Instant begin = end.minus(15, ChronoUnit.MINUTES);
 // with stream schema, group=sw_metrics, name=service_instance_cpm_day
-MeasureQuery query = new MeasureQuery(List.of("sw_metrics"), "service_instance_cpm_day",
+MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metrics"), "service_instance_cpm_day",
     new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
     ImmutableSet.of("id", "scope", "service_id"),
     ImmutableSet.of("total"));
