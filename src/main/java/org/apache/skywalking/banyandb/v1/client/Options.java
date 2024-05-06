@@ -26,7 +26,7 @@ import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManagerSetti
 /**
  * Client connection options.
  */
-@Setter
+@Setter(AccessLevel.PUBLIC)
 @Getter(AccessLevel.PUBLIC)
 public class Options {
     /**
@@ -67,7 +67,7 @@ public class Options {
      */
     private String sslKeyPath = "";
 
-    Options() {
+    public Options() {
     }
 
     ChannelManagerSettings buildChannelManagerSettings() {
