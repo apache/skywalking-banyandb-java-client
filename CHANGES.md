@@ -2,6 +2,17 @@ Changes by Version
 ==================
 Release Notes.
 
+0.7.0
+------------------
+
+### Features
+
+
+### Bugs
+
+* Fix MeasureQuery.SumBy to use SUM instead of COUNT
+* Add missing FloatFieldValue type in the Measure write operation
+
 0.6.0
 ------------------
 

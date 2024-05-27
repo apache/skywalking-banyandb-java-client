@@ -254,6 +254,20 @@ public abstract class Value<T> {
     }
 
     /**
+     * The value of a float type field.
+     */
+    public static class FloatFieldValue extends Value<Float> implements Serializable<BanyandbModel.FieldValue> {
+        private FloatFieldValue(Float value) {
+            super(value);
+        }
+
+        @Override
+        public BanyandbModel.FieldValue serialize() {
+            return BanyandbModel.FieldValue.newBuilder().setFloat(BanyandbModel.Float.newBuilder().setValue(value)).build();
+        }
+    }
+
+    /**
      * Construct a numeric tag
      *
      * @param val payload

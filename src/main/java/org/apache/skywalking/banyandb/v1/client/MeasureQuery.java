@@ -110,7 +110,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         Preconditions.checkArgument(fieldProjections.contains(field), "field should be selected first");
         Preconditions.checkArgument(this.tagProjections.containsAll(groupByKeys), "groupBy tags should be selected first");
         Preconditions.checkState(this.aggregation == null, "aggregation should only be set once");
-        this.aggregation = new Aggregation(field, Aggregation.Type.COUNT, groupByKeys);
+        this.aggregation = new Aggregation(field, Aggregation.Type.SUM, groupByKeys);
         return this;
     }
 
