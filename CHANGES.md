@@ -12,6 +12,7 @@ Release Notes.
 
 * Fix MeasureQuery.SumBy to use SUM instead of COUNT
 * Add missing FloatFieldValue type in the Measure write operation
+* Fix wrong result of the Duration.ofDay
 
 0.6.0
 ------------------
