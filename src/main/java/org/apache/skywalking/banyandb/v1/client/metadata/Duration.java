@@ -29,7 +29,8 @@ public class Duration {
     private static final Pattern DURATION_PATTERN =
             Pattern.compile("(((?<day>\\d+)d)?((?<hour>\\d+)h)?((?<minute>\\d+)m)?|0)");
     private static final long MINUTES_PER_HOUR = 60;
-    private static final long MINUTES_PER_DAY = MINUTES_PER_HOUR * 24;
+    private static final long HOURS_PER_DAY = 24;
+    private static final long MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY;
 
     @EqualsAndHashCode.Exclude
     private volatile String text;
@@ -100,6 +101,6 @@ public class Duration {
     }
 
     public static Duration ofDays(long days) {
-        return ofHours(days * MINUTES_PER_DAY);
+        return ofHours(days * HOURS_PER_DAY);
     }
 }
