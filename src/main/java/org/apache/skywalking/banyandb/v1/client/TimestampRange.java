@@ -22,11 +22,14 @@ import com.google.protobuf.Timestamp;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
+
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 @RequiredArgsConstructor
 @Getter(AccessLevel.PROTECTED)
+@ToString
 public class TimestampRange {
     static final BanyandbModel.TimeRange MAX_RANGE = BanyandbModel.TimeRange.newBuilder()
             .setBegin(TimeUtils.fromEpochNanos(Long.MIN_VALUE))
