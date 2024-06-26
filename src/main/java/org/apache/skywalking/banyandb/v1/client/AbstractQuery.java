@@ -62,6 +62,11 @@ public abstract class AbstractQuery<T> {
      */
     protected AbstractCriteria criteria;
 
+    /**
+     * Enable or disable trace.
+     */
+    protected boolean trace;
+
     public AbstractQuery(List<String> groups, String name, TimestampRange timestampRange, Set<String> tagProjections) {
         this.groups = groups;
         this.name = name;
@@ -97,6 +102,14 @@ public abstract class AbstractQuery<T> {
      */
     public AbstractQuery<T> criteria(AbstractCriteria criteria) {
         this.criteria = criteria;
+        return this;
+    }
+
+    /**
+     * Enable trace for the query.
+     */
+    public AbstractQuery<T> enableTrace() {
+        this.trace = true;
         return this;
     }
 

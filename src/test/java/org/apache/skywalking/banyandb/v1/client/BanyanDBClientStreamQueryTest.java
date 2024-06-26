@@ -126,6 +126,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"),
                 parseProjectionList(request.getProjection()));
+        Assert.assertFalse(request.getTrace());
     }
 
     @Test
@@ -279,6 +280,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals("start_time", request.getOrderBy().getIndexRuleName());
         // assert projections
         assertCollectionEqual(Lists.newArrayList("searchable:duration", "searchable:state", "searchable:start_time", "searchable:trace_id"), parseProjectionList(request.getProjection()));
+        Assert.assertFalse(request.getTrace());
     }
 
     @Test
@@ -305,6 +307,7 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
                 "    }\n" +
                 "  }\n" +
                 "}\n", request.getCriteria().toString());
+        Assert.assertFalse(request.getTrace());
     }
 
     @Test
@@ -359,6 +362,27 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertNull(resp.getElements().get(0).getTagValue("mq.broker"));
         Assert.assertArrayEquals(binaryData,
                 resp.getElements().get(0).getTagValue("data_binary"));
+    }
+
+    @Test
+    public void testQuery_enableTrace() throws BanyanDBException {
+        ArgumentCaptor<BanyandbStream.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbStream.QueryRequest.class);
+
+        Instant end = Instant.now();
+        Instant begin = end.minus(15, ChronoUnit.MINUTES);
+        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw",
+                new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+                ImmutableSet.of("state", "start_time", "duration", "trace_id"));
+        // search for all states
+        query.and(PairQueryCondition.LongQueryCondition.eq("state", 0L));
+        query.setOrderBy(new StreamQuery.OrderBy("duration", AbstractQuery.Sort.DESC));
+        query.enableTrace();
+        client.query(query);
+
+        verify(streamQueryServiceImpl).query(requestCaptor.capture(), ArgumentMatchers.any());
+
+        final BanyandbStream.QueryRequest request = requestCaptor.getValue();
+        Assert.assertTrue(request.getTrace());
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {

@@ -200,6 +200,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         }
         // add all criteria
         buildCriteria().ifPresent(builder::setCriteria);
+        builder.setTrace(this.trace);
         return builder.build();
     }
 
