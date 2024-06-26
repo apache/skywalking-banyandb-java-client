@@ -116,6 +116,7 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
                 parseProjectionList(request.getTagProjection()));
         assertCollectionEqual(Lists.newArrayList("total"),
                 request.getFieldProjection().getNamesList());
+        Assert.assertFalse(request.getTrace());
     }
 
     @Test
@@ -150,6 +151,28 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(entityIDValue, resp.getDataPoints().get(0).getTagValue("entity_id"));
         Assert.assertEquals(10L,
                 (Number) resp.getDataPoints().get(0).getFieldValue("total"));
+    }
+
+    @Test
+    public void testQuery_enableTrace() throws BanyanDBException {
+        ArgumentCaptor<BanyandbMeasure.QueryRequest> requestCaptor = ArgumentCaptor.forClass(BanyandbMeasure.QueryRequest.class);
+
+        Instant end = Instant.now();
+        Instant begin = end.minus(15, ChronoUnit.MINUTES);
+        MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metric"), "service_cpm_minute",
+                new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+                ImmutableSet.of("entity_id"),
+                ImmutableSet.of("total"));
+        query.maxBy("total", ImmutableSet.of("entity_id"));
+        // search with conditions
+        query.and(PairQueryCondition.StringQueryCondition.eq("entity_id", "abc"));
+        query.enableTrace();
+        client.query(query);
+
+        verify(measureQueryService).query(requestCaptor.capture(), ArgumentMatchers.any());
+
+        final BanyandbMeasure.QueryRequest request = requestCaptor.getValue();
+        Assert.assertTrue(request.getTrace());
     }
 
     static <T> void assertCollectionEqual(Collection<T> c1, Collection<T> c2) {

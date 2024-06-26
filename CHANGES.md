@@ -2,11 +2,12 @@ Changes by Version
 ==================
 Release Notes.
 
-0.7.0
+0.7.0-rc0
 ------------------
 
 ### Features
 
+* Bump up the API of BanyanDB Server to support the query trace.
 
 ### Bugs
 

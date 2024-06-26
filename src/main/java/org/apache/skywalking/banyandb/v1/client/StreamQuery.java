@@ -82,6 +82,7 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         if (orderBy != null) {
             builder.setOrderBy(orderBy.build());
         }
+        builder.setTrace(this.trace);
         return builder.build();
     }
 }

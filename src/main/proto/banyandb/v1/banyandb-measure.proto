@@ -44,9 +44,10 @@ message DataPoint {
 message QueryResponse {
   // data_points are the actual data returned
   repeated DataPoint data_points = 1;
+  // trace contains the trace information of the query when trace is enabled
+  common.v1.Trace trace = 2;
 }
 
-// QueryRequest is the request contract for query.
 // QueryRequest is the request contract for query.
 message QueryRequest {
   // groups indicate where the data points are stored.
@@ -101,6 +102,8 @@ message QueryRequest {
   uint32 limit = 11;
   // order_by is given to specify the sort for a tag.
   model.v1.QueryOrder order_by = 12;
+  // trace is used to enable trace for the query
+  bool trace = 13;
 }
 
 // TopNList contains a series of topN items
