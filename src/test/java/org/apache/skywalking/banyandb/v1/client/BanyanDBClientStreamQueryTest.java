@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.NullValue;
 import com.google.protobuf.Timestamp;
 import io.grpc.stub.StreamObserver;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
@@ -318,6 +319,10 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         final long duration = 200L;
         final Instant now = Instant.now();
         final BanyandbStream.QueryResponse responseObj = BanyandbStream.QueryResponse.newBuilder()
+                .setTrace(BanyandbCommon.Trace.newBuilder().addSpans(BanyandbCommon.Span.newBuilder()
+                        .setMessage("test")
+                        .addTags(BanyandbCommon.Tag.newBuilder().setKey("b").setValue("a").build())
+                        .build()).build())
                 .addElements(BanyandbStream.Element.newBuilder()
                         .setElementId(elementId)
                         .setTimestamp(Timestamp.newBuilder()
@@ -362,6 +367,11 @@ public class BanyanDBClientStreamQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertNull(resp.getElements().get(0).getTagValue("mq.broker"));
         Assert.assertArrayEquals(binaryData,
                 resp.getElements().get(0).getTagValue("data_binary"));
+        Assert.assertEquals(1, resp.getTrace().getSpans().size());
+        Assert.assertEquals("test", resp.getTrace().getSpans().get(0).getMessage());
+        Assert.assertEquals(1, resp.getTrace().getSpans().get(0).getTags().size());
+        Assert.assertEquals("b", resp.getTrace().getSpans().get(0).getTags().get(0).getKey());
+        Assert.assertEquals("a", resp.getTrace().getSpans().get(0).getTags().get(0).getValue());
     }
 
     @Test

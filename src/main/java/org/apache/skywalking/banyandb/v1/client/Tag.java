@@ -18,33 +18,25 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * StreamQueryResponse represents the stream query result.
+ * Tag represents the key-value pair of a tag in a {@link Span}.
  */
-public class StreamQueryResponse {
-    @Getter
-    private final List<Element> elements;
+@Getter
+@Setter(value = AccessLevel.PRIVATE)
+public class Tag {
+    private String key;
+    private String value;
 
-    @Getter
-    private final Trace trace;
-
-    StreamQueryResponse(BanyandbStream.QueryResponse response) {
-        final List<BanyandbStream.Element> elementsList = response.getElementsList();
-        elements = new ArrayList<>(elementsList.size());
-        elementsList.forEach(element -> elements.add(Element.create(element)));
-        this.trace = Trace.convertFromProto(response.getTrace());
-    }
-
-    /**
-     * @return size of the response set.
-     */
-    public int size() {
-        return elements.size();
+    static Tag convertTagFromProto(org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Tag protoTag) {
+        Tag tagBean = new Tag();
+        tagBean.setKey(protoTag.getKey());
+        tagBean.setValue(protoTag.getValue());
+        return tagBean;
     }
 }
+
