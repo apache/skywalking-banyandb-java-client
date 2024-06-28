@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.protobuf.Timestamp;
 import io.grpc.stub.StreamObserver;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -124,6 +125,10 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         final String entityIDValue = "entity_id_a";
         final Instant now = Instant.now();
         final BanyandbMeasure.QueryResponse responseObj = BanyandbMeasure.QueryResponse.newBuilder()
+                .setTrace(BanyandbCommon.Trace.newBuilder().addSpans(BanyandbCommon.Span.newBuilder()
+                        .setMessage("test")
+                                .addTags(BanyandbCommon.Tag.newBuilder().setKey("b").setValue("a").build())
+                        .build()).build())
                 .addDataPoints(BanyandbMeasure.DataPoint.newBuilder()
                         .setTimestamp(Timestamp.newBuilder()
                                 .setSeconds(now.toEpochMilli() / 1000)
@@ -151,6 +156,11 @@ public class BanyanDBClientMeasureQueryTest extends AbstractBanyanDBClientTest {
         Assert.assertEquals(entityIDValue, resp.getDataPoints().get(0).getTagValue("entity_id"));
         Assert.assertEquals(10L,
                 (Number) resp.getDataPoints().get(0).getFieldValue("total"));
+        Assert.assertEquals(1, resp.getTrace().getSpans().size());
+        Assert.assertEquals("test", resp.getTrace().getSpans().get(0).getMessage());
+        Assert.assertEquals(1, resp.getTrace().getSpans().get(0).getTags().size());
+        Assert.assertEquals("b", resp.getTrace().getSpans().get(0).getTags().get(0).getKey());
+        Assert.assertEquals("a", resp.getTrace().getSpans().get(0).getTags().get(0).getValue());
     }
 
     @Test

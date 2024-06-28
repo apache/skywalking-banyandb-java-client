@@ -31,12 +31,16 @@ public class MeasureQueryResponse {
     @Getter
     private final List<DataPoint> dataPoints;
 
+    @Getter
+    private final Trace trace;
+
     MeasureQueryResponse(BanyandbMeasure.QueryResponse response) {
         final List<BanyandbMeasure.DataPoint> dataPointList = response.getDataPointsList();
         this.dataPoints = new ArrayList<>(dataPointList.size());
         for (final BanyandbMeasure.DataPoint dp : dataPointList) {
             dataPoints.add(DataPoint.create(dp));
         }
+        this.trace = Trace.convertFromProto(response.getTrace());
     }
 
     /**

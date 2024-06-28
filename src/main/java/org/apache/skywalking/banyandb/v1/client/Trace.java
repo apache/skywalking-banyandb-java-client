@@ -18,33 +18,30 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
+import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * StreamQueryResponse represents the stream query result.
+ * Trace represents the trace of a request.
  */
-public class StreamQueryResponse {
-    @Getter
-    private final List<Element> elements;
+@Getter
+@Setter(value = AccessLevel.PRIVATE)
+public class Trace {
+    private String traceId;
+    private List<Span> spans;
+    private boolean error;
 
-    @Getter
-    private final Trace trace;
-
-    StreamQueryResponse(BanyandbStream.QueryResponse response) {
-        final List<BanyandbStream.Element> elementsList = response.getElementsList();
-        elements = new ArrayList<>(elementsList.size());
-        elementsList.forEach(element -> elements.add(Element.create(element)));
-        this.trace = Trace.convertFromProto(response.getTrace());
-    }
-
-    /**
-     * @return size of the response set.
-     */
-    public int size() {
-        return elements.size();
+    static Trace convertFromProto(org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Trace protoTrace) {
+        Trace traceBean = new Trace();
+        traceBean.setTraceId(protoTrace.getTraceId());
+        traceBean.setError(protoTrace.getError());
+        traceBean.setSpans(protoTrace.getSpansList().stream()
+                .map(Span::convertSpanFromProto)
+                .collect(Collectors.toList()));
+        return traceBean;
     }
 }
