@@ -279,12 +279,13 @@ public class BanyanDBClient implements Closeable {
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second
      * @param concurrency   the number of concurrency would run for the flush max
+     * @param timeout       network timeout threshold in seconds.
      * @return stream bulk write processor
      */
-    public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
+    public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency);
+        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout);
     }
 
     /**
@@ -294,12 +295,13 @@ public class BanyanDBClient implements Closeable {
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second
      * @param concurrency   the number of concurrency would run for the flush max
+     * @param timeout       network timeout threshold in seconds.
      * @return stream bulk write processor
      */
-    public MeasureBulkWriteProcessor buildMeasureWriteProcessor(int maxBulkSize, int flushInterval, int concurrency) {
+    public MeasureBulkWriteProcessor buildMeasureWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
         checkState(this.measureServiceStub != null, "measure service is null");
 
-        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency);
+        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout);
     }
 
     /**

@@ -77,7 +77,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                 .build();
         this.client.define(expectedStream);
         Assert.assertNotNull(expectedStream);
-        processor = client.buildStreamWriteProcessor(1000, 1, 1);
+        processor = client.buildStreamWriteProcessor(1000, 1, 1, 10);
     }
 
     @After

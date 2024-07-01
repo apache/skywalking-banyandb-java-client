@@ -21,19 +21,30 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.auto.value.AutoValue;
 import io.grpc.stub.AbstractAsyncStub;
 import io.grpc.stub.StreamObserver;
-import lombok.extern.slf4j.Slf4j;
-
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf.GeneratedMessageV3,
-        STUB extends AbstractAsyncStub<STUB>> extends BulkWriteProcessor {
+    STUB extends AbstractAsyncStub<STUB>>
+    implements Runnable, Closeable {
     private final STUB stub;
+    private final int maxBulkSize;
+    private final int flushInterval;
+    private final ArrayBlockingQueue<Holder> requests;
+    private final Semaphore semaphore;
+    private final long flushInternalInMillis;
+    private final ScheduledThreadPoolExecutor scheduler;
+    private final int timeout;
+    private volatile long lastFlushTS = 0;
 
     /**
      * Create the processor.
@@ -44,10 +55,32 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second.
      * @param concurrency   the number of concurrency would run for the flush max.
+     * @param timeout       network timeout threshold in seconds.
      */
-    protected AbstractBulkWriteProcessor(STUB stub, String processorName, int maxBulkSize, int flushInterval, int concurrency) {
-        super(processorName, maxBulkSize, flushInterval, concurrency);
+    protected AbstractBulkWriteProcessor(STUB stub,
+                                         String processorName,
+                                         int maxBulkSize,
+                                         int flushInterval,
+                                         int concurrency,
+                                         int timeout) {
         this.stub = stub;
+        this.maxBulkSize = maxBulkSize;
+        this.flushInterval = flushInterval;
+        this.timeout = timeout;
+        requests = new ArrayBlockingQueue<>(maxBulkSize + 1);
+        this.semaphore = new Semaphore(concurrency > 0 ? concurrency : 1);
+
+        scheduler = new ScheduledThreadPoolExecutor(1, r -> {
+            final Thread thread = new Thread(r);
+            thread.setName("ElasticSearch BulkProcessor");
+            return thread;
+        });
+        scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        scheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+        scheduler.setRemoveOnCancelPolicy(true);
+        flushInternalInMillis = flushInterval * 1000;
+        scheduler.scheduleWithFixedDelay(
+            this, 0, flushInterval, TimeUnit.SECONDS);
     }
 
     /**
@@ -55,22 +88,69 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
      *
      * @param writeEntity to add.
      */
+    @SneakyThrows
     public CompletableFuture<Void> add(AbstractWrite<REQ> writeEntity) {
         final CompletableFuture<Void> f = new CompletableFuture<>();
-        this.buffer.produce(Holder.create(writeEntity, f));
+        requests.put(Holder.create(writeEntity, f));
+        flushIfNeeded();
         return f;
     }
 
-    @Override
-    protected void flush(List data) {
+    public void run() {
+        try {
+            doPeriodicalFlush();
+        } catch (Throwable t) {
+            log.error("Failed to flush data to BanyanDB", t);
+        }
+    }
+
+    @SneakyThrows
+    protected void flushIfNeeded() {
+        if (requests.size() >= maxBulkSize) {
+            flush();
+        }
+    }
+
+    private void doPeriodicalFlush() {
+        if (System.currentTimeMillis() - lastFlushTS > flushInternalInMillis / 2) {
+            // Run periodical flush if there is no `flushIfNeeded` executed in the second half of the flush period.
+            // Otherwise, wait for the next round. By default, the last 2 seconds of the 5s period.
+            // This could avoid periodical flush running among bulks(controlled by bulkActions).
+            flush();
+        }
+    }
+
+    public void flush() {
+        if (requests.isEmpty()) {
+            return;
+        }
+
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            log.error("Interrupted when trying to get semaphore to execute bulk requests", e);
+            return;
+        }
+
+        final List<Holder> batch = new ArrayList<>(requests.size());
+        requests.drainTo(batch);
+        final CompletableFuture<Void> future = doFlush(batch);
+        future.whenComplete((v, t) -> semaphore.release());
+        future.join();
+        lastFlushTS = System.currentTimeMillis();
+
+    }
+
+    protected CompletableFuture<Void> doFlush(final List<Holder> data) {
+        // The batch is used to control the completion of the flush operation.
+        // There is at most one error per batch,
+        // because the database server would terminate the batch process when the first error occurs.
         final CompletableFuture<Void> batch = new CompletableFuture<>();
         final StreamObserver<REQ> writeRequestStreamObserver
-                = this.buildStreamObserver(stub.withDeadlineAfter(flushInterval, TimeUnit.SECONDS), batch);
+            = this.buildStreamObserver(stub.withDeadlineAfter(timeout, TimeUnit.SECONDS), batch);
 
-        List sentData = new ArrayList(data.size());
         try {
-            data.forEach(holder -> {
-                Holder h = (Holder) holder;
+            data.forEach(h -> {
                 AbstractWrite<REQ> entity = (AbstractWrite<REQ>) h.writeEntity();
                 REQ request;
                 try {
@@ -81,30 +161,21 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
                     return;
                 }
                 writeRequestStreamObserver.onNext(request);
-                sentData.add(h);
+                h.future().complete(null);
             });
-        } catch (Throwable t) {
-            log.error("Transform and send request to BanyanDB fail.", t);
-            batch.completeExceptionally(t);
         } finally {
             writeRequestStreamObserver.onCompleted();
         }
         batch.whenComplete((ignored, exp) -> {
             if (exp != null) {
-                sentData.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
-                        .forEach((Consumer<CompletableFuture<Void>>) it -> it.completeExceptionally(exp));
                 log.error("Failed to execute requests in bulk", exp);
-            } else {
-                log.debug("Succeeded to execute {} requests in bulk", data.size());
-                sentData.stream().map((Function<Object, CompletableFuture<Void>>) o -> ((Holder) o).future())
-                        .forEach((Consumer<CompletableFuture<Void>>) it -> it.complete(null));
             }
         });
-        try {
-            batch.get(30, TimeUnit.SECONDS);
-        } catch (Throwable t) {
-            log.error("Waiting responses from BanyanDB fail.", t);
-        }
+        return batch;
+    }
+
+    public void close() {
+        scheduler.shutdownNow();
     }
 
     protected abstract StreamObserver<REQ> buildStreamObserver(STUB stub, CompletableFuture<Void> batch);
@@ -115,7 +186,13 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
 
         abstract CompletableFuture<Void> future();
 
-        public static <REQ extends com.google.protobuf.GeneratedMessageV3> Holder create(AbstractWrite<REQ> writeEntity, CompletableFuture<Void> future) {
+        public static <REQ extends com.google.protobuf.GeneratedMessageV3> Holder create(AbstractWrite<REQ> writeEntity,
+                                                                                         CompletableFuture<Void> future) {
+            future.whenComplete((v, t) -> {
+                if (t != null) {
+                    log.error("Failed to execute the request: {}", writeEntity.toString(), t);
+                }
+            });
             return new AutoValue_AbstractBulkWriteProcessor_Holder(writeEntity, future);
         }
 

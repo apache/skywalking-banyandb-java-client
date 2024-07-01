@@ -49,14 +49,16 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
      * @param maxBulkSize   the max bulk size for the flush operation
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second.
+     * @param timeout       network timeout threshold in seconds.
      * @param concurrency   the number of concurrency would run for the flush max.
      */
     protected StreamBulkWriteProcessor(
             final BanyanDBClient client,
             final int maxBulkSize,
             final int flushInterval,
-            final int concurrency) {
-        super(client.getStreamServiceStub(), "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
+            final int concurrency,
+            final int timeout) {
+        super(client.getStreamServiceStub(), "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency, timeout);
         this.client = client;
     }
 
@@ -78,7 +80,7 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
                                         client.findStream(metadata.getGroup(), metadata.getName());
                                         schemaExpired.add(schemaKey);
                                     } catch (BanyanDBException e) {
-                                        throw new RuntimeException(e);
+                                        log.error(e.getMessage(), e);
                                     }
                                 }
                                 break;

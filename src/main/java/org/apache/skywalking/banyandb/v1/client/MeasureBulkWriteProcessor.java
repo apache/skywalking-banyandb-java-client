@@ -48,14 +48,16 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
      * @param maxBulkSize   the max bulk size for the flush operation
      * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
      *                      automatically. Unit is second.
+     * @param timeout       network timeout threshold in seconds.
      * @param concurrency   the number of concurrency would run for the flush max.
      */
     protected MeasureBulkWriteProcessor(
             final BanyanDBClient client,
             final int maxBulkSize,
             final int flushInterval,
-            final int concurrency) {
-        super(client.getMeasureServiceStub(), "MeasureBulkWriteProcessor", maxBulkSize, flushInterval, concurrency);
+            final int concurrency,
+            final int timeout) {
+        super(client.getMeasureServiceStub(), "MeasureBulkWriteProcessor", maxBulkSize, flushInterval, concurrency, timeout);
         this.client = client;
     }
 
@@ -77,7 +79,7 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
                                 client.findMeasure(metadata.getGroup(), metadata.getName());
                                 schemaExpired.add(schemaKey);
                             } catch (BanyanDBException e) {
-                                throw new RuntimeException(e);
+                                log.error(e.getMessage(), e);
                             }
                         }
                         break;
