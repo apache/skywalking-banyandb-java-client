@@ -57,7 +57,7 @@ public class BanyanDBClientMeasureWriteTest extends AbstractBanyanDBClientTest {
         measureRegistry = new HashMap<>();
         setUp(bindMeasureRegistry());
 
-        measureBulkWriteProcessor = client.buildMeasureWriteProcessor(1000, 1, 1);
+        measureBulkWriteProcessor = client.buildMeasureWriteProcessor(1000, 1, 1, 10);
 
         measure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofHours(1))
                 .setEntityRelativeTags("entity_id")

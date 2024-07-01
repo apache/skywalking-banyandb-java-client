@@ -77,7 +77,7 @@ public class BanyanDBClientStreamWriteTest extends AbstractBanyanDBClientTest {
     @Before
     public void setUp() throws IOException, BanyanDBException {
         setUp(bindService(groupRegistryServiceImpl), bindStreamRegistry());
-        streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1);
+        streamBulkWriteProcessor = client.buildStreamWriteProcessor(1000, 1, 1, 10);
 
         stream = Stream.create("default", "sw")
                 .setEntityRelativeTags("service_id", "service_instance_id", "state")

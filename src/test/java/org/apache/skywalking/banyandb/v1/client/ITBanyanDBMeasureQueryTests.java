@@ -54,7 +54,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         Measure expectedMeasure = Measure.create("sw_metric", "service_cpm_minute", Duration.ofMinutes(1)).setEntityRelativeTags("entity_id").addTagFamily(TagFamilySpec.create("default").addTagSpec(TagFamilySpec.TagSpec.newStringTag("entity_id")).build()).addField(Measure.FieldSpec.newIntField("total").compressWithZSTD().encodeWithGorilla().build()).addField(Measure.FieldSpec.newIntField("value").compressWithZSTD().encodeWithGorilla().build()).addIndex(IndexRule.create("scope", IndexRule.IndexType.INVERTED)).build();
         client.define(expectedMeasure);
         Assert.assertNotNull(expectedMeasure);
-        processor = client.buildMeasureWriteProcessor(1000, 1, 1);
+        processor = client.buildMeasureWriteProcessor(1000, 1, 1, 10);
     }
 
     @After
