@@ -72,7 +72,7 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
 
         scheduler = new ScheduledThreadPoolExecutor(1, r -> {
             final Thread thread = new Thread(r);
-            thread.setName("ElasticSearch BulkProcessor");
+            thread.setName("BanyanDB BulkProcessor");
             return thread;
         });
         scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
