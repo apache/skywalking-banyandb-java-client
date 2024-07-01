@@ -21,13 +21,14 @@ package org.apache.skywalking.banyandb.v1.client;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-
+import lombok.ToString;
 
 /**
  * Tag represents the key-value pair of a tag in a {@link Span}.
  */
 @Getter
 @Setter(value = AccessLevel.PRIVATE)
+@ToString
 public class Tag {
     private String key;
     private String value;
