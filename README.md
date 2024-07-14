@@ -247,11 +247,11 @@ segmentIds.forEach(id -> query.or(PairQueryCondition.LongQueryCondition.eq("segm
 ### Stream
 
 Since grpc bidi streaming is used for write protocol, build a `StreamBulkWriteProcessor` which would handle back-pressure for you.
-Adjust `maxBulkSize`, `flushInterval` and `concurrency` of the consumer in different scenarios to meet requirements.
+Adjust `maxBulkSize`, `flushInterval`, `concurrency` and `timeout` of the consumer in different scenarios to meet requirements.
 
 ```java
 // build a StreamBulkWriteProcessor from client
-StreamBulkWriteProcessor streamBulkWriteProcessor = client.buildStreamWriteProcessor(maxBulkSize, flushInterval, concurrency);
+StreamBulkWriteProcessor streamBulkWriteProcessor = client.buildStreamWriteProcessor(maxBulkSize, flushInterval, concurrency, timeout);
 ```
 
 The `StreamBulkWriteProcessor` is thread-safe and thus can be used across threads.
@@ -288,7 +288,7 @@ The writing procedure for `Measure` is similar to the above described process an
 
 ```java
 // build a MeasureBulkWriteProcessor from client
-MeasureBulkWriteProcessor measureBulkWriteProcessor = client.buildMeasureWriteProcessor(maxBulkSize, flushInterval, concurrency);
+MeasureBulkWriteProcessor measureBulkWriteProcessor = client.buildMeasureWriteProcessor(maxBulkSize, flushInterval, concurrency, timeout);
 ```
 
 A `BulkWriteProcessor` is created by calling `buildMeasureWriteProcessor`. Then build the `MeasureWrite` object and send with bulk processor,
