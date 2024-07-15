@@ -135,7 +135,7 @@ client.query(query);
 After response is returned, `elements` can be fetched,
 
 ```java
-StreamQueryResponse resp = client.queryStreams(query);
+StreamQueryResponse resp = client.query(query);
 List<RowEntity> entities = resp.getElements();
 ```
 
@@ -144,6 +144,23 @@ Every item `RowEntity` in the list contains `elementId`, `timestamp` and tag fam
 The `StreamQueryResponse`, `RowEntity`, `TagFamily` and `Tag` (i.e. `TagAndValue`) forms a hierarchical structure, where
 the order of the tag families and containing tags, i.e. indexes of these objects in the List, follow the order specified 
 in the projection condition we've used in the request.
+
+If you want to trace the query, you can use `query.enableTrace()` to get the trace spans.
+
+```java
+// enable trace
+query.enableTrace();
+// send the query request
+client.query(query);
+```
+
+After response is returned, `trace` can be extracted,
+
+```java
+// send the query request
+StreamQueryResponse resp = client.queryStreams(query);
+Trace t = resp.getTrace();
+```
 
 ### Measure
 
@@ -193,6 +210,22 @@ query.offset(1);
 query.orderBy("service_id", Sort.DESC);
 ```
 
+If you want to trace the query, you can use `query.enableTrace()` to get the trace spans.
+
+```java
+// enable trace
+query.enableTrace();
+// send the query request
+client.query(query);
+```
+
+After response is returned, `trace` can be extracted,
+
+```java
+// send the query request
+MeasureQueryResponse resp = client.query(query);
+Trace trace = resp.getTrace();
+```
 ### Criteria
 
 Both `StreamQuery` and `MeausreQuery` support the `criteria` flag to filter data.
