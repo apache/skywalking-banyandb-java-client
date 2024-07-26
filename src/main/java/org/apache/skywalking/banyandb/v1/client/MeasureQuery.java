@@ -136,11 +136,6 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         return this;
     }
 
-    public MeasureQuery orderBy(String tagName, Sort sort) {
-        this.orderBy = new OrderBy(tagName, sort);
-        return this;
-    }
-
     /**
      * @return QueryRequest for gRPC level query.
      */
