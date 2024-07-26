@@ -165,7 +165,6 @@ public abstract class AbstractQuery<T> {
         return b.build();
     }
 
-    @RequiredArgsConstructor
     public static class OrderBy {
         /**
          * The field name for ordering.
@@ -176,9 +175,27 @@ public abstract class AbstractQuery<T> {
          */
         private final Sort type;
 
+        /**
+         * Create an orderBy condition with given rule name and sort type
+         */
+        public OrderBy(final String indexRuleName, final Sort type) {
+            this.indexRuleName = indexRuleName;
+            this.type = type;
+        }
+
+        /**
+         * Create an orderBy condition with timestamp and sort type
+         */
+        public OrderBy(final Sort type) {
+            this.indexRuleName = null;
+            this.type = type;
+        }
+
         BanyandbModel.QueryOrder build() {
             final BanyandbModel.QueryOrder.Builder builder = BanyandbModel.QueryOrder.newBuilder();
-            builder.setIndexRuleName(indexRuleName);
+            if (indexRuleName != null) {
+                builder.setIndexRuleName(indexRuleName);
+            }
             builder.setSort(
                     Sort.DESC.equals(type) ? BanyandbModel.Sort.SORT_DESC : BanyandbModel.Sort.SORT_ASC);
             return builder.build();
