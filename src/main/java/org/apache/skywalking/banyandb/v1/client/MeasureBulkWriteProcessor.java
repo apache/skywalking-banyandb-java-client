@@ -76,7 +76,7 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
                         if (!schemaExpired.contains(schemaKey)) {
                             log.warn("The schema {} is expired, trying update the schema...", schemaKey);
                             try {
-                                client.findMeasure(metadata.getGroup(), metadata.getName());
+                                client.updateMeasureMetadataCacheFromSever(metadata.getGroup(), metadata.getName());
                                 schemaExpired.add(schemaKey);
                             } catch (BanyanDBException e) {
                                 log.error(e.getMessage(), e);

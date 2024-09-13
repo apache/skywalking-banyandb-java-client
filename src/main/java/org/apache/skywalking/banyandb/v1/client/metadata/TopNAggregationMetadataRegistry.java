@@ -21,15 +21,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TopNAggregation;
 import org.apache.skywalking.banyandb.database.v1.TopNAggregationRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregationRegistryServiceGrpc.TopNAggregationRegistryServiceBlockingStub,
-        BanyandbDatabase.TopNAggregation, TopNAggregation> {
+        BanyandbDatabase.TopNAggregation> {
     public TopNAggregationMetadataRegistry(Channel channel) {
         super(TopNAggregationRegistryServiceGrpc.newBlockingStub(channel));
     }
@@ -38,7 +38,7 @@ public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregat
     public long create(TopNAggregation payload) throws BanyanDBException {
         execute(() ->
                 stub.create(BanyandbDatabase.TopNAggregationRegistryServiceCreateRequest.newBuilder()
-                        .setTopNAggregation(payload.serialize())
+                        .setTopNAggregation(payload)
                         .build()));
         return DEFAULT_MOD_REVISION;
     }
@@ -47,7 +47,7 @@ public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregat
     public void update(TopNAggregation payload) throws BanyanDBException {
         execute(() ->
                 stub.update(BanyandbDatabase.TopNAggregationRegistryServiceUpdateRequest.newBuilder()
-                        .setTopNAggregation(payload.serialize())
+                        .setTopNAggregation(payload)
                         .build()));
     }
 
@@ -67,7 +67,7 @@ public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregat
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
 
-        return TopNAggregation.fromProtobuf(resp.getTopNAggregation());
+        return resp.getTopNAggregation();
     }
 
     @Override
@@ -86,6 +86,6 @@ public class TopNAggregationMetadataRegistry extends MetadataClient<TopNAggregat
                         .setGroup(group)
                         .build()));
 
-        return resp.getTopNAggregationList().stream().map(TopNAggregation::fromProtobuf).collect(Collectors.toList());
+        return resp.getTopNAggregationList();
     }
 }

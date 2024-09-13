@@ -18,17 +18,21 @@
 
 package org.apache.skywalking.banyandb.v1.client.metadata;
 
-import com.google.auto.value.AutoValue;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.Property;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyRequest;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyRequest.Strategy;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyResponse;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.DeleteRequest;
+import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.DeleteResponse;
 import org.apache.skywalking.banyandb.property.v1.PropertyServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PropertyStore {
     private final PropertyServiceGrpc.PropertyServiceBlockingStub stub;
@@ -37,35 +41,26 @@ public class PropertyStore {
         this.stub = PropertyServiceGrpc.newBlockingStub(channel);
     }
 
-    public ApplyResult apply(Property payload) throws BanyanDBException {
-        return apply(payload, Strategy.MERGE);
+    public ApplyResponse apply(Property payload) throws BanyanDBException {
+        return apply(payload, Strategy.STRATEGY_MERGE);
     }
 
-    public ApplyResult apply(Property payload, Strategy strategy) throws BanyanDBException {
+    public ApplyResponse apply(Property payload, Strategy strategy) throws BanyanDBException {
         BanyandbProperty.ApplyRequest.Strategy s = BanyandbProperty.ApplyRequest.Strategy.STRATEGY_MERGE;
-        switch (strategy) {
-            case MERGE:
-                s = BanyandbProperty.ApplyRequest.Strategy.STRATEGY_MERGE;
-                break;
-            case REPLACE:
-                s = BanyandbProperty.ApplyRequest.Strategy.STRATEGY_REPLACE;
-                break;
-        }
-        BanyandbProperty.ApplyRequest r = BanyandbProperty.ApplyRequest.newBuilder()
-                .setProperty(payload.serialize())
-                .setStrategy(s)
+        ApplyRequest r = BanyandbProperty.ApplyRequest.newBuilder()
+                .setProperty(payload)
+                .setStrategy(strategy)
                 .build();
-        BanyandbProperty.ApplyResponse resp = HandleExceptionsWith.callAndTranslateApiException(() ->
+        return HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.stub.apply(r));
-        return new AutoValue_PropertyStore_ApplyResult(resp.getCreated(), resp.getTagsNum(), resp.getLeaseId());
     }
 
-    public DeleteResult delete(String group, String name, String id, String... tags) throws BanyanDBException {
-        BanyandbProperty.DeleteRequest.Builder b = BanyandbProperty.DeleteRequest.newBuilder();
+    public DeleteResponse delete(String group, String name, String id, String... tags) throws BanyanDBException {
+        DeleteRequest.Builder b = DeleteRequest.newBuilder();
         if (tags != null && tags.length > 0) {
             b.addAllTags(Arrays.asList(tags));
         }
-        BanyandbProperty.DeleteResponse resp = HandleExceptionsWith.callAndTranslateApiException(() ->
+        return HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.stub.delete(b.setMetadata(BanyandbProperty.Metadata
                                 .newBuilder()
                                 .setContainer(BanyandbCommon.Metadata.newBuilder()
@@ -75,7 +70,6 @@ public class PropertyStore {
                                 .setId(id)
                                 .build())
                         .build()));
-        return new AutoValue_PropertyStore_DeleteResult(resp.getDeleted(), resp.getTagsNum());
     }
 
     public Property get(String group, String name, String id, String... tags) throws BanyanDBException {
@@ -94,7 +88,7 @@ public class PropertyStore {
                                 .build())
                         .build()));
 
-        return Property.fromProtobuf(resp.getProperty());
+        return resp.getProperty();
     }
 
     public List<Property> list(String group, String name, List<String> ids, List<String> tags) throws BanyanDBException {
@@ -112,7 +106,7 @@ public class PropertyStore {
         BanyandbProperty.ListResponse resp = HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.stub.list(builder.build()));
 
-        return resp.getPropertyList().stream().map(Property::fromProtobuf).collect(Collectors.toList());
+        return resp.getPropertyList();
     }
 
     public void keepAlive(long leaseId) throws BanyanDBException {
@@ -123,23 +117,23 @@ public class PropertyStore {
                 this.stub.keepAlive(req));
     }
 
-    public enum Strategy {
-        MERGE, REPLACE
-    }
-
-    @AutoValue
-    public abstract static class ApplyResult {
-        public abstract boolean created();
-
-        public abstract int tagsNum();
-
-        public abstract long leaseId();
-    }
-
-    @AutoValue
-    public abstract static class DeleteResult {
-        public abstract boolean deleted();
-
-        public abstract int tagsNum();
-    }
+//    public enum Strategy {
+//        MERGE, REPLACE
+//    }
+//
+//    @AutoValue
+//    public abstract static class ApplyResult {
+//        public abstract boolean created();
+//
+//        public abstract int tagsNum();
+//
+//        public abstract long leaseId();
+//    }
+//
+//    @AutoValue
+//    public abstract static class DeleteResult {
+//        public abstract boolean deleted();
+//
+//        public abstract int tagsNum();
+//    }
 }

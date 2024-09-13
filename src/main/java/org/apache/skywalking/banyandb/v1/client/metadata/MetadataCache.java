@@ -20,8 +20,11 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.skywalking.banyandb.v1.client.BanyanDBClient;
+import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.util.CopyOnWriteMap;
-
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,31 +32,71 @@ import java.util.Optional;
 
 public class MetadataCache {
     private final Map<String, EntityMetadata> cache;
+    private final BanyanDBClient client;
 
-    public MetadataCache() {
+    public MetadataCache(BanyanDBClient client) {
         this.cache = new CopyOnWriteMap<>();
+        this.client = client;
     }
 
-    public Stream register(Stream stream) {
-        this.cache.put(formatKey(stream.group(), stream.name()), parse(stream));
-        return stream;
+    public EntityMetadata register(Stream stream) {
+        if (stream == null) {
+            return null;
+        }
+        EntityMetadata metadata = parse(stream);
+        this.cache.put(formatKey(stream.getMetadata().getGroup(), stream.getMetadata().getName()), metadata);
+        return metadata;
     }
 
     public EntityMetadata unregister(Stream stream) {
-        return this.cache.remove(formatKey(stream.group(), stream.name()));
+        if (stream == null) {
+            return null;
+        }
+        return this.cache.remove(formatKey(stream.getMetadata().getGroup(), stream.getMetadata().getName()));
     }
 
-    public Measure register(Measure measure) {
-        this.cache.put(formatKey(measure.group(), measure.name()), parse(measure));
-        return measure;
+    public EntityMetadata register(Measure measure) {
+        if (measure == null) {
+            return null;
+        }
+        EntityMetadata metadata = parse(measure);
+        this.cache.put(formatKey(measure.getMetadata().getGroup(), measure.getMetadata().getName()), metadata);
+        return metadata;
     }
 
     public EntityMetadata unregister(Measure measure) {
-        return this.cache.remove(formatKey(measure.group(), measure.name()));
+        if (measure == null) {
+            return null;
+        }
+        return this.cache.remove(formatKey(measure.getMetadata().getGroup(), measure.getMetadata().getName()));
     }
 
-    public EntityMetadata findMetadata(String group, String name) {
-        return this.cache.get(formatKey(group, name));
+    public EntityMetadata unregister(String group, String name) {
+        return this.cache.remove(formatKey(group, name));
+    }
+
+    public EntityMetadata findStreamMetadata(String group, String name) throws BanyanDBException {
+        MetadataCache.EntityMetadata metadata = this.cache.get(formatKey(group, name));
+        if (metadata != null) {
+            return metadata;
+        }
+        return this.register(this.client.findStream(group, name));
+    }
+
+    public EntityMetadata findMeasureMetadata(String group, String name) throws BanyanDBException {
+        MetadataCache.EntityMetadata metadata = this.cache.get(formatKey(group, name));
+        if (metadata != null) {
+            return metadata;
+        }
+        return this.register(this.client.findMeasure(group, name));
+    }
+
+    public EntityMetadata updateStreamFromSever(String group, String name) throws BanyanDBException {
+        return register(client.findStream(group, name));
+    }
+
+    public EntityMetadata updateMeasureFromSever(String group, String name) throws BanyanDBException {
+        return register(client.findMeasure(group, name));
     }
 
     static String formatKey(String group, String name) {
@@ -62,40 +105,40 @@ public class MetadataCache {
 
     static EntityMetadata parse(Stream s) {
         int totalTags = 0;
-        final int[] tagFamilyCapacity = new int[s.tagFamilies().size()];
+        final int[] tagFamilyCapacity = new int[s.getTagFamiliesList().size()];
         Map<String, TagInfo> tagInfo = new HashMap<>();
         int k = 0;
-        for (int i = 0; i < s.tagFamilies().size(); i++) {
-            final String tagFamilyName = s.tagFamilies().get(i).tagFamilyName();
-            tagFamilyCapacity[i] = s.tagFamilies().get(i).tagSpecs().size();
+        for (int i = 0; i < s.getTagFamiliesList().size(); i++) {
+            final String tagFamilyName = s.getTagFamiliesList().get(i).getName();
+            tagFamilyCapacity[i] = s.getTagFamiliesList().get(i).getTagsList().size();
             totalTags += tagFamilyCapacity[i];
             for (int j = 0; j < tagFamilyCapacity[i]; j++) {
-                tagInfo.put(s.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
+                tagInfo.put(s.getTagFamiliesList().get(i).getTagsList().get(j).getName(), new TagInfo(tagFamilyName, k++));
             }
         }
-        return new EntityMetadata(s.group(), s.name(), s.modRevision(), totalTags, 0, tagFamilyCapacity,
+        return new EntityMetadata(s.getMetadata().getGroup(), s.getMetadata().getName(), s.getMetadata().getModRevision(), totalTags, 0, tagFamilyCapacity,
                 Collections.unmodifiableMap(tagInfo),
                 Collections.emptyMap());
     }
 
     static EntityMetadata parse(Measure m) {
         int totalTags = 0;
-        final int[] tagFamilyCapacity = new int[m.tagFamilies().size()];
+        final int[] tagFamilyCapacity = new int[m.getTagFamiliesList().size()];
         final Map<String, TagInfo> tagOffset = new HashMap<>();
         int k = 0;
-        for (int i = 0; i < m.tagFamilies().size(); i++) {
-            final String tagFamilyName = m.tagFamilies().get(i).tagFamilyName();
-            tagFamilyCapacity[i] = m.tagFamilies().get(i).tagSpecs().size();
+        for (int i = 0; i < m.getTagFamiliesList().size(); i++) {
+            final String tagFamilyName = m.getTagFamiliesList().get(i).getName();
+            tagFamilyCapacity[i] = m.getTagFamiliesList().get(i).getTagsList().size();
             totalTags += tagFamilyCapacity[i];
             for (int j = 0; j < tagFamilyCapacity[i]; j++) {
-                tagOffset.put(m.tagFamilies().get(i).tagSpecs().get(j).getTagName(), new TagInfo(tagFamilyName, k++));
+                tagOffset.put(m.getTagFamiliesList().get(i).getTagsList().get(j).getName(), new TagInfo(tagFamilyName, k++));
             }
         }
         final Map<String, Integer> fieldOffset = new HashMap<>();
-        for (int i = 0; i < m.fields().size(); i++) {
-            fieldOffset.put(m.fields().get(i).getName(), i);
+        for (int i = 0; i < m.getFieldsList().size(); i++) {
+            fieldOffset.put(m.getFieldsList().get(i).getName(), i);
         }
-        return new EntityMetadata(m.group(), m.name(), m.modRevision(), totalTags, m.fields().size(), tagFamilyCapacity,
+        return new EntityMetadata(m.getMetadata().getGroup(), m.getMetadata().getName(), m.getMetadata().getModRevision(), totalTags, m.getFieldsList().size(), tagFamilyCapacity,
                 Collections.unmodifiableMap(tagOffset), Collections.unmodifiableMap(fieldOffset));
     }
 

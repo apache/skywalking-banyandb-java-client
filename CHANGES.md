@@ -2,6 +2,19 @@ Changes by Version
 ==================
 Release Notes.
 
+0.7.0-rc3
+------------------
+
+### Features
+
+* Refactor metadata object to original protocol.
+* Complemented the Schema management API.
+* Enhance the MetadataCache.
+* Add more IT tests.
+
+### Bugs
+
+
 0.7.0-rc0
 ------------------
 

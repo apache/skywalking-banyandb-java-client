@@ -18,12 +18,9 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Catalog;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.IntervalRule;
-import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.ResourceOpts;
+import java.io.IOException;
+import java.util.List;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Metadata;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.CompressionMethod;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.EncodingMethod;
@@ -41,82 +38,72 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static org.awaitility.Awaitility.await;
-
-public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
-    private MeasureBulkWriteProcessor processor;
-
+public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
-        Group expectedGroup = buildGroup();
+        BanyandbCommon.Group expectedGroup =
+            BanyandbCommon.Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_metric")).build();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
-        Measure expectedMeasure = buildMeasure();
-        client.define(expectedMeasure);
-        processor = client.buildMeasureWriteProcessor(1000, 1, 1, 10);
     }
 
     @After
     public void tearDown() throws IOException {
-        if (this.processor != null) {
-            this.processor.close();
-        }
         this.closeClient();
     }
 
     @Test
-    public void testMeasureQuery() throws BanyanDBException, ExecutionException, InterruptedException, TimeoutException {
-        // try to write a metrics
-        Instant now = Instant.now();
-        Instant begin = now.minus(15, ChronoUnit.MINUTES);
-
-        MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
-        measureWrite.tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
-
-        CompletableFuture<Void> f = processor.add(measureWrite);
-        f.exceptionally(exp -> {
-            Assert.fail(exp.getMessage());
-            return null;
-        });
-        f.get(10, TimeUnit.SECONDS);
-
-        MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metric"), "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("entity_id"), // tags
-                ImmutableSet.of("total")); // fields
-
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            MeasureQueryResponse resp = client.query(query);
-            Assert.assertNotNull(resp);
-            Assert.assertEquals(1, resp.size());
-        });
+    public void testMeasureRegistry_createAndGet() throws BanyanDBException {
+        Measure expectedMeasure = buildMeasure();
+        this.client.define(expectedMeasure);
+        Measure actualMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
+        Assert.assertNotNull(actualMeasure);
+        Assert.assertNotNull(actualMeasure.getUpdatedAt());
+        actualMeasure = actualMeasure.toBuilder().clearUpdatedAt().setMetadata(actualMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+        Assert.assertEquals(expectedMeasure, actualMeasure);
     }
 
-    private Group buildGroup() {
-        return Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_metric"))
-                    .setCatalog(Catalog.CATALOG_MEASURE)
-                    .setResourceOpts(ResourceOpts.newBuilder()
-                                                 .setShardNum(2)
-                                                 .setSegmentInterval(
-                                                     IntervalRule.newBuilder()
-                                                                 .setUnit(
-                                                                     IntervalRule.Unit.UNIT_DAY)
-                                                                 .setNum(
-                                                                     1))
-                                                 .setTtl(
-                                                     IntervalRule.newBuilder()
-                                                                 .setUnit(
-                                                                     IntervalRule.Unit.UNIT_DAY)
-                                                                 .setNum(
-                                                                     7)))
-                    .build();
+    @Test
+    public void testMeasureRegistry_createAndUpdate() throws BanyanDBException {
+        this.client.define(buildMeasure());
+        Measure beforeMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
+        Assert.assertNotNull(beforeMeasure);
+        Assert.assertNotNull(beforeMeasure.getUpdatedAt());
+
+        Measure updatedMeasure = beforeMeasure.toBuilder()
+                                                .setInterval(Duration.ofMinutes(2).format())
+                                                .build();
+        this.client.update(updatedMeasure);
+        Measure afterMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
+        Assert.assertNotNull(afterMeasure);
+        Assert.assertNotNull(afterMeasure.getUpdatedAt());
+        updatedMeasure = updatedMeasure.toBuilder().clearUpdatedAt().setMetadata(updatedMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+        afterMeasure = afterMeasure.toBuilder().clearUpdatedAt().setMetadata(afterMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+        Assert.assertEquals(updatedMeasure, afterMeasure);
+    }
+
+    @Test
+    public void testMeasureRegistry_createAndList() throws BanyanDBException {
+        Measure expectedMeasure = buildMeasure();
+        this.client.define(expectedMeasure);
+        List<Measure> actualMeasures = client.findMeasures("sw_metric");
+        Assert.assertNotNull(actualMeasures);
+        Assert.assertEquals(1, actualMeasures.size());
+        Measure actualMeasure = actualMeasures.get(0);
+        actualMeasure = actualMeasure.toBuilder().clearUpdatedAt().setMetadata(actualMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+        Assert.assertEquals(expectedMeasure, actualMeasure);
+    }
+
+    @Test
+    public void testMeasureRegistry_createAndDelete() throws BanyanDBException {
+        Measure expectedMeasure = buildMeasure();
+        this.client.define(expectedMeasure);
+        boolean deleted = this.client.deleteMeasure(
+            expectedMeasure.getMetadata().getGroup(), expectedMeasure.getMetadata().getName());
+        Assert.assertTrue(deleted);
+        Assert.assertNull(
+            client.findMeasure(expectedMeasure.getMetadata().getGroup(), expectedMeasure.getMetadata().getName()));
     }
 
     private Measure buildMeasure() {

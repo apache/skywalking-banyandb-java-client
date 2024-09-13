@@ -20,16 +20,16 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
 import org.apache.skywalking.banyandb.database.v1.GroupRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGrpc.GroupRegistryServiceBlockingStub,
-        BanyandbCommon.Group, Group> {
+        BanyandbCommon.Group> {
 
     public GroupMetadataRegistry(Channel channel) {
         super(GroupRegistryServiceGrpc.newBlockingStub(channel));
@@ -38,7 +38,7 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     @Override
     public long create(Group payload) throws BanyanDBException {
         execute(() -> stub.create(BanyandbDatabase.GroupRegistryServiceCreateRequest.newBuilder()
-                .setGroup(payload.serialize())
+                .setGroup(payload)
                 .build()));
         return DEFAULT_MOD_REVISION;
     }
@@ -46,7 +46,7 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
     @Override
     public void update(Group payload) throws BanyanDBException {
         execute(() -> stub.update(BanyandbDatabase.GroupRegistryServiceUpdateRequest.newBuilder()
-                .setGroup(payload.serialize())
+                .setGroup(payload)
                 .build()));
     }
 
@@ -66,7 +66,7 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
                         .setGroup(name)
                         .build()));
 
-        return Group.fromProtobuf(resp.getGroup());
+        return resp.getGroup();
     }
 
     @Override
@@ -84,6 +84,6 @@ public class GroupMetadataRegistry extends MetadataClient<GroupRegistryServiceGr
                 stub.list(BanyandbDatabase.GroupRegistryServiceListRequest.newBuilder()
                         .build()));
 
-        return resp.getGroupList().stream().map(Group::fromProtobuf).collect(Collectors.toList());
+        return resp.getGroupList();
     }
 }
