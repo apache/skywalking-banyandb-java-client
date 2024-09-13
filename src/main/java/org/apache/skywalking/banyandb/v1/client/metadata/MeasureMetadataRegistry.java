@@ -21,15 +21,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
 import org.apache.skywalking.banyandb.database.v1.MeasureRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServiceGrpc.MeasureRegistryServiceBlockingStub,
-        BanyandbDatabase.Measure, Measure> {
+        BanyandbDatabase.Measure> {
 
     public MeasureMetadataRegistry(Channel channel) {
         super(MeasureRegistryServiceGrpc.newBlockingStub(channel));
@@ -39,7 +39,7 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     public long create(final Measure payload) throws BanyanDBException {
         BanyandbDatabase.MeasureRegistryServiceCreateResponse resp = execute(() ->
                 stub.create(BanyandbDatabase.MeasureRegistryServiceCreateRequest.newBuilder()
-                        .setMeasure(payload.serialize())
+                        .setMeasure(payload)
                         .build()));
         return resp.getModRevision();
     }
@@ -48,7 +48,7 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
     public void update(final Measure payload) throws BanyanDBException {
         execute(() ->
                 stub.update(BanyandbDatabase.MeasureRegistryServiceUpdateRequest.newBuilder()
-                        .setMeasure(payload.serialize())
+                        .setMeasure(payload)
                         .build()));
     }
 
@@ -68,7 +68,7 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
 
-        return Measure.fromProtobuf(resp.getMeasure());
+        return resp.getMeasure();
     }
 
     @Override
@@ -87,6 +87,6 @@ public class MeasureMetadataRegistry extends MetadataClient<MeasureRegistryServi
                         .setGroup(group)
                         .build()));
 
-        return resp.getMeasureList().stream().map(Measure::fromProtobuf).collect(Collectors.toList());
+        return resp.getMeasureList();
     }
 }

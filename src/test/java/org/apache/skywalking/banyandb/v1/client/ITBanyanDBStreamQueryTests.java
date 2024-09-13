@@ -20,13 +20,25 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Catalog;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.IntervalRule;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.ResourceOpts;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Metadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Entity;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagFamilySpec;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagSpec;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
-import org.apache.skywalking.banyandb.v1.client.metadata.Catalog;
-import org.apache.skywalking.banyandb.v1.client.metadata.Group;
-import org.apache.skywalking.banyandb.v1.client.metadata.IndexRule;
-import org.apache.skywalking.banyandb.v1.client.metadata.IntervalRule;
-import org.apache.skywalking.banyandb.v1.client.metadata.Stream;
-import org.apache.skywalking.banyandb.v1.client.metadata.TagFamilySpec;
+import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,6 +51,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.apache.skywalking.banyandb.v1.client.BanyanDBClient.DEFAULT_EXPIRE_AT;
 import static org.awaitility.Awaitility.await;
 
 public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
@@ -47,36 +60,10 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         this.setUpConnection();
-        Group expectedGroup = this.client.define(
-                Group.create("default", Catalog.STREAM, 2,
-                        IntervalRule.create(IntervalRule.Unit.DAY, 1),
-                        IntervalRule.create(IntervalRule.Unit.DAY, 7))
-        );
-        Assert.assertNotNull(expectedGroup);
-        Stream expectedStream = Stream.create("default", "sw")
-                .setEntityRelativeTags("service_id", "service_instance_id", "state")
-                .addTagFamily(TagFamilySpec.create("data")
-                        .addTagSpec(TagFamilySpec.TagSpec.newBinaryTag("data_binary"))
-                        .build())
-                .addTagFamily(TagFamilySpec.create("searchable")
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("trace_id"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("state"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_id"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("service_instance_id"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("endpoint_id"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newIntTag("duration"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("http.method"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("status_code"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("db.type"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("db.instance"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.broker"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.topic"))
-                        .addTagSpec(TagFamilySpec.TagSpec.newStringTag("mq.queue"))
-                        .build())
-                .addIndex(IndexRule.create("trace_id", IndexRule.IndexType.INVERTED))
-                .build();
-        this.client.define(expectedStream);
-        Assert.assertNotNull(expectedStream);
+        this.client.define(buildGroup());
+        this.client.define(buildStream());
+        this.client.define(buildIndexRule());
+        this.client.define(buildIndexRuleBinding());
         processor = client.buildStreamWriteProcessor(1000, 1, 1, 10);
     }
 
@@ -107,7 +94,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = client.createStreamWrite("default", "sw", segmentId, now.toEpochMilli())
+        StreamWrite streamWrite = client.createStreamWrite("sw_record", "trace", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
                 .tag("state", Value.longTagValue(state)) // 1
@@ -130,9 +117,10 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         });
         f.get(10, TimeUnit.SECONDS);
 
-        StreamQuery query = new StreamQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
+        StreamQuery query = new StreamQuery(
+            Lists.newArrayList("sw_record"), "trace", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));
         query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", traceId));
-
+        query.setOrderBy(new AbstractQuery.OrderBy(AbstractQuery.Sort.DESC));
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             StreamQueryResponse resp = client.query(query);
             Assert.assertNotNull(resp);
@@ -140,5 +128,109 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
             Assert.assertEquals(latency, (Number) resp.getElements().get(0).getTagValue("duration"));
             Assert.assertEquals(traceId, resp.getElements().get(0).getTagValue("trace_id"));
         });
+    }
+
+    private Group buildGroup() {
+        return Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_record"))
+                    .setCatalog(Catalog.CATALOG_STREAM)
+                    .setResourceOpts(ResourceOpts.newBuilder()
+                                                 .setShardNum(2)
+                                                 .setSegmentInterval(
+                                                     IntervalRule.newBuilder()
+                                                                 .setUnit(
+                                                                     IntervalRule.Unit.UNIT_DAY)
+                                                                 .setNum(
+                                                                     1))
+                                                 .setTtl(
+                                                     IntervalRule.newBuilder()
+                                                                 .setUnit(
+                                                                     IntervalRule.Unit.UNIT_DAY)
+                                                                 .setNum(
+                                                                     3)))
+                    .build();
+    }
+
+    private Stream buildStream() {
+        Stream.Builder builder = Stream.newBuilder()
+                                       .setMetadata(Metadata.newBuilder()
+                                                            .setGroup("sw_record")
+                                                            .setName("trace"))
+                                       .setEntity(Entity.newBuilder().addAllTagNames(
+                                           Arrays.asList("service_id", "service_instance_id", "state")))
+                                       .addTagFamilies(TagFamilySpec.newBuilder()
+                                                                    .setName("data")
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("data_binary")
+                                                                                    .setType(TagType.TAG_TYPE_DATA_BINARY)))
+                                       .addTagFamilies(TagFamilySpec.newBuilder()
+                                                                    .setName("searchable")
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("trace_id")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("state")
+                                                                                    .setType(TagType.TAG_TYPE_INT))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("service_id")
+                                                                                    .setType(TagType.TAG_TYPE_STRING)
+                                                                                    .setIndexedOnly(true))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("service_instance_id")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("endpoint_id")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("duration")
+                                                                                    .setType(TagType.TAG_TYPE_INT))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("http.method")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("status_code")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("db.type")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("db.instance")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("mq.broker")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("mq.topic")
+                                                                                    .setType(TagType.TAG_TYPE_STRING))
+                                                                    .addTags(TagSpec.newBuilder()
+                                                                                    .setName("mq.queue")
+                                                                                    .setType(TagType.TAG_TYPE_STRING)));
+        return builder.build();
+    }
+
+    private IndexRule buildIndexRule() {
+        IndexRule.Builder builder = IndexRule.newBuilder()
+                                             .setMetadata(Metadata.newBuilder()
+                                                                  .setGroup("sw_record")
+                                                                  .setName("trace_id"))
+                                             .addTags("trace_id")
+                                             .setType(IndexRule.Type.TYPE_INVERTED)
+                                             .setAnalyzer(IndexRule.Analyzer.ANALYZER_UNSPECIFIED);
+        return builder.build();
+    }
+
+    private IndexRuleBinding buildIndexRuleBinding() {
+        IndexRuleBinding.Builder builder = IndexRuleBinding.newBuilder()
+                                                           .setMetadata(BanyandbCommon.Metadata.newBuilder()
+                                                                                               .setGroup("sw_record")
+                                                                                               .setName("trace_binding"))
+                                                           .setSubject(BanyandbDatabase.Subject.newBuilder()
+                                                                                               .setCatalog(
+                                                                                                   BanyandbCommon.Catalog.CATALOG_STREAM)
+                                                                                               .setName("trace"))
+                                                           .addAllRules(
+                                                               Arrays.asList("trace_id"))
+                                                           .setBeginAt(TimeUtils.buildTimestamp(ZonedDateTime.of(2024, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)))
+                                                           .setExpireAt(TimeUtils.buildTimestamp(DEFAULT_EXPIRE_AT));
+        return builder.build();
     }
 }

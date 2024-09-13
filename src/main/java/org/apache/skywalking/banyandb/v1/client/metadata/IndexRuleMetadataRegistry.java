@@ -21,15 +21,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryServiceGrpc.IndexRuleRegistryServiceBlockingStub,
-        BanyandbDatabase.IndexRule, IndexRule> {
+        BanyandbDatabase.IndexRule> {
     public IndexRuleMetadataRegistry(Channel channel) {
         super(IndexRuleRegistryServiceGrpc.newBlockingStub(channel));
     }
@@ -38,7 +38,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     public long create(IndexRule payload) throws BanyanDBException {
         execute(() ->
                 stub.create(BanyandbDatabase.IndexRuleRegistryServiceCreateRequest.newBuilder()
-                        .setIndexRule(payload.serialize())
+                        .setIndexRule(payload)
                         .build()));
         return DEFAULT_MOD_REVISION;
     }
@@ -47,7 +47,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
     public void update(IndexRule payload) throws BanyanDBException {
         execute(() ->
                 stub.update(BanyandbDatabase.IndexRuleRegistryServiceUpdateRequest.newBuilder()
-                        .setIndexRule(payload.serialize())
+                        .setIndexRule(payload)
                         .build()));
     }
 
@@ -67,7 +67,7 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
 
-        return IndexRule.fromProtobuf(resp.getIndexRule());
+        return resp.getIndexRule();
     }
 
     @Override
@@ -86,6 +86,6 @@ public class IndexRuleMetadataRegistry extends MetadataClient<IndexRuleRegistryS
                         .setGroup(group)
                         .build()));
 
-        return resp.getIndexRuleList().stream().map(IndexRule::fromProtobuf).collect(Collectors.toList());
+        return resp.getIndexRuleList();
     }
 }

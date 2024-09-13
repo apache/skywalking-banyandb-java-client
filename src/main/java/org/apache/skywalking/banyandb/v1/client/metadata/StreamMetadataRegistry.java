@@ -21,15 +21,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import org.apache.skywalking.banyandb.database.v1.StreamRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class StreamMetadataRegistry extends MetadataClient<StreamRegistryServiceGrpc.StreamRegistryServiceBlockingStub,
-        BanyandbDatabase.Stream, Stream> {
+        BanyandbDatabase.Stream> {
 
     public StreamMetadataRegistry(Channel channel) {
         super(StreamRegistryServiceGrpc.newBlockingStub(channel));
@@ -39,7 +39,7 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     public long create(Stream payload) throws BanyanDBException {
         BanyandbDatabase.StreamRegistryServiceCreateResponse resp = execute(() ->
                 stub.create(BanyandbDatabase.StreamRegistryServiceCreateRequest.newBuilder()
-                        .setStream(payload.serialize())
+                        .setStream(payload)
                         .build()));
         return resp.getModRevision();
     }
@@ -48,7 +48,7 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
     public void update(Stream payload) throws BanyanDBException {
         execute(() ->
                 stub.update(BanyandbDatabase.StreamRegistryServiceUpdateRequest.newBuilder()
-                        .setStream(payload.serialize())
+                        .setStream(payload)
                         .build()));
     }
 
@@ -68,7 +68,7 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
 
-        return Stream.fromProtobuf(resp.getStream());
+        return resp.getStream();
     }
 
     @Override
@@ -87,6 +87,6 @@ public class StreamMetadataRegistry extends MetadataClient<StreamRegistryService
                         .setGroup(group)
                         .build()));
 
-        return resp.getStreamList().stream().map(Stream::fromProtobuf).collect(Collectors.toList());
+        return resp.getStreamList();
     }
 }

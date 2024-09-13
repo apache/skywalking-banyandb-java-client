@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.junit.Rule;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -30,7 +31,7 @@ import java.io.IOException;
 public class BanyanDBClientTestCI {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "395bbf2ff70c4c94b60ea610e9a5176545c4ae5b";
+    private static final String TAG = "a528a5d99745c8fa978c135b8bda2685c50cda95";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
@@ -57,5 +58,45 @@ public class BanyanDBClientTestCI {
         if (this.client != null) {
             this.client.close();
         }
+    }
+
+    protected BanyandbCommon.Group buildStreamGroup() {
+        return BanyandbCommon.Group.newBuilder().setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_record"))
+                                   .setCatalog(BanyandbCommon.Catalog.CATALOG_STREAM)
+                                   .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                                               .setShardNum(2)
+                                                                               .setSegmentInterval(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  1))
+                                                                               .setTtl(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  3)))
+                                   .build();
+    }
+
+    protected BanyandbCommon.Group buildMeasureGroup() {
+        return BanyandbCommon.Group.newBuilder().setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_metric"))
+                                   .setCatalog(BanyandbCommon.Catalog.CATALOG_MEASURE)
+                                   .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                                               .setShardNum(2)
+                                                                               .setSegmentInterval(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  1))
+                                                                               .setTtl(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  7)))
+                                   .build();
     }
 }

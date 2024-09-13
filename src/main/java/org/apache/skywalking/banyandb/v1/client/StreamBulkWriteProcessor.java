@@ -77,7 +77,7 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
                                 if (!schemaExpired.contains(schemaKey)) {
                                     log.warn("The schema {} is expired, trying update the schema...", schemaKey);
                                     try {
-                                        client.findStream(metadata.getGroup(), metadata.getName());
+                                        client.updateStreamMetadataCacheFromSever(metadata.getGroup(), metadata.getName());
                                         schemaExpired.add(schemaKey);
                                     } catch (BanyanDBException e) {
                                         log.error(e.getMessage(), e);

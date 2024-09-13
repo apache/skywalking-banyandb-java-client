@@ -21,15 +21,15 @@ package org.apache.skywalking.banyandb.v1.client.metadata;
 import io.grpc.Channel;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
 import org.apache.skywalking.banyandb.database.v1.IndexRuleBindingRegistryServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.grpc.MetadataClient;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IndexRuleBindingMetadataRegistry extends MetadataClient<IndexRuleBindingRegistryServiceGrpc.IndexRuleBindingRegistryServiceBlockingStub,
-        BanyandbDatabase.IndexRuleBinding, IndexRuleBinding> {
+        BanyandbDatabase.IndexRuleBinding> {
 
     public IndexRuleBindingMetadataRegistry(Channel channel) {
         super(IndexRuleBindingRegistryServiceGrpc.newBlockingStub(channel));
@@ -38,7 +38,7 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<IndexRuleBi
     @Override
     public long create(IndexRuleBinding payload) throws BanyanDBException {
         execute(() -> stub.create(BanyandbDatabase.IndexRuleBindingRegistryServiceCreateRequest.newBuilder()
-                .setIndexRuleBinding(payload.serialize())
+                .setIndexRuleBinding(payload)
                 .build()));
         return DEFAULT_MOD_REVISION;
     }
@@ -46,7 +46,7 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<IndexRuleBi
     @Override
     public void update(IndexRuleBinding payload) throws BanyanDBException {
         execute(() -> stub.update(BanyandbDatabase.IndexRuleBindingRegistryServiceUpdateRequest.newBuilder()
-                .setIndexRuleBinding(payload.serialize())
+                .setIndexRuleBinding(payload)
                 .build()));
     }
 
@@ -66,7 +66,7 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<IndexRuleBi
                         .setMetadata(BanyandbCommon.Metadata.newBuilder().setGroup(group).setName(name).build())
                         .build()));
 
-        return IndexRuleBinding.fromProtobuf(resp.getIndexRuleBinding());
+        return resp.getIndexRuleBinding();
     }
 
     @Override
@@ -85,6 +85,6 @@ public class IndexRuleBindingMetadataRegistry extends MetadataClient<IndexRuleBi
                         .setGroup(group)
                         .build()));
 
-        return resp.getIndexRuleBindingList().stream().map(IndexRuleBinding::fromProtobuf).collect(Collectors.toList());
+        return resp.getIndexRuleBindingList();
     }
 }

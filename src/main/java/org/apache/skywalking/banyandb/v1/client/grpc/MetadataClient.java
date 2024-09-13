@@ -20,19 +20,16 @@ package org.apache.skywalking.banyandb.v1.client.grpc;
 
 import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.stub.AbstractBlockingStub;
+import java.util.List;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
-import org.apache.skywalking.banyandb.v1.client.metadata.NamedSchema;
-
-import java.util.List;
 
 /**
  * abstract metadata client which defines CRUD operations for a specific kind of schema.
  *
  * @param <P> ProtoBuf: schema defined in ProtoBuf format
- * @param <S> NamedSchema: Java implementation (POJO) which can be serialized to P
  */
-public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P extends GeneratedMessageV3, S extends NamedSchema<P>> {
+public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P extends GeneratedMessageV3> {
     public static final long DEFAULT_MOD_REVISION = 0;
 
     protected final STUB stub;
@@ -48,7 +45,7 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @return the mod revision of the schema
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract long create(S payload) throws BanyanDBException;
+    public abstract long create(P payload) throws BanyanDBException;
 
     /**
      * Update the schema
@@ -56,7 +53,7 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @param payload the schema which will be updated with the given name and group
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract void update(S payload) throws BanyanDBException;
+    public abstract void update(P payload) throws BanyanDBException;
 
     /**
      * Delete a schema
@@ -76,7 +73,7 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @return the schema, null if not found
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract S get(String group, String name) throws BanyanDBException;
+    public abstract P get(String group, String name) throws BanyanDBException;
 
     /**
      * Check whether a schema exists
@@ -94,7 +91,7 @@ public abstract class MetadataClient<STUB extends AbstractBlockingStub<STUB>, P 
      * @return a list of schemas found
      * @throws BanyanDBException a wrapped exception to the underlying gRPC calls
      */
-    public abstract List<S> list(String group) throws BanyanDBException;
+    public abstract List<P> list(String group) throws BanyanDBException;
 
     protected <REQ, RESP, E extends BanyanDBException> RESP execute(HandleExceptionsWith.SupplierWithIO<RESP, E> supplier) throws BanyanDBException {
         return HandleExceptionsWith.callAndTranslateApiException(supplier);
