@@ -43,7 +43,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
         Group expectedGroup =
-            Group.newBuilder().setMetadata(Metadata.newBuilder().setName("default")).build();
+            Group.newBuilder().setMetadata(Metadata.newBuilder().setName("default")).setCatalog(BanyandbCommon.Catalog.CATALOG_UNSPECIFIED).build();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
     }

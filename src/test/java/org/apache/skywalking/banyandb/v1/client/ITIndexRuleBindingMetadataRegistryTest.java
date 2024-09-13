@@ -42,8 +42,7 @@ public class ITIndexRuleBindingMetadataRegistryTest extends BanyanDBClientTestCI
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
-        BanyandbCommon.Group expectedGroup =
-            BanyandbCommon.Group.newBuilder().setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_record")).build();
+        BanyandbCommon.Group expectedGroup = buildStreamGroup();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
     }

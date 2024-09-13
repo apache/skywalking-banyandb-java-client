@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.junit.Rule;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -57,5 +58,45 @@ public class BanyanDBClientTestCI {
         if (this.client != null) {
             this.client.close();
         }
+    }
+
+    protected BanyandbCommon.Group buildStreamGroup() {
+        return BanyandbCommon.Group.newBuilder().setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_record"))
+                                   .setCatalog(BanyandbCommon.Catalog.CATALOG_STREAM)
+                                   .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                                               .setShardNum(2)
+                                                                               .setSegmentInterval(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  1))
+                                                                               .setTtl(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  3)))
+                                   .build();
+    }
+
+    protected BanyandbCommon.Group buildMeasureGroup() {
+        return BanyandbCommon.Group.newBuilder().setMetadata(BanyandbCommon.Metadata.newBuilder().setName("sw_metric"))
+                                   .setCatalog(BanyandbCommon.Catalog.CATALOG_MEASURE)
+                                   .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                                                                               .setShardNum(2)
+                                                                               .setSegmentInterval(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  1))
+                                                                               .setTtl(
+                                                                                   BanyandbCommon.IntervalRule.newBuilder()
+                                                                                                              .setUnit(
+                                                                                                                  BanyandbCommon.IntervalRule.Unit.UNIT_DAY)
+                                                                                                              .setNum(
+                                                                                                                  7)))
+                                   .build();
     }
 }

@@ -42,8 +42,7 @@ public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
-        BanyandbCommon.Group expectedGroup =
-            BanyandbCommon.Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_metric")).build();
+        BanyandbCommon.Group expectedGroup = buildMeasureGroup();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
     }
