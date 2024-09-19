@@ -45,10 +45,7 @@ public class Options {
      * Threshold of force gRPC reconnection if network issue is encountered
      */
     private long forceReconnectionThreshold = 1;
-    /**
-     * Threshold of resolving the DNS
-     */
-    private long resolveDNSInterval = 30 * 60;
+
     /**
      * Force use TLS for gRPC
      * Default is false
@@ -59,11 +56,11 @@ public class Options {
      */
     private String sslTrustCAPath = "";
     /**
-     * SSL: Cert Chain Path
+     * SSL: Cert Chain Path, BanyanDB server not support mTLS yet
      */
     private String sslCertChainPath = "";
     /**
-     * SSL: Cert Key Path
+     * SSL: Cert Key Path, BanyanDB server not support mTLS yet
      */
     private String sslKeyPath = "";
 

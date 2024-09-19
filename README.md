@@ -23,9 +23,7 @@ BanyanDBClient client = new BanyanDBClient("banyandb.svc:17912", "10.0.12.9:1791
 client.connect();
 ```
 
-These addresses are either IP addresses or DNS names. If DNS names are used, the client will resolve the DNS name to
-IP addresses and use them to connect to the server. The client will periodically refresh the IP addresses of the DNS
-name. The refresh interval can be configured by `resolveDNSInterval` option.
+These addresses are either IP addresses or DNS names. 
 
 The client will try to connect to the server in a round-robin manner. The client will periodically refresh the server
 addresses. The refresh interval can be configured by `refreshInterval` option.
@@ -43,8 +41,6 @@ options are listed below,
 | forceReconnectionThreshold | Threshold of force gRPC reconnection if network issue is encountered | 1                        |
 | forceTLS                   | Force use TLS for gRPC                                               | false                    |
 | sslTrustCAPath             | SSL: Trusted CA Path                                                 |                          |
-| sslCertChainPath           | SSL: Cert Chain Path                                                 |                          |
-| sslKeyPath                 | SSL: Cert Key Path                                                   |                          |
 
 ## Schema Management
 
