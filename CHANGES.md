@@ -2,6 +2,13 @@ Changes by Version
 ==================
 Release Notes.
 
+0.7.0-rc4
+------------------
+
+### Features
+
+* Remove analyze DNS name to get/refresh IP for create connection.
+
 0.7.0-rc3
 ------------------
 

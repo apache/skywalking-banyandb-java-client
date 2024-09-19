@@ -25,39 +25,27 @@ import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.SocketUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.v1.client.Options;
 import org.apache.skywalking.banyandb.v1.client.util.PrivateKeyUtil;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
 public class DefaultChannelFactory implements ChannelFactory {
     private final URI[] targets;
     private final Options options;
-    private SocketAddress[] addresses;
-    private long lastTargetsResolvedTime;
 
     @Override
     public ManagedChannel create() throws IOException {
-        if (this.addresses == null ||
-                System.currentTimeMillis() - this.lastTargetsResolvedTime > this.options.getResolveDNSInterval()) {
-            resolveTargets();
-        }
         NettyChannelBuilder managedChannelBuilder = NettyChannelBuilder.forAddress(resolveAddress())
                 .maxInboundMessageSize(options.getMaxInboundMessageSize())
                 .usePlaintext();
@@ -91,30 +79,12 @@ public class DefaultChannelFactory implements ChannelFactory {
         return managedChannelBuilder.build();
     }
 
-    private void resolveTargets() {
-        this.addresses = Arrays.stream(this.targets)
-                .flatMap(target -> {
-                    try {
-                        return Arrays.stream(SocketUtils.allAddressesByName(target.getHost()))
-                                .map(InetAddress::getHostAddress)
-                                .map(ip -> new InetSocketAddress(ip, target.getPort()));
-                    } catch (Throwable t) {
-                        log.error("Failed to resolve the BanyanDB server's address ", t);
-                    }
-                    return Stream.empty();
-                })
-                .sorted(Comparator.comparing(InetSocketAddress::toString))
-                .distinct()
-                .toArray(InetSocketAddress[]::new);
-        this.lastTargetsResolvedTime = System.currentTimeMillis();
-    }
-
     private SocketAddress resolveAddress() throws UnknownHostException {
-        int numAddresses = this.addresses.length;
+        int numAddresses = this.targets.length;
         if (numAddresses < 1) {
             throw new UnknownHostException();
         }
         int offset = numAddresses == 1 ? 0 : PlatformDependent.threadLocalRandom().nextInt(numAddresses);
-        return this.addresses[offset];
+        return new InetSocketAddress(this.targets[offset].getHost(), this.targets[offset].getPort());
     }
 }
