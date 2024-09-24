@@ -87,12 +87,12 @@ public class ITIndexRuleMetadataRegistryTest extends BanyanDBClientTestCI {
     public void testIndexRuleRegistry_createAndUpdate() throws BanyanDBException {
         this.client.define(buildIndexRule());
         IndexRule before = client.findIndexRule("sw_record", "trace_id");
-        Assert.assertEquals(IndexRule.Analyzer.ANALYZER_SIMPLE, before.getAnalyzer());
-        IndexRule updatedIndexRule = before.toBuilder().setAnalyzer(IndexRule.Analyzer.ANALYZER_STANDARD).build();
+        Assert.assertEquals("simple", before.getAnalyzer());
+        IndexRule updatedIndexRule = before.toBuilder().setAnalyzer("standard").build();
         this.client.update(updatedIndexRule);
         IndexRule after = this.client.findIndexRule("sw_record", "trace_id");
         Assert.assertNotNull(after);
-        Assert.assertEquals(IndexRule.Analyzer.ANALYZER_STANDARD, after.getAnalyzer());
+        Assert.assertEquals("standard", after.getAnalyzer());
     }
 
     @Test
@@ -111,7 +111,7 @@ public class ITIndexRuleMetadataRegistryTest extends BanyanDBClientTestCI {
                                                                   .setName("trace_id"))
                                              .addTags("trace_id")
                                              .setType(IndexRule.Type.TYPE_INVERTED)
-            .setAnalyzer(IndexRule.Analyzer.ANALYZER_SIMPLE);
+            .setAnalyzer("simple");
         return builder.build();
     }
 }

@@ -109,7 +109,7 @@ IndexRule.Builder ir = IndexRule.newBuilder()
                                                           .setName("trace_id"))
                                      .addTags("trace_id")
                                      .setType(IndexRule.Type.TYPE_INVERTED)
-                                     .setAnalyzer(IndexRule.Analyzer.ANALYZER_UNSPECIFIED);
+                                     .setAnalyzer("simple");
 client.define(ir.build());
 ```
 
