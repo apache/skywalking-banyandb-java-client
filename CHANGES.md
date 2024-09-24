@@ -8,7 +8,7 @@ Release Notes.
 ### Features
 
 * Remove analyze DNS name to get/refresh IP for create connection.
-* Support Match Query proto.
+* Support new Match Query proto.
 
 0.7.0-rc3
 ------------------
