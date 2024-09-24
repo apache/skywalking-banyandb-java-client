@@ -213,8 +213,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                                                                   .setGroup("sw_record")
                                                                   .setName("trace_id"))
                                              .addTags("trace_id")
-                                             .setType(IndexRule.Type.TYPE_INVERTED)
-                                             .setAnalyzer(IndexRule.Analyzer.ANALYZER_UNSPECIFIED);
+                                             .setType(IndexRule.Type.TYPE_INVERTED);
         return builder.build();
     }
 

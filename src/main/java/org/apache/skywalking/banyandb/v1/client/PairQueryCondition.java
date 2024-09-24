@@ -19,6 +19,7 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel.Condition.MatchOption;
 
 import java.util.List;
 
@@ -28,19 +29,33 @@ import java.util.List;
 public abstract class PairQueryCondition<T> extends AbstractCriteria {
     protected final BanyandbModel.Condition.BinaryOp op;
     private final TagAndValue<T> tagAndValue;
+    private final MatchOption matchOption;
 
     private PairQueryCondition(BanyandbModel.Condition.BinaryOp op, TagAndValue<T> tagAndValue) {
         this.op = op;
         this.tagAndValue = tagAndValue;
+        this.matchOption = MatchOption.getDefaultInstance();
+    }
+
+    private PairQueryCondition(BanyandbModel.Condition.BinaryOp op,
+                               TagAndValue<T> tagAndValue,
+                               MatchOption matchOption) {
+        this.op = op;
+        this.tagAndValue = tagAndValue;
+        this.matchOption = matchOption;
     }
 
     @Override
     public BanyandbModel.Criteria build() {
+        BanyandbModel.Condition.Builder condition = BanyandbModel.Condition.newBuilder()
+                                                                           .setName(this.tagAndValue.getTagName())
+                                                                           .setOp(this.op)
+                                                                           .setValue(this.tagAndValue.buildTypedTagValue());
+        if (this.matchOption != null) {
+            condition.setMatchOption(this.matchOption);
+        }
         return BanyandbModel.Criteria.newBuilder()
-                .setCondition(BanyandbModel.Condition.newBuilder()
-                .setName(this.tagAndValue.getTagName())
-                .setOp(this.op)
-                .setValue(this.tagAndValue.buildTypedTagValue()).build())
+                .setCondition(condition.build())
                 .build();
     }
 
@@ -138,6 +153,10 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
             super(op, new TagAndValue.StringTagPair(tagName, value));
         }
 
+        private StringQueryCondition(String tagName, BanyandbModel.Condition.BinaryOp op, String value, MatchOption matchOption) {
+            super(op, new TagAndValue.StringTagPair(tagName, value), matchOption);
+        }
+
         /**
          * Build a query condition for {@link String} type
          * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_EQ} as the relation
@@ -168,10 +187,23 @@ public abstract class PairQueryCondition<T> extends AbstractCriteria {
          *
          * @param tagName name of the tag
          * @param val     value of the tag
-         * @return a query that `String != value`
+         * @return a query that `String match value`
          */
         public static PairQueryCondition<String> match(String tagName, String val) {
             return new StringQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_MATCH, val);
+        }
+
+        /**
+         * Build a query condition for {@link String} type
+         * and {@link BanyandbModel.Condition.BinaryOp#BINARY_OP_MATCH} as the relation
+         *
+         * @param tagName name of the tag
+         * @param val     value of the tag
+         * @param matchOption set the specific match options
+         * @return a query that `match value`
+         */
+        public static PairQueryCondition<String> match(String tagName, String val, MatchOption matchOption) {
+            return new StringQueryCondition(tagName, BanyandbModel.Condition.BinaryOp.BINARY_OP_MATCH, val, matchOption);
         }
     }
 
