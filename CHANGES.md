@@ -12,7 +12,6 @@ Release Notes.
 * Add ToString annotation to Tag.
 * Enhance the BulkWriteProcessor.
 * Provide a new method to order data by timestamp.
-* Remove duplicate orderBy method in measure query.
 * Refactor metadata object to original protocol.
 * Complemented the Schema management API.
 * Enhance the MetadataCache.
@@ -25,6 +24,7 @@ Release Notes.
 * Fix MeasureQuery.SumBy to use SUM instead of COUNT
 * Add missing FloatFieldValue type in the Measure write operation
 * Fix wrong result of the Duration.ofDay
+* Remove duplicate orderBy method in measure query.
 
 0.7.0-rc4
 ------------------
@@ -46,6 +46,26 @@ Release Notes.
 
 ### Bugs
 
+0.7.0-rc2
+------------------
+
+### Features
+
+* Provide a new method to order data by timestamp.
+
+### Bugs
+* Remove duplicate orderBy method in measure query.
+
+0.7.0-rc1
+------------------
+
+### Features
+
+* Add trace to response.
+* Add ToString annotation to Tag.
+* Enhance the BulkWriteProcessor.
+
+### Bugs
 
 0.7.0-rc0
 ------------------
