@@ -2,6 +2,30 @@ Changes by Version
 ==================
 Release Notes.
 
+0.7.0
+------------------
+
+### Features
+
+* Bump up the API of BanyanDB Server to support the query trace.
+* Add trace to response.
+* Add ToString annotation to Tag.
+* Enhance the BulkWriteProcessor.
+* Provide a new method to order data by timestamp.
+* Refactor metadata object to original protocol.
+* Complemented the Schema management API.
+* Enhance the MetadataCache.
+* Add more IT tests.
+* Remove analyze DNS name to get/refresh IP for create connection.
+* Support new Match Query proto.
+
+### Bugs
+
+* Fix MeasureQuery.SumBy to use SUM instead of COUNT
+* Add missing FloatFieldValue type in the Measure write operation
+* Fix wrong result of the Duration.ofDay
+* Remove duplicate orderBy method in measure query.
+
 0.7.0-rc4
 ------------------
 
@@ -22,6 +46,26 @@ Release Notes.
 
 ### Bugs
 
+0.7.0-rc2
+------------------
+
+### Features
+
+* Provide a new method to order data by timestamp.
+
+### Bugs
+* Remove duplicate orderBy method in measure query.
+
+0.7.0-rc1
+------------------
+
+### Features
+
+* Add trace to response.
+* Add ToString annotation to Tag.
+* Enhance the BulkWriteProcessor.
+
+### Bugs
 
 0.7.0-rc0
 ------------------
