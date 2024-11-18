@@ -145,4 +145,38 @@ public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
                                                           EncodingMethod.ENCODING_METHOD_GORILLA));
         return builder.build();
     }
+
+    @Test
+    public void testIndexMeasureRegistry_createAndGet() throws BanyanDBException {
+        Measure expectedMeasure = buildIndexMeasure();
+        this.client.define(expectedMeasure);
+        Measure actualMeasure = client.findMeasure("sw_metric", "service_traffic");
+        Assert.assertNotNull(actualMeasure);
+        Assert.assertNotNull(actualMeasure.getUpdatedAt());
+        actualMeasure = actualMeasure.toBuilder().clearUpdatedAt().setMetadata(actualMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+        Assert.assertEquals(expectedMeasure, actualMeasure);
+    }
+
+    private Measure buildIndexMeasure() {
+        Measure.Builder builder = Measure.newBuilder()
+                .setMetadata(Metadata.newBuilder()
+                        .setGroup("sw_metric")
+                        .setName("service_traffic"))
+                .setEntity(Entity.newBuilder().addTagNames("id"))
+                .setIndexMode(true)
+                .addTagFamilies(
+                        TagFamilySpec.newBuilder()
+                                .setName("default")
+                                .addTags(
+                                        TagSpec.newBuilder()
+                                                .setName("id")
+                                                .setType(
+                                                        TagType.TAG_TYPE_STRING))
+                                .addTags(
+                                        TagSpec.newBuilder()
+                                                .setName("service_name")
+                                                .setType(
+                                                        TagType.TAG_TYPE_STRING)));
+        return builder.build();
+    }
 }
