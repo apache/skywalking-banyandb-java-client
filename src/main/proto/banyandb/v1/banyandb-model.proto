@@ -23,7 +23,6 @@ package banyandb.model.v1;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "validate/validate.proto";
 
 message Str {
   string value = 1;

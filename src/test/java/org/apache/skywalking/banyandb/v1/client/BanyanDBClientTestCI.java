@@ -31,7 +31,7 @@ import java.io.IOException;
 public class BanyanDBClientTestCI {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "9770bf48f9b88574683f56e2a137555cd68066d9";
+    private static final String TAG = "079483262016e8b2ac58c3f115f974d8ad7e9d2e";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 

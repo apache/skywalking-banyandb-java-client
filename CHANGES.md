@@ -2,6 +2,12 @@ Changes by Version
 ==================
 Release Notes.
 
+0.8.0
+
+### Features
+
+* Bump up the API to support the index mode of Measure.
+
 0.7.0
 ------------------
 
