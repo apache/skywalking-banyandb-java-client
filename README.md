@@ -206,6 +206,33 @@ Measure m = Measure.newBuilder()
 client.define(m);
 ```
 
+If you want to create an `index_mode` `Measure`:
+
+```java
+Measure m = Measure.newBuilder()
+                   .setMetadata(Metadata.newBuilder()
+                                        .setGroup("sw_metric")
+                                        .setName("service_traffic"))
+                   .setEntity(Entity.newBuilder().addTagNames("service_id"))
+                   .setIndexMode(true)
+                   .addTagFamilies(
+                       TagFamilySpec.newBuilder()
+                                    .setName("default")
+                                    .addTags(
+                                        TagSpec.newBuilder()
+                                               .setName("service_id")
+                                               .setType(
+                                                   TagType.TAG_TYPE_STRING))
+                                    .addTags(
+                                        TagSpec.newBuilder()
+                                               .setName("layer")
+                                               .setType(
+                                                   TagType.TAG_TYPE_STRING)))
+                    .build();
+// define a "index_mode" measure, as we've mentioned above
+client.define(m);
+```
+
 For more APIs usage, refer to test cases and API docs.
 
 ## Query
