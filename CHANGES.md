@@ -7,6 +7,7 @@ Release Notes.
 ### Features
 
 * Bump up the API to support the index mode of Measure.
+* Bump up the API to support the new property.
 
 0.7.0
 ------------------

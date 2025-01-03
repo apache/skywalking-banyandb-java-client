@@ -29,35 +29,27 @@ import "banyandb/v1/banyandb-model.proto";
 // Metadata is for multi-tenant use
 message Metadata {
   // container is created when it receives the first property
-  common.v1.Metadata container = 1;
+  common.v1.Metadata container = 1 [(validate.rules).message.required = true];
   // id identifies a property
-  string id = 2;
+  string id = 2 [(validate.rules).string.min_len = 1];
 }
-
 
 // Property stores the user defined data
 message Property {
   // metadata is the identity of a property
-  Metadata metadata = 1;
+  Metadata metadata = 1 [(validate.rules).message.required = true];
   // tag stores the content of a property
-  repeated model.v1.Tag tags = 2;
+  repeated model.v1.Tag tags = 2 [(validate.rules).repeated.min_items = 1];
   // updated_at indicates when the property is updated
   google.protobuf.Timestamp updated_at = 3;
-  // readonly. lease_id is the ID of the lease that attached to key.
-  int64 lease_id = 4;
-  // ttl indicates the time to live of the property.
-  // It's a string in the format of "1h", "2m", "3s", "1500ms".
-  // It defaults to 0s, which means the property never expires.
-  // The minimum allowed ttl is 1s.
-  string ttl = 5;
 }
 
 message ApplyRequest {
   banyandb.property.v1.Property property = 1 [(validate.rules).message.required = true];
   enum Strategy {
-    STRATEGY_UNSPECIFIED=0;
-    STRATEGY_MERGE=1;
-    STRATEGY_REPLACE=2;
+    STRATEGY_UNSPECIFIED = 0;
+    STRATEGY_MERGE = 1;
+    STRATEGY_REPLACE = 2;
   }
   // strategy indicates how to update a property. It defaults to STRATEGY_MERGE
   Strategy strategy = 2;
@@ -68,49 +60,51 @@ message ApplyResponse {
   // True: the property is absent. False: the property existed.
   bool created = 1;
   uint32 tags_num = 2;
-  int64 lease_id = 3;
 }
 
 message DeleteRequest {
-  banyandb.property.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
-  repeated string tags = 2;
+  // groups indicate where the data points are stored.
+  string group = 1 [(validate.rules).string.min_len = 1];
+  // container is created when it receives the first property
+  string container = 2 [(validate.rules).string.min_len = 1];
+  // id is the identity of properties
+  string id = 3;
 }
 
 message DeleteResponse {
   bool deleted = 1;
-  uint32 tags_num = 2;
 }
 
-message GetRequest {
-  banyandb.property.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
-  repeated string tags = 2;
+// QueryRequest is the request contract for query.
+message QueryRequest {
+  // groups indicate where the data points are stored.
+  repeated string groups = 1 [(validate.rules).repeated.min_items = 1];
+  // container is created when it receives the first property
+  string container = 2;
+  // ids is the identities of properties
+  repeated string ids = 3;
+  // criteria is used to filter properties based on tags
+  model.v1.Criteria criteria = 4;
+  // tag_projection can be used to select tags of the data points in the response
+  repeated string tag_projection = 5;
+  uint32 limit = 6;
+  // trace is used to enable trace for the query
+  bool trace = 7;
 }
 
-message GetResponse {
-  banyandb.property.v1.Property property = 1;
+// QueryResponse is the response for a query to the Query module.
+message QueryResponse {
+  // properties are the actual data returned
+  repeated banyandb.property.v1.Property properties = 1;
+  // trace contains the trace information of the query when trace is enabled
+  common.v1.Trace trace = 2;
 }
-
-message ListRequest {
-  banyandb.common.v1.Metadata container = 1 [(validate.rules).message.required = true];
-  repeated string ids = 2;
-  repeated string tags = 3;
-}
-
-message ListResponse {
-  repeated banyandb.property.v1.Property property = 1;
-}
-
-message KeepAliveRequest {
-  int64 lease_id = 1;
-}
-
-message KeepAliveResponse {}
 
 service PropertyService {
   // Apply creates a property if it's absent, or update a existed one based on a strategy.
   rpc Apply(ApplyRequest) returns (ApplyResponse);
+
   rpc Delete(DeleteRequest) returns (DeleteResponse);
-  rpc Get(GetRequest) returns (GetResponse);
-  rpc List(ListRequest) returns (ListResponse);
-  rpc KeepAlive(KeepAliveRequest) returns (KeepAliveResponse);
+
+  rpc Query(QueryRequest) returns (QueryResponse);
 }
