@@ -66,8 +66,11 @@ public class ITStreamMetadataRegistryTest extends BanyanDBClientTestCI {
         Stream beforeStream = client.findStream("sw_record", "trace");
         Assert.assertNotNull(beforeStream);
         Assert.assertNotNull(beforeStream.getUpdatedAt());
-        Stream updatedStream = beforeStream.toBuilder().setEntity(Entity.newBuilder().addAllTagNames(
-            Arrays.asList("service_id", "is_error"))).build();
+        Stream updatedStream = beforeStream.toBuilder().addTagFamilies(TagFamilySpec.newBuilder()
+                .setName("ex")
+                .addTags(TagSpec.newBuilder()
+                        .setName("ex")
+                        .setType(TagType.TAG_TYPE_INT))).build();
         this.client.update(updatedStream);
         Stream afterStream = client.findStream("sw_record", "trace");
         Assert.assertNotNull(afterStream);

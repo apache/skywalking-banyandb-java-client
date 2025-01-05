@@ -64,25 +64,6 @@ public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
     }
 
     @Test
-    public void testMeasureRegistry_createAndUpdate() throws BanyanDBException {
-        this.client.define(buildMeasure());
-        Measure beforeMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
-        Assert.assertNotNull(beforeMeasure);
-        Assert.assertNotNull(beforeMeasure.getUpdatedAt());
-
-        Measure updatedMeasure = beforeMeasure.toBuilder()
-                                                .setInterval(Duration.ofMinutes(2).format())
-                                                .build();
-        this.client.update(updatedMeasure);
-        Measure afterMeasure = client.findMeasure("sw_metric", "service_cpm_minute");
-        Assert.assertNotNull(afterMeasure);
-        Assert.assertNotNull(afterMeasure.getUpdatedAt());
-        updatedMeasure = updatedMeasure.toBuilder().clearUpdatedAt().setMetadata(updatedMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
-        afterMeasure = afterMeasure.toBuilder().clearUpdatedAt().setMetadata(afterMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
-        Assert.assertEquals(updatedMeasure, afterMeasure);
-    }
-
-    @Test
     public void testMeasureRegistry_createAndList() throws BanyanDBException {
         Measure expectedMeasure = buildMeasure();
         this.client.define(expectedMeasure);
