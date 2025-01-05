@@ -28,8 +28,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
@@ -43,7 +41,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
         super.setUpConnection();
         Group expectedGroup =
-            Group.newBuilder().setMetadata(Metadata.newBuilder().setName("default")).setCatalog(BanyandbCommon.Catalog.CATALOG_UNSPECIFIED).build();
+            Group.newBuilder().setMetadata(Metadata.newBuilder()
+                            .setName("default"))
+                    .setCatalog(BanyandbCommon.Catalog.CATALOG_PROPERTY)
+                    .setResourceOpts(BanyandbCommon.ResourceOpts.newBuilder()
+                            .setShardNum(2))
+                    .build();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
     }
@@ -61,7 +64,13 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Assert.assertTrue(this.client.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Property gotProperty = client.findProperty("default", "sw", "ui_template");
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                            .addGroups("default")
+                            .setContainer("sw")
+                            .addIds("ui_template")
+                    .build());
+            Assert.assertEquals(1, resp.getPropertiesCount());
+            Property gotProperty = resp.getProperties(0);
             Assert.assertNotNull(gotProperty);
             Assert.assertEquals(property.getTagsList(), gotProperty.getTagsList());
         });
@@ -75,13 +84,24 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Assert.assertTrue(this.client.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Property gotProperty = client.findProperty("default", "sw", "ui_template");
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                    .addGroups("default")
+                    .setContainer("sw")
+                    .addIds("ui_template")
+                    .build());
+            Assert.assertEquals(1, resp.getPropertiesCount());
+            Property gotProperty = resp.getProperties(0);
             Assert.assertNotNull(gotProperty);
             Assert.assertEquals(property.getTagsList(), gotProperty.getTagsList());
         });
 
         Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template").getDeleted());
-        Assert.assertNull(client.findProperty("default", "sw", "ui_template"));
+        BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                .addGroups("default")
+                .setContainer("sw")
+                .addIds("ui_template")
+                .build());
+        Assert.assertEquals(0, resp.getPropertiesCount());
     }
 
     @Test
@@ -97,7 +117,13 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Assert.assertFalse(this.client.apply(property2).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            Property gotProperty = client.findProperty("default", "sw", "ui_template");
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                    .addGroups("default")
+                    .setContainer("sw")
+                    .addIds("ui_template")
+                    .build());
+            Assert.assertEquals(1, resp.getPropertiesCount());
+            Property gotProperty = resp.getProperties(0);
             Assert.assertNotNull(gotProperty);
             Assert.assertEquals(property2.getTagsList(), gotProperty.getTagsList());
         });
@@ -115,29 +141,29 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Assert.assertTrue(this.client.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Property> gotProperties = client.findProperties("default", "sw");
-            Assert.assertEquals(2, gotProperties.size());
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                    .addGroups("default")
+                    .setContainer("sw")
+                    .build());
+            Assert.assertEquals(2, resp.getPropertiesCount());
         });
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Property> gotProperties = client.findProperties("default", "sw", Arrays.asList("id1", "id2"), null);
-            Assert.assertEquals(2, gotProperties.size());
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                    .addGroups("default")
+                    .setContainer("sw")
+                    .addIds("id1")
+                    .addIds("id2")
+                    .build());
+            Assert.assertEquals(2, resp.getPropertiesCount());
         });
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Property> gotProperties = client.findProperties("default", "sw", Arrays.asList("id2"), null);
-            Assert.assertEquals(1, gotProperties.size());
+            BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
+                    .addGroups("default")
+                    .setContainer("sw")
+                    .addIds("id2")
+                    .build());
+            Assert.assertEquals(1, resp.getPropertiesCount());
         });
-    }
-
-    @Test
-    public void test_PropertyKeepAlive() throws BanyanDBException {
-        Property property = buildProperty("default", "sw", "id1")
-            .toBuilder().addTags(
-                Tag.newBuilder().setKey("name").setValue(
-                    TagValue.newBuilder().setStr(Str.newBuilder().setValue("bar")))).setTtl("30m").build();
-        BanyandbProperty.ApplyResponse resp = this.client.apply(property);
-        Assert.assertTrue(resp.getCreated());
-        Assert.assertTrue(resp.getLeaseId() > 0);
-        this.client.keepAliveProperty(resp.getLeaseId());
     }
 
     private BanyandbProperty.Property buildProperty(String group, String name, String id) {

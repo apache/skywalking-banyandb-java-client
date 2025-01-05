@@ -60,7 +60,6 @@ import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadat
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
-import org.apache.skywalking.banyandb.v1.client.metadata.PropertyStore;
 import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregationMetadataRegistry;
@@ -830,50 +829,14 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Find property
+     * Query properties
      *
-     * @param group group of the metadata
-     * @param name  name of the metadata
-     * @param id    identity of the property
-     * @param tags  tags to be returned
-     * @return property if it can be found
+     * @param request query request
+     * @return query response
      */
-    public Property findProperty(String group, String name, String id, String... tags) throws BanyanDBException {
+    public BanyandbProperty.QueryResponse query(BanyandbProperty.QueryRequest request) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        try {
-            return store.get(group, name, id, tags);
-        } catch (BanyanDBException ex) {
-            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
-                return null;
-            }
-            throw ex;
-        }
-    }
-
-    /**
-     * List Properties
-     *
-     * @param group group of the metadata
-     * @param name  name of the metadata
-     * @return all properties belonging to the group and the name
-     */
-    public List<Property> findProperties(String group, String name) throws BanyanDBException {
-        return findProperties(group, name, null, null);
-
-    }
-
-    /**
-     * List Properties
-     *
-     * @param group group of the metadata
-     * @param name  name of the metadata
-     * @param ids   identities of the properties
-     * @param tags  tags to be returned
-     * @return all properties belonging to the group and the name
-     */
-    public List<Property> findProperties(String group, String name, List<String> ids, List<String> tags) throws BanyanDBException {
-        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.list(group, name, ids, tags);
+        return store.query(request);
     }
 
     /**
@@ -882,23 +845,12 @@ public class BanyanDBClient implements Closeable {
      * @param group group of the metadata
      * @param name  name of the metadata
      * @param id    identity of the property
-     * @param tags  tags to be deleted. If null, the property is deleted
      * @return if this property has been deleted
      */
-    public DeleteResponse deleteProperty(String group, String name, String id, String... tags) throws
+    public DeleteResponse deleteProperty(String group, String name, String id) throws
             BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.delete(group, name, id, tags);
-    }
-
-    /**
-     * Keep alive the property
-     *
-     * @param leaseId lease id of the property
-     */
-    public void keepAliveProperty(long leaseId) throws BanyanDBException {
-        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        store.keepAlive(leaseId);
+        return store.delete(group, name, id);
     }
 
     /**
