@@ -24,7 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.util.StatusUtil;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -69,7 +71,10 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
 
             @Override
             public void onNext(BanyandbMeasure.WriteResponse writeResponse) {
-                switch (writeResponse.getStatus()) {
+                BanyandbModel.Status status = StatusUtil.convertStringToStatus(writeResponse.getStatus());
+                switch (status) {
+                    case STATUS_SUCCEED:
+                        break;
                     case STATUS_EXPIRED_SCHEMA:
                         BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
                         String schemaKey = metadata.getGroup() + "." + metadata.getName();
@@ -84,6 +89,7 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
                         }
                         break;
                     default:
+                        log.warn("Write measure failed with status: {}", status);
                 }
             }
 

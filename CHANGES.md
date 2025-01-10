@@ -8,6 +8,7 @@ Release Notes.
 
 * Bump up the API to support the index mode of Measure.
 * Bump up the API to support the new property.
+* Bump up the API to adopt the status field which is changed to the string type due to the compatibility issue.
 
 0.7.0
 ------------------

@@ -23,9 +23,11 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.util.StatusUtil;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -70,7 +72,10 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
 
                     @Override
                     public void onNext(BanyandbStream.WriteResponse writeResponse) {
-                        switch (writeResponse.getStatus()) {
+                        BanyandbModel.Status status = StatusUtil.convertStringToStatus(writeResponse.getStatus());
+                        switch (status) {
+                            case STATUS_SUCCEED:
+                                break;
                             case STATUS_EXPIRED_SCHEMA:
                                 BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
                                 String schemaKey = metadata.getGroup() + "." + metadata.getName();
@@ -85,6 +90,7 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
                                 }
                                 break;
                             default:
+                                log.warn("Write stream failed with status: {}", status);
                         }
                     }
 
