@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Metadata;
+import org.apache.skywalking.banyandb.common.v1.ServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TopNAggregation;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
@@ -1067,6 +1068,20 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
         return this.metadataCache.updateMeasureFromSever(group, name);
+    }
+
+    /**
+     * Get the API version of the server
+     *
+     * @return the API version of the server
+     * @throws BanyanDBException if the server is not reachable
+     */
+    public BanyandbCommon.APIVersion getAPIVersion() throws BanyanDBException {
+        ServiceGrpc.ServiceBlockingStub stub = ServiceGrpc.newBlockingStub(this.channel);
+        return HandleExceptionsWith.callAndTranslateApiException(() -> {
+            BanyandbCommon.GetAPIVersionResponse resp = stub.getAPIVersion(BanyandbCommon.GetAPIVersionRequest.getDefaultInstance());
+            return resp.getVersion();
+        });
     }
 
     @Override
