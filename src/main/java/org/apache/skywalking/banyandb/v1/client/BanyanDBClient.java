@@ -34,12 +34,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Metadata;
+import org.apache.skywalking.banyandb.common.v1.ServiceGrpc;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TopNAggregation;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Subject;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.Property;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyRequest.Strategy;
@@ -75,6 +77,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import org.apache.skywalking.banyandb.v1.client.util.StatusUtil;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -227,7 +231,10 @@ public class BanyanDBClient implements Closeable {
 
                             @Override
                             public void onNext(BanyandbStream.WriteResponse writeResponse) {
-                                switch (writeResponse.getStatus()) {
+                                BanyandbModel.Status status = StatusUtil.convertStringToStatus(writeResponse.getStatus());
+                                switch (status) {
+                                    case STATUS_SUCCEED:
+                                        break;
                                     case STATUS_INVALID_TIMESTAMP:
                                         responseException = new InvalidArgumentException(
                                                 "Invalid timestamp: " + streamWrite.getTimestamp(), null, Status.Code.INVALID_ARGUMENT, false);
@@ -250,11 +257,10 @@ public class BanyanDBClient implements Closeable {
                                         responseException = new InvalidArgumentException(
                                                 "Expired revision: " + metadata.getModRevision(), null, Status.Code.INVALID_ARGUMENT, true);
                                         break;
-                                    case STATUS_INTERNAL_ERROR:
-                                        responseException = new InternalException(
-                                                "Internal error occurs in server", null, Status.Code.INTERNAL, true);
-                                        break;
                                     default:
+                                        responseException = new InternalException(
+                                              String.format("Internal error (%s) occurs in server", writeResponse.getStatus()), null, Status.Code.INTERNAL, true);
+                                        break;
                                 }
                             }
 
@@ -1062,6 +1068,20 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
         return this.metadataCache.updateMeasureFromSever(group, name);
+    }
+
+    /**
+     * Get the API version of the server
+     *
+     * @return the API version of the server
+     * @throws BanyanDBException if the server is not reachable
+     */
+    public BanyandbCommon.APIVersion getAPIVersion() throws BanyanDBException {
+        ServiceGrpc.ServiceBlockingStub stub = ServiceGrpc.newBlockingStub(this.channel);
+        return HandleExceptionsWith.callAndTranslateApiException(() -> {
+            BanyandbCommon.GetAPIVersionResponse resp = stub.getAPIVersion(BanyandbCommon.GetAPIVersionRequest.getDefaultInstance());
+            return resp.getVersion();
+        });
     }
 
     @Override

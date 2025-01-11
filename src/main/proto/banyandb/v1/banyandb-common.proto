@@ -115,3 +115,29 @@ message Tag {
   // value is the value of the tag.
   string value = 2;
 }
+
+
+// APIVersion is the version of the API
+message APIVersion {
+  // version is the version of the API
+  string version = 1;
+  // revision is the commit hash of the API
+  string revision = 2;
+}
+
+// GetAPIVersionRequest is the request for GetAPIVersion
+message GetAPIVersionRequest {
+  // empty
+}
+
+// GetAPIVersionResponse is the response for GetAPIVersion
+message GetAPIVersionResponse {
+  // version is the version of the API
+  APIVersion version = 1;
+}
+
+// Service is the service for the API
+service Service {
+  // GetAPIVersion returns the version of the API
+  rpc GetAPIVersion(GetAPIVersionRequest) returns (GetAPIVersionResponse);
+}
