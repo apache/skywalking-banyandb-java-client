@@ -43,6 +43,11 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
      * One order condition is supported and optional.
      */
     private OrderBy orderBy;
+    
+    /**
+     * Node selector for the query.
+     */
+    private String nodeSelector;
 
     public StreamQuery(final List<String> groups, final String name, final TimestampRange timestampRange, final Set<String> projections) {
         super(groups, name, timestampRange, projections);
@@ -63,6 +68,17 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
     public StreamQuery or(PairQueryCondition<?> condition) {
         return (StreamQuery) super.or(condition);
     }
+    
+    /**
+     * Set the node selector for this query.
+     *
+     * @param nodeSelector the node selector
+     * @return this query instance for chaining
+     */
+    public StreamQuery nodeSelector(String nodeSelector) {
+        this.nodeSelector = nodeSelector;
+        return this;
+    }
 
     @Override
     BanyandbStream.QueryRequest build(MetadataCache.EntityMetadata entityMetadata) throws BanyanDBException {
@@ -81,6 +97,9 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         builder.setLimit(limit);
         if (orderBy != null) {
             builder.setOrderBy(orderBy.build());
+        }
+        if (nodeSelector != null && !nodeSelector.isEmpty()) {
+            builder.setNodeSelector(nodeSelector);
         }
         builder.setTrace(this.trace);
         return builder.build();

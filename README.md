@@ -289,6 +289,25 @@ Measure m = Measure.newBuilder()
 client.define(m);
 ```
 
+### Define a Property
+
+```java
+// Define property schema
+BanyandbDatabase.Property propertyDef = 
+   BanyandbDatabase.Property.newBuilder()
+        .setMetadata(Metadata.newBuilder()
+            .setGroup("default")
+            .setName("ui_template"))
+        .addTags(
+           TagSpec.newBuilder()
+               .setName("name")
+               .setType(
+                   TagType.TAG_TYPE_STRING))
+        .build();
+
+client.define(propertyDef);
+```
+
 For more APIs usage, refer to test cases and API docs.
 
 ## Query
@@ -414,6 +433,31 @@ After response is returned, `trace` can be extracted,
 MeasureQueryResponse resp = client.query(query);
 Trace trace = resp.getTrace();
 ```
+
+### Property
+
+Query properties:
+
+```java
+BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(List.of("default"), "ui_template", Set.of("name")).build();
+BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
+```
+
+Query properties based on id:
+
+```java
+BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(List.of("default"), "ui_template", Set.of("name")).id("dashboard-1").build();
+BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
+```
+
+Query properties based on tags:
+
+```java
+PropertyQuery pQuery = new PropertyQuery(List.of("default"), "ui_template", Set.of("name"));
+ pQuery.criteria(PairQueryCondition.StringQueryCondition.eq("name", "foo"));
+BanyandbProperty.QueryResponse resp = client.query(pQuery.build());
+```
+
 ### Criteria
 
 Both `StreamQuery` and `MeausreQuery` support the `criteria` flag to filter data.
@@ -525,28 +569,10 @@ MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_
 CompletableFuture<Void> f = measureBulkWriteProcessor.add(measureWrite);
 f.get(10, TimeUnit.SECONDS);
 ```
-# Property APIs
 
-Before using properties, you need to define a property schema:
+### Property
 
-```java
-// Define property schema
-BanyandbDatabase.Property propertyDef = 
-   BanyandbDatabase.Property.newBuilder()
-        .setMetadata(Metadata.newBuilder()
-            .setGroup("default")
-            .setName("sw"))
-        .addTags(
-           TagSpec.newBuilder()
-               .setName("name")
-               .setType(
-                   TagType.TAG_TYPE_STRING))
-        .build();
-
-client.define(propertyDef);
-```
-
-After defining the schema, you can apply (create/update) properties:
+Unlike `Stream` and `Measure`, `Property` is a single write operation. The `Property` object is created and sent to the server.
 
 ```java
 // Apply a property (create or update)
@@ -570,18 +596,13 @@ You can also apply with a specific strategy:
 ApplyResponse response = client.apply(property, Strategy.STRATEGY_MERGE);
 ```
 
-Query properties:
+## Delete
 
-```java
-// Query properties
-BanyandbProperty.QueryRequest queryRequest = BanyandbProperty.QueryRequest.newBuilder()
-    .setMetadata(Metadata.newBuilder()
-        .setGroup("default")
-        .setName("ui_template"))
-    .build();
+### Stream and Measure
 
-BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
-```
+The `Stream` and `Measure` are deleted by the TTL mechanism. You can set the TTL when defining the group schema.
+
+### Property
 
 Delete a property:
 
