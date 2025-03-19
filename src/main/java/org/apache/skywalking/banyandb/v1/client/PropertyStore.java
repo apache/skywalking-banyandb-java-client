@@ -54,7 +54,7 @@ public class PropertyStore {
         return HandleExceptionsWith.callAndTranslateApiException(() ->
                 this.stub.delete(BanyandbProperty.DeleteRequest.newBuilder()
                         .setGroup(group)
-                        .setContainer(name)
+                        .setName(name)
                         .setId(id)
                         .build()));
     }

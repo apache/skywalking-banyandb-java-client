@@ -26,22 +26,16 @@ import "validate/validate.proto";
 import "banyandb/v1/banyandb-common.proto";
 import "banyandb/v1/banyandb-model.proto";
 
-// Metadata is for multi-tenant use
-message Metadata {
-  // container is created when it receives the first property
-  common.v1.Metadata container = 1 [(validate.rules).message.required = true];
-  // id identifies a property
-  string id = 2 [(validate.rules).string.min_len = 1];
-}
-
 // Property stores the user defined data
 message Property {
   // metadata is the identity of a property
-  Metadata metadata = 1 [(validate.rules).message.required = true];
+  common.v1.Metadata metadata = 1 [(validate.rules).message.required = true];
+  // id is the identity of a property
+  string id = 2 [(validate.rules).string.min_len = 1];
   // tag stores the content of a property
-  repeated model.v1.Tag tags = 2 [(validate.rules).repeated.min_items = 1];
+  repeated model.v1.Tag tags = 3 [(validate.rules).repeated.min_items = 1];
   // updated_at indicates when the property is updated
-  google.protobuf.Timestamp updated_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
 }
 
 message ApplyRequest {
@@ -65,9 +59,9 @@ message ApplyResponse {
 message DeleteRequest {
   // groups indicate where the data points are stored.
   string group = 1 [(validate.rules).string.min_len = 1];
-  // container is created when it receives the first property
-  string container = 2 [(validate.rules).string.min_len = 1];
-  // id is the identity of properties
+  // name is the identity of a property.
+  string name = 2 [(validate.rules).string.min_len = 1];
+  // id is the identity of item in the property.
   string id = 3;
 }
 
@@ -79,8 +73,8 @@ message DeleteResponse {
 message QueryRequest {
   // groups indicate where the data points are stored.
   repeated string groups = 1 [(validate.rules).repeated.min_items = 1];
-  // container is created when it receives the first property
-  string container = 2;
+  // name is created when it receives the first property
+  string name = 2;
   // ids is the identities of properties
   repeated string ids = 3;
   // criteria is used to filter properties based on tags
@@ -90,6 +84,8 @@ message QueryRequest {
   uint32 limit = 6;
   // trace is used to enable trace for the query
   bool trace = 7;
+  // node_selector is used to select the node to query
+  string node_selector = 8;
 }
 
 // QueryResponse is the response for a query to the Query module.
