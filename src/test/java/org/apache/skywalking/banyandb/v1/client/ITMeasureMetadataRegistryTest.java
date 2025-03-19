@@ -69,10 +69,19 @@ public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
         this.client.define(expectedMeasure);
         List<Measure> actualMeasures = client.findMeasures("sw_metric");
         Assert.assertNotNull(actualMeasures);
-        Assert.assertEquals(1, actualMeasures.size());
-        Measure actualMeasure = actualMeasures.get(0);
-        actualMeasure = actualMeasure.toBuilder().clearUpdatedAt().setMetadata(actualMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
-        Assert.assertEquals(expectedMeasure, actualMeasure);
+        // _topn_result is a system measure, so there should be 2 measures
+        Assert.assertEquals(2, actualMeasures.size());
+        boolean found = false;
+        for (Measure actualMeasure : actualMeasures) {
+            if (actualMeasure.getMetadata().getName().equals("service_cpm_minute")) {
+                found = true;
+                actualMeasure = actualMeasure.toBuilder().clearUpdatedAt().setMetadata(actualMeasure.getMetadata().toBuilder().clearModRevision().clearCreateRevision()).build();
+                Assert.assertEquals(expectedMeasure, actualMeasure);
+            }
+        }
+        if (!found) {
+            Assert.fail("service_cpm_minute not found");
+        }
     }
 
     @Test

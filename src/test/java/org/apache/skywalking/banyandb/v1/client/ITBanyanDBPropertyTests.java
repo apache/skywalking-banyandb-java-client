@@ -33,6 +33,8 @@ import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.Property;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Metadata;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagSpec;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
 
 import static org.awaitility.Awaitility.await;
 
@@ -49,6 +51,21 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
                     .build();
         client.define(expectedGroup);
         Assert.assertNotNull(expectedGroup);
+        org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property expectedProperty =
+            org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property.newBuilder()
+                    .setMetadata(
+                        BanyandbCommon.Metadata.newBuilder()
+                                .setGroup("default")
+                                .setName("sw")
+                                .build())
+                     .addTags(
+                        TagSpec.newBuilder()
+                                .setName("name")
+                                .setType(
+                                        TagType.TAG_TYPE_STRING))
+                    .build();
+        client.define(expectedProperty);
+        Assert.assertNotNull(expectedProperty);
     }
 
     @After
@@ -66,7 +83,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                             .addGroups("default")
-                            .setContainer("sw")
+                            .setName("sw")
                             .addIds("ui_template")
                     .build());
             Assert.assertEquals(1, resp.getPropertiesCount());
@@ -86,7 +103,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                     .addGroups("default")
-                    .setContainer("sw")
+                    .setName("sw")
                     .addIds("ui_template")
                     .build());
             Assert.assertEquals(1, resp.getPropertiesCount());
@@ -98,7 +115,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template").getDeleted());
         BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                 .addGroups("default")
-                .setContainer("sw")
+                .setName("sw")
                 .addIds("ui_template")
                 .build());
         Assert.assertEquals(0, resp.getPropertiesCount());
@@ -119,7 +136,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                     .addGroups("default")
-                    .setContainer("sw")
+                    .setName("sw")
                     .addIds("ui_template")
                     .build());
             Assert.assertEquals(1, resp.getPropertiesCount());
@@ -143,14 +160,14 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                     .addGroups("default")
-                    .setContainer("sw")
+                    .setName("sw")
                     .build());
             Assert.assertEquals(2, resp.getPropertiesCount());
         });
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                     .addGroups("default")
-                    .setContainer("sw")
+                    .setName("sw")
                     .addIds("id1")
                     .addIds("id2")
                     .build());
@@ -159,7 +176,7 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                     .addGroups("default")
-                    .setContainer("sw")
+                    .setName("sw")
                     .addIds("id2")
                     .build());
             Assert.assertEquals(1, resp.getPropertiesCount());
@@ -169,14 +186,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
     private BanyandbProperty.Property buildProperty(String group, String name, String id) {
         BanyandbProperty.Property.Builder builder = BanyandbProperty.Property.newBuilder()
                                                                              .setMetadata(
-                                                                                 BanyandbProperty.Metadata.newBuilder()
-                                                                                                          .setContainer(
-                                                                                                              BanyandbCommon.Metadata.newBuilder()
-                                                                                                                                     .setGroup(
-                                                                                                                                         group)
-                                                                                                                                     .setName(
-                                                                                                                                         name))
-                                                                                                          .setId(id));
+                                                                                        BanyandbCommon.Metadata.newBuilder()
+                                                                                                                .setGroup(
+                                                                                                                    group)
+                                                                                                                .setName(
+                                                                                                                    name).build())
+                                                                                    .setId(id);
         return builder.build();
     }
 }

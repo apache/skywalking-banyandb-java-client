@@ -11,6 +11,7 @@ Release Notes.
 * Bump up the API to support the new property.
 * Bump up the API to adopt the status field which is changed to the string type due to the compatibility issue.
 * Bump up the API to support getting the API version.
+* Bump up the API to support the lifecycle management.
 
 0.7.0
 ------------------

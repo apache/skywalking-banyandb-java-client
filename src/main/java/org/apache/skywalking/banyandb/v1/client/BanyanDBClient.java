@@ -62,6 +62,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadat
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.MeasureMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
+import org.apache.skywalking.banyandb.v1.client.metadata.PropertyMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregationMetadataRegistry;
@@ -813,6 +814,64 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Define a new property.
+     * 
+     * @param property the property to be stored in the BanyanBD
+     * @throws BanyanDBException if the property is invalid
+     */
+    public void define(org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property property) throws BanyanDBException {
+        PropertyMetadataRegistry registry = new PropertyMetadataRegistry(checkNotNull(this.channel));
+        registry.create(property);
+    }
+
+    /**
+     * Update the property.
+     *
+     * @param property the property to be stored in the BanyanBD
+     * @throws BanyanDBException if the property is invalid
+     */
+    public void update(org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property property) throws BanyanDBException {
+        PropertyMetadataRegistry registry = new PropertyMetadataRegistry(checkNotNull(this.channel));
+        registry.update(property);
+    }
+
+    /**
+     * Find the property with given group and name
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @return the property found in BanyanDB. Otherwise, null is returned.
+     */
+    public org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property findPropertyDefinition(String group, String name) throws BanyanDBException {
+        PropertyMetadataRegistry registry = new PropertyMetadataRegistry(checkNotNull(this.channel));
+        return registry.get(group, name);
+    }
+
+    /**
+     * Find the properties with given group
+     *
+     * @param group group of the metadata
+     * @return the properties found in BanyanDB
+     */
+    public List<org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Property> findPropertiesDefinition(String group) throws BanyanDBException {
+        PropertyMetadataRegistry registry = new PropertyMetadataRegistry(checkNotNull(this.channel));
+        return registry.list(group);
+    }
+
+    /**
+     * Delete the property
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @param id    identity of the property
+     * @return if this property has been deleted
+     */
+    public boolean deletePropertyDefinition(String group, String name) throws BanyanDBException {
+        PropertyMetadataRegistry registry = new PropertyMetadataRegistry(checkNotNull(this.channel));
+        return registry.delete(group, name);
+    }
+
+    /**
      * Apply(Create or update) the property with {@link BanyandbProperty.ApplyRequest.Strategy#STRATEGY_MERGE}
      *
      * @param property the property to be stored in the BanyanBD
@@ -1044,6 +1103,20 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
 
         return new TopNAggregationMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
+    }
+
+    /**
+     * Check if the given property exists.
+     *
+     * @param group group of the property
+     * @param name name of the property
+     * @return ResourceExist which indicates whether group and property exist
+     */
+    public ResourceExist existProperty(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new PropertyMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
     }
 
     /**

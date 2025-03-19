@@ -71,6 +71,62 @@ client.define(g);
 
 Then we may define a stream with customized configurations.
 
+#### Define a how-warm-cold Group
+
+Here illustrates how to use the lifecycle stages feature for hot-warm-cold data architecture:
+
+```java
+// build a group sw_record for Stream with hot-warm-cold lifecycle stages
+Group g = Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_record"))
+            .setCatalog(Catalog.CATALOG_STREAM)
+            .setResourceOpts(ResourceOpts.newBuilder()
+                // Hot configuration
+                .setShardNum(3)
+                // Default segment interval (will be overridden by stages if defined)
+                .setSegmentInterval(
+                    IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(1))
+                // Default TTL (will be overridden by stages if defined)
+                .setTtl(
+                    IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(3))
+                // Define lifecycle stages (hot → warm → cold)
+                .addStages(LifecycleStage.newBuilder()
+                    .setName("warm")
+                    .setShardNum(2) // Fewer shards
+                    .setSegmentInterval(IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(1))
+                    .setTtl(IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(7)) // Keep in warm for 7 days
+                    .setNodeSelector("hdd-nodes") // Store on cheaper HDD nodes
+                    .build())
+                .addStages(LifecycleStage.newBuilder()
+                    .setName("cold")
+                    .setShardNum(1) // Minimal shards for archived data
+                    .setSegmentInterval(IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(7)) // Larger segments for cold data
+                    .setTtl(IntervalRule.newBuilder()
+                        .setUnit(IntervalRule.Unit.UNIT_DAY)
+                        .setNum(30)) // Keep in cold for 30 more days
+                    .setNodeSelector("archive-nodes") // Store on archive nodes
+                    .setClose(true) // Close segments that are no longer live
+                    .build()))
+            .build();
+client.define(g);
+```
+
+This configuration creates a hot-warm-cold architecture where:
+- Hot stage: Data is stored on fast SSD nodes with many shards for 1 day, optimized for high query performance
+- Warm stage: Data moves to HDD nodes with fewer shards for 7 days, balanced between performance and cost
+- Cold stage: Data finally moves to archive nodes with minimal shards for 30 days, optimized for storage efficiency
+
+Data automatically flows through these stages according to the defined TTLs. The total retention of data is 38 days (1+7+30).
+
 #### Define a Stream
 ```java
 // build a stream trace with above group
@@ -469,68 +525,64 @@ MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_
 CompletableFuture<Void> f = measureBulkWriteProcessor.add(measureWrite);
 f.get(10, TimeUnit.SECONDS);
 ```
+# Property APIs
 
-## Property APIs
-
-Property APIs are used to store key-value pairs.
-
-### Apply(Create/Update)
-
-`apply` will always succeed whenever the property exists or not.
-The old value will be overwritten if already existed, otherwise a new value will be set.
+Before using properties, you need to define a property schema:
 
 ```java
-Property property = Property.create("default", "sw", "ui_template")
-    .addTag(TagAndValue.newStringTag("name", "hello"))
-    .addTag(TagAndValue.newStringTag("state", "successd"))
+// Define property schema
+BanyandbDatabase.Property propertyDef = 
+   BanyandbDatabase.Property.newBuilder()
+        .setMetadata(Metadata.newBuilder()
+            .setGroup("default")
+            .setName("ui_template"))
+        .setTagType(TagType.TAG_TYPE_STRING)
+        .build();
+
+client.define(propertyDef);
+```
+
+After defining the schema, you can apply (create/update) properties:
+
+```java
+// Apply a property (create or update)
+Property property = Property.newBuilder()
+    .setMetadata(Metadata.newBuilder()
+        .setGroup("default")
+        .setName("ui_template"))
+    .setId("dashboard-1")
+    .setTagValue(BanyandbModel.TagValue.newBuilder()
+        .setStr("template-data-json"))
     .build();
-this.client.apply(property); //created:true tagsNum:2
+
+ApplyResponse response = client.apply(property);
 ```
 
-The operation supports updating partial tags.
+You can also apply with a specific strategy:
 
 ```java
-Property property = Property.create("default", "sw", "ui_template")
-    .addTag(TagAndValue.newStringTag("state", "failed"))
+// Apply with merge strategy
+ApplyResponse response = client.apply(property, Strategy.STRATEGY_MERGE);
+```
+
+Query properties:
+
+```java
+// Query properties
+BanyandbProperty.QueryRequest queryRequest = BanyandbProperty.QueryRequest.newBuilder()
+    .setMetadata(Metadata.newBuilder()
+        .setGroup("default")
+        .setName("ui_template"))
     .build();
-this.client.apply(property); //created:false tagsNum:1
+
+BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
 ```
 
-### Query
-
-Property can be queried via `Client.findProperty`,
+Delete a property:
 
 ```java
- BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
-        .addGroups("default")
-        .setContainer("sw")
-        .addIds("ui_template")
-        .build());
-```
-
-The query operation could filter tags,
-
-```java
-BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
-        .addGroups("default")
-        .setContainer("sw")
-        .addIds("ui_template")
-        .addTagProjection("state")
-        .build());
-```
-
-### Delete
-
-Property can be deleted by calling `Client.deleteProperty`,
-
-```java
-this.client.deleteProperty("default", "sw", "ui_template"); //deleted:true tagsNum:2
-```
-
-The delete operation could remove specific tags instead of the whole property.
-
-```java
-this.client.deleteProperty("default", "sw", "ui_template", "state"); //deleted:true tagsNum:1
+// Delete a property
+DeleteResponse deleteResponse = client.deleteProperty("default", "ui_template", "dashboard-1");
 ```
 
 # Compiling project
