@@ -535,8 +535,12 @@ BanyandbDatabase.Property propertyDef =
    BanyandbDatabase.Property.newBuilder()
         .setMetadata(Metadata.newBuilder()
             .setGroup("default")
-            .setName("ui_template"))
-        .setTagType(TagType.TAG_TYPE_STRING)
+            .setName("sw"))
+        .addTags(
+           TagSpec.newBuilder()
+               .setName("name")
+               .setType(
+                   TagType.TAG_TYPE_STRING))
         .build();
 
 client.define(propertyDef);
@@ -547,12 +551,13 @@ After defining the schema, you can apply (create/update) properties:
 ```java
 // Apply a property (create or update)
 Property property = Property.newBuilder()
-    .setMetadata(Metadata.newBuilder()
-        .setGroup("default")
-        .setName("ui_template"))
+    .setMetadata(
+        BanyandbCommon.Metadata.newBuilder()
+            .setGroup("default")
+            .setName("sw").build())
     .setId("dashboard-1")
-    .setTagValue(BanyandbModel.TagValue.newBuilder()
-        .setStr("template-data-json"))
+    .addTags(Tag.newBuilder().setKey("name").setValue(
+        TagValue.newBuilder().setStr(Str.newBuilder().setValue("hello"))))
     .build();
 
 ApplyResponse response = client.apply(property);
