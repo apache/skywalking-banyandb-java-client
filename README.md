@@ -439,21 +439,21 @@ Trace trace = resp.getTrace();
 Query properties:
 
 ```java
-BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(List.of("default"), "ui_template", Set.of("name")).build();
+BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(Lists.newArrayList("default"), "ui_template", ImmutableSet.of("name")).build();
 BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
 ```
 
-Query properties based on id:
+Query properties based on ID:
 
 ```java
-BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(List.of("default"), "ui_template", Set.of("name")).id("dashboard-1").build();
+BanyandbProperty.QueryRequest queryRequest = new PropertyQuery(Lists.newArrayList("default"), "ui_template", ImmutableSet.of("name")).id("dashboard-1").build();
 BanyandbProperty.QueryResponse queryResponse = client.query(queryRequest);
 ```
 
 Query properties based on tags:
 
 ```java
-PropertyQuery pQuery = new PropertyQuery(List.of("default"), "ui_template", Set.of("name"));
+PropertyQuery pQuery = new PropertyQuery(Lists.newArrayList("default"), "ui_template", ImmutableSet.of("name"));
  pQuery.criteria(PairQueryCondition.StringQueryCondition.eq("name", "foo"));
 BanyandbProperty.QueryResponse resp = client.query(pQuery.build());
 ```
