@@ -2,6 +2,13 @@ Changes by Version
 ==================
 Release Notes.
 
+0.9.0
+------------------
+
+### Features
+
+* Bump up the API to support sharding_key.
+
 0.8.0
 ------------------
 
