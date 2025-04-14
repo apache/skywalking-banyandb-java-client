@@ -50,7 +50,7 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
 
     private OrderBy orderBy;
 
-    private String nodeSelector;
+    private Set<String> stages;
 
     public MeasureQuery(final List<String> groups, final String name, final Set<String> tagProjections, final Set<String> fieldProjections) {
         this(groups, name, null, tagProjections, fieldProjections);
@@ -138,8 +138,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
         return this;
     }
 
-    public MeasureQuery nodeSelector(String nodeSelector) {
-        this.nodeSelector = nodeSelector;
+    public MeasureQuery stages(Set<String> stages) {
+        this.stages = stages;
         return this;
     }
 
@@ -168,8 +168,8 @@ public class MeasureQuery extends AbstractQuery<BanyandbMeasure.QueryRequest> {
                     .addAllNames(fieldProjections)
                     .build());
         }
-        if (nodeSelector != null && !nodeSelector.isEmpty()) {
-            builder.setNodeSelector(nodeSelector);
+        if (stages != null && !stages.isEmpty()) {
+            builder.addAllStages(stages);
         }
         if (this.aggregation != null) {
             BanyandbMeasure.QueryRequest.GroupBy.Builder groupByBuilder = BanyandbMeasure.QueryRequest.GroupBy.newBuilder()

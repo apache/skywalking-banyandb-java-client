@@ -43,11 +43,11 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
      * One order condition is supported and optional.
      */
     private OrderBy orderBy;
-    
+
     /**
-     * Node selector for the query.
+     * The stages of the stream query.
      */
-    private String nodeSelector;
+    private Set<String> stages;
 
     public StreamQuery(final List<String> groups, final String name, final TimestampRange timestampRange, final Set<String> projections) {
         super(groups, name, timestampRange, projections);
@@ -69,14 +69,8 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         return (StreamQuery) super.or(condition);
     }
     
-    /**
-     * Set the node selector for this query.
-     *
-     * @param nodeSelector the node selector
-     * @return this query instance for chaining
-     */
-    public StreamQuery nodeSelector(String nodeSelector) {
-        this.nodeSelector = nodeSelector;
+    public StreamQuery stages(Set<String> stages) {
+        this.stages = stages;
         return this;
     }
 
@@ -98,8 +92,8 @@ public class StreamQuery extends AbstractQuery<BanyandbStream.QueryRequest> {
         if (orderBy != null) {
             builder.setOrderBy(orderBy.build());
         }
-        if (nodeSelector != null && !nodeSelector.isEmpty()) {
-            builder.setNodeSelector(nodeSelector);
+        if (stages != null && !stages.isEmpty()) {
+            builder.addAllStages(stages);
         }
         builder.setTrace(this.trace);
         return builder.build();
