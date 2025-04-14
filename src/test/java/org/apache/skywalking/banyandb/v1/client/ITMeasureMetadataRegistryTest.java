@@ -28,6 +28,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Entity;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.FieldSpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.FieldType;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.ShardingKey;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagFamilySpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagSpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
@@ -102,6 +103,7 @@ public class ITMeasureMetadataRegistryTest extends BanyanDBClientTestCI {
                                                               .setName("service_cpm_minute"))
                                          .setInterval(Duration.ofMinutes(1).format())
                                          .setEntity(Entity.newBuilder().addTagNames("entity_id"))
+                                         .setShardingKey(ShardingKey.newBuilder().addTagNames("service_id"))
                                          .addTagFamilies(
                                              TagFamilySpec.newBuilder()
                                                           .setName("default")

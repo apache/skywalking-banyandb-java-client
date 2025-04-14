@@ -226,6 +226,7 @@ Measure m = Measure.newBuilder()
                                         .setName("service_cpm_minute"))
                    .setInterval(Duration.ofMinutes(1).format())
                    .setEntity(Entity.newBuilder().addTagNames("entity_id"))
+                   .setShardingKey(ShardingKey.newBuilder().addTagNames("service_id"))
                    .addTagFamilies(
                        TagFamilySpec.newBuilder()
                                     .setName("default")

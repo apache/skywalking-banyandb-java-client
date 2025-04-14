@@ -96,6 +96,10 @@ message FieldSpec {
   CompressionMethod compression_method = 4 [(validate.rules).enum.defined_only = true];
 }
 
+message ShardingKey {
+  repeated string tag_names = 1 [(validate.rules).repeated.min_items = 1];
+}
+
 // Measure intends to store data point
 message Measure {
   // metadata is the identity of a measure
@@ -114,6 +118,8 @@ message Measure {
   // index_mode specifies whether the data should be stored exclusively in the index,
   // meaning it will not be stored in the data storage system.
   bool index_mode = 7;
+  // sharding_key determines the distribution of TopN-related data.
+  ShardingKey sharding_key = 8;
 }
 
 // TopNAggregation generates offline TopN statistics for a measure's TopN approximation
