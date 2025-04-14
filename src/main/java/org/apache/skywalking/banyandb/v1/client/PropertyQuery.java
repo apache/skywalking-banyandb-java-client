@@ -43,11 +43,6 @@ public class PropertyQuery extends AbstractQuery<BanyandbProperty.QueryRequest> 
     private List<String> ids;
     
     /**
-     * Node selector for distributed query routing
-     */
-    private String nodeSelector;
-
-    /**
      * Construct a property query with required fields
      */
     public PropertyQuery(final List<String> groups, final String name, final Set<String> projections) {
@@ -80,16 +75,6 @@ public class PropertyQuery extends AbstractQuery<BanyandbProperty.QueryRequest> 
         return this;
     }
     
-    /**
-     * Set a node selector for query routing
-     * @param nodeSelector the node selector expression
-     * @return this query instance for chaining
-     */
-    public PropertyQuery nodeSelector(String nodeSelector) {
-        this.nodeSelector = nodeSelector;
-        return this;
-    }
-
     @Override
     public PropertyQuery and(PairQueryCondition<?> condition) {
         return (PropertyQuery) super.and(condition);
@@ -116,10 +101,6 @@ public class PropertyQuery extends AbstractQuery<BanyandbProperty.QueryRequest> 
         
         if (!this.ids.isEmpty()) {
             builder.addAllIds(this.ids);
-        }
-        
-        if (this.nodeSelector != null && !this.nodeSelector.isEmpty()) {
-            builder.setNodeSelector(this.nodeSelector);
         }
         
         return builder.build();

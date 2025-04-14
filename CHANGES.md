@@ -8,6 +8,7 @@ Release Notes.
 ### Features
 
 * Bump up the API to support sharding_key.
+* Bump up the API to support version 0.9.
 
 0.8.0
 ------------------
