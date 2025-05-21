@@ -34,6 +34,7 @@ public class TopNQuery {
     private final int number;
     private final AbstractQuery.Sort sort;
     private MeasureQuery.Aggregation.Type aggregationType = MeasureQuery.Aggregation.Type.UNSPECIFIED;
+    private  List<String> stages;
     /**
      * Query conditions.
      */
@@ -67,6 +68,11 @@ public class TopNQuery {
                     throw new UnsupportedOperationException("only equality is supported");
                 }
                 bld.addConditions(expr.build().getCondition());
+            }
+        }
+        if (stages != null && !stages.isEmpty()) {
+            for (String stage : stages) {
+                bld.addStages(stage);
             }
         }
         return bld.build();
