@@ -863,7 +863,6 @@ public class BanyanDBClient implements Closeable {
      *
      * @param group group of the metadata
      * @param name  name of the metadata
-     * @param id    identity of the property
      * @return if this property has been deleted
      */
     public boolean deletePropertyDefinition(String group, String name) throws BanyanDBException {
