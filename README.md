@@ -237,6 +237,11 @@ Measure m = Measure.newBuilder()
                                                    TagType.TAG_TYPE_STRING))
                                     .addTags(
                                         TagSpec.newBuilder()
+                                               .setName("service_id")
+                                               .setType(
+                                                   TagType.TAG_TYPE_STRING))
+                                    .addTags(
+                                        TagSpec.newBuilder()
                                                .setName("scope")
                                                .setType(
                                                    TagType.TAG_TYPE_STRING)))
