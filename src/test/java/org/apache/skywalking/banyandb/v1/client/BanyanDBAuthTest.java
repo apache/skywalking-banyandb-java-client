@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -66,9 +67,15 @@ public class BanyanDBAuthTest {
                         MountableFile.forHostPath(tempConfigPath),
                         "/tmp/bydb_server_config.yaml"
                 )
-                .withCommand("standalone", "--auth-config-file", "/tmp/bydb_server_config.yaml")
+                .withCommand("standalone",
+                        "--auth-config-file", "/tmp/bydb_server_config.yaml",
+                        "--enable-health-auth", "true"
+                )
                 .withExposedPorts(GRPC_PORT, HTTP_PORT)
-                .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
+                .waitingFor(Wait.forHttp("/api/healthz")
+                        .withHeader("Authorization",
+                                "Basic " + Base64.getEncoder().encodeToString("admin:123456".getBytes()))
+                        .forPort(HTTP_PORT));
     }
 
     @Test
