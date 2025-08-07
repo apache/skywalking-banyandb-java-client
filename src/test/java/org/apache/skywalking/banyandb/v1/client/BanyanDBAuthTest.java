@@ -29,6 +29,10 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -46,18 +50,29 @@ public class BanyanDBAuthTest {
     protected static final int HTTP_PORT = 17913;
 
     @Rule
-    public GenericContainer<?> banyanDB = new GenericContainer<>(DockerImageName.parse(IMAGE))
-            .withCopyFileToContainer(
-                    MountableFile.forClasspathResource("config.yaml"),
-                    "/tmp/bydb_server_config.yaml"
-            )
-            .withCommand("sh", "-c",
-                    "chmod 600 /tmp/bydb_server_config.yaml && exec standalone " +
-                            "--auth-config-file /tmp/bydb_server_config.yaml " +
-                            "--enable-health-auth false"
-            )
-            .withExposedPorts(GRPC_PORT, HTTP_PORT)
-            .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
+    public GenericContainer<?> banyanDB;
+
+    public BanyanDBAuthTest() throws Exception {
+        // Step 1: prepare config file with 0600 permissions
+        Path tempConfigPath = Files.createTempFile("bydb_server_config", ".yaml");
+        Files.write(tempConfigPath, Files.readAllBytes(
+                Paths.get(getClass().getClassLoader().getResource("config.yaml").toURI()))
+        );
+        Files.setPosixFilePermissions(tempConfigPath, PosixFilePermissions.fromString("rw-------"));
+
+        // Step 2: create container
+        banyanDB = new GenericContainer<>(DockerImageName.parse(IMAGE))
+                .withCopyFileToContainer(
+                        MountableFile.forHostPath(tempConfigPath),
+                        "/tmp/bydb_server_config.yaml"
+                )
+                .withCommand("standalone",
+                        "--auth-config-file", "/tmp/bydb_server_config.yaml",
+                        "--enable-health-auth", "false"
+                )
+                .withExposedPorts(GRPC_PORT, HTTP_PORT)
+                .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
+    }
 
     @Test
     public void testAuthWithCorrect() throws IOException {
