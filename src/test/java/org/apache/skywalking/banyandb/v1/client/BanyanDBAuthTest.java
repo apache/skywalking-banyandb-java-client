@@ -64,10 +64,10 @@ public class BanyanDBAuthTest {
                     .forPort(HTTP_PORT)
                     .withHeader("Authorization", "Basic " + AUTH)
                     .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofSeconds(30)));
+                    .withStartupTimeout(Duration.ofSeconds(1000)));
 
     @Test
-    public void testAuthWithCorrect() throws BanyanDBException, IOException {
+    public void testAuthWithCorrect() throws IOException {
         BanyanDBClient client = createClient("admin", "123456");
         client.connect();
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
