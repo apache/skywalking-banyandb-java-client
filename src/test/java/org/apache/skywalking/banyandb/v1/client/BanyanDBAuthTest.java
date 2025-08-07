@@ -29,7 +29,6 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +41,6 @@ public class BanyanDBAuthTest {
     private static final String TAG = "42ec9df7457868926eb80157b36355d94fcd6bba";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
-    private static final String AUTH = Base64.getEncoder().encodeToString("admin:123456".getBytes());
 
     protected static final int GRPC_PORT = 17912;
     protected static final int HTTP_PORT = 17913;
