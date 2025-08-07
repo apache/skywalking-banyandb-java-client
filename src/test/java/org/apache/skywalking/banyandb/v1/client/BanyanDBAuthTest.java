@@ -25,12 +25,17 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertThrows;
 
 public class BanyanDBAuthTest {
@@ -39,6 +44,7 @@ public class BanyanDBAuthTest {
     private static final String TAG = "42ec9df7457868926eb80157b36355d94fcd6bba";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
+    private static final String AUTH = Base64.getEncoder().encodeToString("admin:123456".getBytes());
 
     protected static final int GRPC_PORT = 17912;
     protected static final int HTTP_PORT = 17913;
@@ -53,17 +59,23 @@ public class BanyanDBAuthTest {
                     "--auth-config-file", "/tmp/bydb_server_config.yaml",
                     "--enable-health-auth", "true"
             )
-            .withExposedPorts(GRPC_PORT, HTTP_PORT);
-            // TODO .waitingFor(Wait.forLogMessage(".*\"message\":\"Listening to\".*", 1));
+            .withExposedPorts(GRPC_PORT, HTTP_PORT)
+            .waitingFor(Wait.forHttp("/api/healthz")
+                    .forPort(HTTP_PORT)
+                    .withHeader("Authorization", "Basic " + AUTH)
+                    .forStatusCode(200)
+                    .withStartupTimeout(Duration.ofSeconds(30)));
 
     @Test
     public void testAuthWithCorrect() throws BanyanDBException, IOException {
         BanyanDBClient client = createClient("admin", "123456");
         client.connect();
-        // list all groups
-        List<BanyandbCommon.Group> groupList = client.findGroups();
-        Assert.assertEquals(1, groupList.size());
-        Assert.assertEquals("_monitoring", groupList.get(0).getMetadata().getName());
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            // list all groups
+            List<BanyandbCommon.Group> groupList = client.findGroups();
+            Assert.assertEquals(1, groupList.size());
+            Assert.assertEquals("_monitoring", groupList.get(0).getMetadata().getName());
+        });
         client.close();
     }
 
@@ -71,7 +83,9 @@ public class BanyanDBAuthTest {
     public void testAuthWithWrong() throws IOException {
         BanyanDBClient client = createClient("admin", "123456" + "wrong");
         client.connect();
-        assertThrows(UnauthenticatedException.class, client::getAPIVersion);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertThrows(UnauthenticatedException.class, client::getAPIVersion);
+        });
         client.close();
     }
 
