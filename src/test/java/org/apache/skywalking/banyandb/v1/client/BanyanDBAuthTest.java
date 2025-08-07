@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.UnauthenticatedException;
@@ -35,7 +34,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertThrows;
 
-@Slf4j
 public class BanyanDBAuthTest {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
@@ -56,8 +54,8 @@ public class BanyanDBAuthTest {
                     "--auth-config-file", "/tmp/bydb_server_config.yaml",
                     "--enable-health-auth", "true"
             )
-            .withExposedPorts(GRPC_PORT, HTTP_PORT)
-            .waitingFor(Wait.forLogMessage(".*\"message\":\"Listening to\".*", 1));
+            .withExposedPorts(GRPC_PORT, HTTP_PORT);
+            // TODO .waitingFor(Wait.forLogMessage(".*\"message\":\"Listening to\".*", 1));
 
     @Test
     public void testAuthWithCorrect() throws BanyanDBException, IOException {
