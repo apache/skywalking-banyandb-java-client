@@ -66,10 +66,7 @@ public class BanyanDBAuthTest {
                         MountableFile.forHostPath(tempConfigPath),
                         "/tmp/bydb_server_config.yaml"
                 )
-                .withCommand("standalone",
-                        "--auth-config-file", "/tmp/bydb_server_config.yaml",
-                        "--enable-health-auth", "false"
-                )
+                .withCommand("standalone", "--auth-config-file", "/tmp/bydb_server_config.yaml")
                 .withExposedPorts(GRPC_PORT, HTTP_PORT)
                 .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
     }
