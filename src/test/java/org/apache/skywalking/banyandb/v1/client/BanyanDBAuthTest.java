@@ -56,14 +56,10 @@ public class BanyanDBAuthTest {
             )
             .withCommand("standalone",
                     "--auth-config-file", "/tmp/bydb_server_config.yaml",
-                    "--enable-health-auth", "true"
+                    "--enable-health-auth", "false"
             )
             .withExposedPorts(GRPC_PORT, HTTP_PORT)
-            .waitingFor(Wait.forHttp("/api/healthz")
-                    .forPort(HTTP_PORT)
-                    .withHeader("Authorization", "Basic " + AUTH)
-                    .forStatusCode(200)
-                    .withStartupTimeout(Duration.ofSeconds(1000)));
+            .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
 
     @Test
     public void testAuthWithCorrect() throws IOException {
