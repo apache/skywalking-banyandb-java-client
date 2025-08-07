@@ -19,7 +19,6 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.UnauthenticatedException;
 import org.junit.Assert;
 import org.junit.Rule;
