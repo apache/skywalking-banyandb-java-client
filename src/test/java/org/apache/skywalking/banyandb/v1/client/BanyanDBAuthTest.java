@@ -76,10 +76,11 @@ public class BanyanDBAuthTest {
         BanyanDBClient client = createClient("admin", "123456");
         client.connect();
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            // get api version
+            client.getAPIVersion();
             // list all groups
             List<BanyandbCommon.Group> groupList = client.findGroups();
-            Assert.assertEquals(1, groupList.size());
-            Assert.assertEquals("_monitoring", groupList.get(0).getMetadata().getName());
+            Assert.assertEquals(0, groupList.size());
         });
         client.close();
     }
