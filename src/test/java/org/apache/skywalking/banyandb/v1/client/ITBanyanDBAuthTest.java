@@ -33,14 +33,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertThrows;
 
-public class BanyanDBAuthTest {
+public class ITBanyanDBAuthTest {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
     private static final String TAG = "42ec9df7457868926eb80157b36355d94fcd6bba";
@@ -53,7 +52,7 @@ public class BanyanDBAuthTest {
     @Rule
     public GenericContainer<?> banyanDB;
 
-    public BanyanDBAuthTest() throws Exception {
+    public ITBanyanDBAuthTest() throws Exception {
         // Step 1: prepare config file with 0600 permissions
         Path tempConfigPath = Files.createTempFile("bydb_server_config", ".yaml");
         Files.write(tempConfigPath, Files.readAllBytes(
@@ -68,14 +67,10 @@ public class BanyanDBAuthTest {
                         "/tmp/bydb_server_config.yaml"
                 )
                 .withCommand("standalone",
-                        "--auth-config-file", "/tmp/bydb_server_config.yaml",
-                        "--enable-health-auth", "true"
+                        "--auth-config-file", "/tmp/bydb_server_config.yaml"
                 )
                 .withExposedPorts(GRPC_PORT, HTTP_PORT)
-                .waitingFor(Wait.forHttp("/api/healthz")
-                        .withHeader("Authorization",
-                                "Basic " + Base64.getEncoder().encodeToString("admin:123456".getBytes()))
-                        .forPort(HTTP_PORT));
+                .waitingFor(Wait.forHttp("/api/healthz").forPort(HTTP_PORT));
     }
 
     @Test

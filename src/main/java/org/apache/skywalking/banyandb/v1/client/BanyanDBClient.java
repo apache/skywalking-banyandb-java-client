@@ -193,7 +193,7 @@ public class BanyanDBClient implements Closeable {
                 String password = options.getPassword();
                 if (!"".equals(username) && !"".equals(password)) {
                     interceptedChannel = ClientInterceptors.intercept(rawChannel,
-                            new AuthInterceptor(options.getUsername(), options.getPassword()));
+                            new AuthInterceptor(username, password));
                 }
                 // Ensure this.channel is assigned only once.
                 this.channel = interceptedChannel;

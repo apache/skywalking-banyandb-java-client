@@ -30,6 +30,11 @@ public class AuthInterceptor implements ClientInterceptor {
     private final String username;
     private final String password;
 
+    private static final Metadata.Key<String> USERNAME_KEY =
+            Metadata.Key.of("username", Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> PASSWORD_KEY =
+            Metadata.Key.of("password", Metadata.ASCII_STRING_MARSHALLER);
+
     public AuthInterceptor(String username, String password) {
         this.username = username;
         this.password = password;
@@ -45,11 +50,8 @@ public class AuthInterceptor implements ClientInterceptor {
                 next.newCall(method, callOptions)) {
             @Override
             public void start(Listener<RESP_T> responseListener, Metadata headers) {
-                Metadata.Key<String> usernameKey = Metadata.Key.of("username", Metadata.ASCII_STRING_MARSHALLER);
-                Metadata.Key<String> passwordKey = Metadata.Key.of("password", Metadata.ASCII_STRING_MARSHALLER);
-
-                headers.put(usernameKey, username);
-                headers.put(passwordKey, password);
+                headers.put(USERNAME_KEY, username);
+                headers.put(PASSWORD_KEY, password);
 
                 super.start(responseListener, headers);
             }
