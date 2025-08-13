@@ -56,14 +56,6 @@ public class Options {
      */
     private String sslTrustCAPath = "";
     /**
-     * SSL: Cert Chain Path, BanyanDB server not support mTLS yet
-     */
-    private String sslCertChainPath = "";
-    /**
-     * SSL: Cert Key Path, BanyanDB server not support mTLS yet
-     */
-    private String sslKeyPath = "";
-    /**
      * Basic Auth: username of BanyanDB server
      */
     private String username = "";
