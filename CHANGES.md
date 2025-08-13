@@ -12,6 +12,7 @@ Release Notes.
 * Support stage query on TopN.
 * Add replicas configuration to the API: introduce `replicas` in LifecycleStage and ResourceOpts to support high availability.
 * Simplify TLS options: remove unsupported mTLS client certificate settings from Options and DefaultChannelFactory; trust CA is still supported.
+* Support auth with username and password.
 
 0.8.0
 ------------------

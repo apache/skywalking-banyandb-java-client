@@ -55,6 +55,14 @@ public class Options {
      * SSL: Trusted CA Path
      */
     private String sslTrustCAPath = "";
+    /**
+     * Basic Auth: username of BanyanDB server
+     */
+    private String username = "";
+    /**
+     * Basic Auth: password of BanyanDB server
+     */
+    private String password = "";
 
     public Options() {
     }
