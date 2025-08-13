@@ -18,7 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client.grpc.channel;
 
-import com.google.common.base.Strings;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
@@ -28,11 +27,9 @@ import io.netty.util.internal.PlatformDependent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.v1.client.Options;
-import org.apache.skywalking.banyandb.v1.client.util.PrivateKeyUtil;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
