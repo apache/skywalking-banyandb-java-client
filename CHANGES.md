@@ -10,6 +10,8 @@ Release Notes.
 * Bump up the API to support sharding_key.
 * Bump up the API to support version 0.9.
 * Support stage query on TopN.
+* Add replicas configuration to the API: introduce `replicas` in LifecycleStage and ResourceOpts to support high availability.
+* Simplify TLS options: remove unsupported mTLS client certificate settings from Options and DefaultChannelFactory; trust CA is still supported.
 
 0.8.0
 ------------------
