@@ -10,6 +10,7 @@ Release Notes.
 * Bump up the API to support sharding_key.
 * Bump up the API to support version 0.9.
 * Support stage query on TopN.
+* Support auth with username and password.
 
 0.8.0
 ------------------

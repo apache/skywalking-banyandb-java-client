@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.protobuf.Timestamp;
 import io.grpc.Channel;
+import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -51,6 +52,7 @@ import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.v1.client.auth.AuthInterceptor;
 import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
@@ -183,8 +185,18 @@ public class BanyanDBClient implements Closeable {
                 for (int i = 0; i < this.targets.length; i++) {
                         addresses[i] = URI.create("//" + this.targets[i]);
                 }
-                this.channel = ChannelManager.create(this.options.buildChannelManagerSettings(),
+                Channel rawChannel = ChannelManager.create(this.options.buildChannelManagerSettings(),
                         new DefaultChannelFactory(addresses, this.options));
+                Channel interceptedChannel = rawChannel;
+                // register auth interceptor
+                String username = options.getUsername();
+                String password = options.getPassword();
+                if (!"".equals(username) && !"".equals(password)) {
+                    interceptedChannel = ClientInterceptors.intercept(rawChannel,
+                            new AuthInterceptor(username, password));
+                }
+                // Ensure this.channel is assigned only once.
+                this.channel = interceptedChannel;
                 streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
                 measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);

@@ -41,6 +41,10 @@ options are listed below,
 | forceReconnectionThreshold | Threshold of force gRPC reconnection if network issue is encountered | 1                        |
 | forceTLS                   | Force use TLS for gRPC                                               | false                    |
 | sslTrustCAPath             | SSL: Trusted CA Path                                                 |                          |
+| sslCertChainPath           | SSL: Cert Chain Path, BanyanDB server not support mTLS yet           |                          |
+| sslKeyPath                 | SSL: Cert Key Path, BanyanDB server not support mTLS yet             |                          |
+| username                   | Basic Auth: username of BanyanDB server                              |                          |
+| password                   | Basic Auth: password of BanyanDB server                              |                          |
 
 ## Schema Management
 
