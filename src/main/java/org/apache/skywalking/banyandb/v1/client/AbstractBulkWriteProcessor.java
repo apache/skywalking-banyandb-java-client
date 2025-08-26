@@ -170,6 +170,7 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
             writeRequestStreamObserver.onCompleted();
         }
         batch.whenComplete((ignored, exp) -> {
+            timer.observeDuration();
             if (exp != null) {
                 log.error("Failed to execute requests in bulk", exp);
             }
