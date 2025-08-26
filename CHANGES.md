@@ -14,6 +14,7 @@ Release Notes.
 * Simplify TLS options: remove unsupported mTLS client certificate settings from Options and DefaultChannelFactory; trust CA is still supported.
 * Support auth with username and password.
 * Update gRPC to 1.75.0.
+* Add histogram metrics to write/insert/update operations of the measure, stream and property. 
 
 0.8.0
 ------------------
