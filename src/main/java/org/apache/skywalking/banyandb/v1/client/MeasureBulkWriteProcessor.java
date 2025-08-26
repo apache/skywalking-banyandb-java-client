@@ -19,6 +19,8 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.stub.StreamObserver;
+import io.prometheus.client.Histogram;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
@@ -42,25 +44,29 @@ import java.util.concurrent.CompletableFuture;
 public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<BanyandbMeasure.WriteRequest,
         MeasureServiceGrpc.MeasureServiceStub> {
     private final BanyanDBClient client;
+    private final Histogram writeHistogram;
+    private final Options options;
 
     /**
      * Create the processor.
      *
-     * @param client        the client
-     * @param maxBulkSize   the max bulk size for the flush operation
-     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                      automatically. Unit is second.
-     * @param timeout       network timeout threshold in seconds.
-     * @param concurrency   the number of concurrency would run for the flush max.
+     * @param client         the client
+     * @param maxBulkSize    the max bulk size for the flush operation
+     * @param flushInterval  if given maxBulkSize is not reached in this period, the flush would be trigger
+     *                       automatically. Unit is second.
+     * @param concurrency    the number of concurrency would run for the flush max.
+     * @param timeout        network timeout threshold in seconds.
      */
     protected MeasureBulkWriteProcessor(
-            final BanyanDBClient client,
-            final int maxBulkSize,
-            final int flushInterval,
-            final int concurrency,
-            final int timeout) {
+        final BanyanDBClient client,
+        final int maxBulkSize,
+        final int flushInterval,
+        final int concurrency,
+        final int timeout, final Histogram writeHistogram, final Options options) {
         super(client.getMeasureServiceStub(), "MeasureBulkWriteProcessor", maxBulkSize, flushInterval, concurrency, timeout);
         this.client = client;
+        this.writeHistogram = writeHistogram;
+        this.options = options;
     }
 
     @Override
@@ -104,5 +110,15 @@ public class MeasureBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyan
                 batch.complete(null);
             }
         });
+    }
+
+    @Override
+    protected CompletableFuture<Void> doObservedFlush(final List<Holder> data) {
+        Histogram.Timer timer = writeHistogram.labels(
+            "measure",
+            "bulk_write",
+            options.getPrometheusMetricsOpts().getClientID()
+        ).startTimer();
+        return super.doFlush(data, timer);
     }
 }

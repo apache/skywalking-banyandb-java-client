@@ -27,6 +27,7 @@ import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import io.prometheus.client.Histogram;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import lombok.AccessLevel;
@@ -101,6 +102,7 @@ import static com.google.common.base.Preconditions.checkState;
 @Slf4j
 public class BanyanDBClient implements Closeable {
     public static final ZonedDateTime DEFAULT_EXPIRE_AT = ZonedDateTime.of(2099, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static Histogram WRITE_HISTOGRAM;
     private final String[] targets;
     /**
      * Options for server connection.
@@ -145,6 +147,16 @@ public class BanyanDBClient implements Closeable {
      * Client local metadata cache.
      */
     private final MetadataCache metadataCache;
+
+    static {
+        // init prometheus metric
+        WRITE_HISTOGRAM = Histogram.build()
+                                   .name("banyandb_write_latency_seconds")
+                                   .help("BanyanDB Bulk Write latency in seconds")
+                                   .buckets(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
+                                   .labelNames("catalog", "operation", "instanceID")
+                                   .register();
+    }
 
     /**
      * Create a BanyanDB client instance with a default options.
@@ -234,6 +246,13 @@ public class BanyanDBClient implements Closeable {
     public CompletableFuture<Void> write(StreamWrite streamWrite) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
+        Histogram.Timer timer
+            = WRITE_HISTOGRAM.labels(
+                                "stream",
+                                "single_write", // single write for non-bulk operation.
+                                options.getPrometheusMetricsOpts().getClientID()
+                            )
+                             .startTimer();
         CompletableFuture<Void> future = new CompletableFuture<>();
         final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
                 = this.streamServiceStub
@@ -279,12 +298,14 @@ public class BanyanDBClient implements Closeable {
 
                             @Override
                             public void onError(Throwable throwable) {
+                                timer.observeDuration();
                                 log.error("Error occurs in flushing streams.", throwable);
                                 future.completeExceptionally(throwable);
                             }
 
                             @Override
                             public void onCompleted() {
+                                timer.observeDuration();
                                 if (responseException == null) {
                                     future.complete(null);
                                 } else {
@@ -313,7 +334,7 @@ public class BanyanDBClient implements Closeable {
     public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
         checkState(this.streamServiceStub != null, "stream service is null");
 
-        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout);
+        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
     }
 
     /**
@@ -329,7 +350,7 @@ public class BanyanDBClient implements Closeable {
     public MeasureBulkWriteProcessor buildMeasureWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
         checkState(this.measureServiceStub != null, "measure service is null");
 
-        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout);
+        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
     }
 
     /**
@@ -827,7 +848,7 @@ public class BanyanDBClient implements Closeable {
 
     /**
      * Define a new property.
-     * 
+     *
      * @param property the property to be stored in the BanyanBD
      * @throws BanyanDBException if the property is invalid
      */
@@ -889,7 +910,13 @@ public class BanyanDBClient implements Closeable {
      */
     public ApplyResponse apply(Property property) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.apply(property);
+        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
+            "property",
+            "single_write",
+            options.getPrometheusMetricsOpts().getClientID()
+        ).startTimer()) {
+            return store.apply(property);
+        }
     }
 
     /**
@@ -901,7 +928,13 @@ public class BanyanDBClient implements Closeable {
     public ApplyResponse apply(Property property, Strategy strategy) throws
             BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.apply(property, strategy);
+        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
+            "property",
+            "single_write",
+            options.getPrometheusMetricsOpts().getClientID()
+        ).startTimer()) {
+            return store.apply(property, strategy);
+        }
     }
 
     /**
@@ -926,7 +959,13 @@ public class BanyanDBClient implements Closeable {
     public DeleteResponse deleteProperty(String group, String name, String id) throws
             BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        return store.delete(group, name, id);
+        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
+            "property",
+            "delete",
+            options.getPrometheusMetricsOpts().getClientID()
+        ).startTimer()) {
+            return store.delete(group, name, id);
+        }
     }
 
     /**

@@ -20,6 +20,8 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import io.grpc.stub.StreamObserver;
 
+import io.prometheus.client.Histogram;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
@@ -43,6 +45,8 @@ import java.util.concurrent.CompletableFuture;
 public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<BanyandbStream.WriteRequest,
         StreamServiceGrpc.StreamServiceStub> {
     private final BanyanDBClient client;
+    private final Histogram writeHistogram;
+    private final Options options;
 
     /**
      * Create the processor.
@@ -59,9 +63,13 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
             final int maxBulkSize,
             final int flushInterval,
             final int concurrency,
-            final int timeout) {
+            final int timeout,
+            final Histogram writeHistogram,
+            final Options options) {
         super(client.getStreamServiceStub(), "StreamBulkWriteProcessor", maxBulkSize, flushInterval, concurrency, timeout);
         this.client = client;
+        this.writeHistogram = writeHistogram;
+        this.options = options;
     }
 
     @Override
@@ -106,4 +114,15 @@ public class StreamBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyand
                     }
                 });
     }
+
+    @Override
+    protected CompletableFuture<Void> doObservedFlush(final List<Holder> data) {
+        Histogram.Timer timer = writeHistogram.labels(
+            "stream",
+            "bulk_write",
+            options.getPrometheusMetricsOpts().getClientID()
+        ).startTimer();
+        return super.doFlush(data, timer);
+    }
 }
+

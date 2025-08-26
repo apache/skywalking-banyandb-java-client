@@ -82,7 +82,7 @@
         <!-- core lib dependency -->
         <bytebuddy.version>1.10.19</bytebuddy.version>
         <!-- grpc version should align with the Skywalking main repo -->
-        <grpc.version>1.63.0</grpc.version>
+        <grpc.version>1.75.0</grpc.version>
         <protoc.version>3.25.3</protoc.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
@@ -95,6 +95,7 @@
         <!-- necessary for Java 9+ -->
         <org.apache.tomcat.annotations-api.version>6.0.53</org.apache.tomcat.annotations-api.version>
         <slf4j.version>1.7.36</slf4j.version>
+        <prometheus.client.version>0.16.0</prometheus.client.version>
 
         <!-- Plugin versions -->
         <docker.plugin.version>0.4.13</docker.plugin.version>
@@ -160,6 +161,11 @@
             <groupId>build.buf.protoc-gen-validate</groupId>
             <artifactId>pgv-java-stub</artifactId>
             <version>${bufbuild.protoc-gen-validate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
+            <version>${prometheus.client.version}</version>
         </dependency>
 
         <dependency>

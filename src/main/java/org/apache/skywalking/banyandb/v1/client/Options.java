@@ -63,14 +63,24 @@ public class Options {
      * Basic Auth: password of BanyanDB server
      */
     private String password = "";
+    /**
+     * Enable Prometheus metrics
+     */
+    private PrometheusMetricsOpts prometheusMetricsOpts = new PrometheusMetricsOpts();
 
     public Options() {
     }
 
     ChannelManagerSettings buildChannelManagerSettings() {
         return ChannelManagerSettings.newBuilder()
-                .setRefreshInterval(this.refreshInterval)
-                .setForceReconnectionThreshold(this.forceReconnectionThreshold)
-                .build();
+                                     .setRefreshInterval(this.refreshInterval)
+                                     .setForceReconnectionThreshold(this.forceReconnectionThreshold)
+                                     .build();
+    }
+
+    public static class PrometheusMetricsOpts {
+        @Setter(AccessLevel.PUBLIC)
+        @Getter
+        private String clientID = "default";
     }
 }
