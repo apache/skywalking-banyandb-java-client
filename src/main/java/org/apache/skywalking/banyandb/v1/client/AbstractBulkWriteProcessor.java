@@ -21,6 +21,7 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.auto.value.AutoValue;
 import io.grpc.stub.AbstractAsyncStub;
 import io.grpc.stub.StreamObserver;
+import io.prometheus.client.Histogram;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -134,14 +135,16 @@ public abstract class AbstractBulkWriteProcessor<REQ extends com.google.protobuf
 
         final List<Holder> batch = new ArrayList<>(requests.size());
         requests.drainTo(batch);
-        final CompletableFuture<Void> future = doFlush(batch);
+        final CompletableFuture<Void> future = doObservedFlush(batch);
         future.whenComplete((v, t) -> semaphore.release());
         future.join();
         lastFlushTS = System.currentTimeMillis();
 
     }
 
-    protected CompletableFuture<Void> doFlush(final List<Holder> data) {
+    protected abstract CompletableFuture<Void> doObservedFlush(final List<Holder> data);
+
+    protected CompletableFuture<Void> doFlush(final List<Holder> data, Histogram.Timer timer) {
         // The batch is used to control the completion of the flush operation.
         // There is at most one error per batch,
         // because the database server would terminate the batch process when the first error occurs.
