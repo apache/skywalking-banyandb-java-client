@@ -15,6 +15,9 @@ Release Notes.
 * Support auth with username and password.
 * Update gRPC to 1.75.0.
 * Add histogram metrics to write/insert/update operations of the measure, stream and property. 
+* Bump up parent Apache pom to v35.
+* Bump up maven to 3.6.3.
+* Add IDEA setup doc to support super large generated file(by protoc).
 
 0.8.0
 ------------------

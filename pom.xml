@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>21</version>
+        <version>35</version>
         <relativePath />
     </parent>
 
@@ -91,7 +91,7 @@
         <auto-value.version>1.10.4</auto-value.version>
         <testcontainers.version>1.19.7</testcontainers.version>
         <awaitility.version>4.2.1</awaitility.version>
-        <bufbuild.protoc-gen-validate.version>0.6.13</bufbuild.protoc-gen-validate.version>
+        <bufbuild.protoc-gen-validate.version>1.2.1</bufbuild.protoc-gen-validate.version>
         <!-- necessary for Java 9+ -->
         <org.apache.tomcat.annotations-api.version>6.0.53</org.apache.tomcat.annotations-api.version>
         <slf4j.version>1.7.36</slf4j.version>
