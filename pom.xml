@@ -72,7 +72,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <compiler.version>1.8</compiler.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <powermock.version>2.0.9</powermock.version>
         <checkstyle.version>6.18</checkstyle.version>
         <junit.version>4.13.2</junit.version>
@@ -299,7 +300,7 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>[1.8, )</version>
+                                    <version>[9, )</version>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>3.6</version>
