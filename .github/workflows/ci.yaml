@@ -78,7 +78,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Test
-        run: ./mvnw clean verify install
+        run: ./mvnw -q clean verify install
 
   ci:
     name: CI
