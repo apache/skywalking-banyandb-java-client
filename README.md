@@ -624,6 +624,20 @@ DeleteResponse deleteResponse = client.deleteProperty("default", "ui_template", 
 # Compiling project
 > ./mvnw clean package
 
+## IDEA Setup Notice
+If you are using IntelliJ IDEA, compiling passed in maven and see errors in source file editor, please add the following 
+configurations through `Help`->`Edit Custom Properties..`:
+
+```properties
+#---------------------------------------------------------------------
+# Maximum file size (kilobytes) IDE should provide code assistance for.
+# The larger file is the slower its editor works and higher overall system memory requirements are
+# if code assistance is enabled. Remove this property or set to very large number if you need
+# code assistance for any files available regardless their size.
+#---------------------------------------------------------------------
+idea.max.intellisense.filesize=5000
+```
+
 # Code of conduct
 This project adheres to the Contributor Covenant [code of conduct](https://www.apache.org/foundation/policies/conduct). By participating, you are expected to uphold this code.
 Please follow the [REPORTING GUIDELINES](https://www.apache.org/foundation/policies/conduct#reporting-guidelines) to report unacceptable behavior.

@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        version: [ 8, 11, 17, 21 ]
+        version: [ 11, 17, 21 ]
     steps:
       - uses: actions/checkout@v4
         with:

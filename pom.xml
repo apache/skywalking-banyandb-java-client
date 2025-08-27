@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>21</version>
+        <version>35</version>
         <relativePath />
     </parent>
 
@@ -72,7 +72,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <compiler.version>1.8</compiler.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <powermock.version>2.0.9</powermock.version>
         <checkstyle.version>6.18</checkstyle.version>
         <junit.version>4.13.2</junit.version>
@@ -91,7 +92,7 @@
         <auto-value.version>1.10.4</auto-value.version>
         <testcontainers.version>1.19.7</testcontainers.version>
         <awaitility.version>4.2.1</awaitility.version>
-        <bufbuild.protoc-gen-validate.version>0.6.13</bufbuild.protoc-gen-validate.version>
+        <bufbuild.protoc-gen-validate.version>1.2.1</bufbuild.protoc-gen-validate.version>
         <!-- necessary for Java 9+ -->
         <org.apache.tomcat.annotations-api.version>6.0.53</org.apache.tomcat.annotations-api.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -299,8 +300,7 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <!-- Build has not yet been updated for Java 9+ -->
-                                    <version>1.8</version>
+                                    <version>[9, )</version>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>3.6</version>
