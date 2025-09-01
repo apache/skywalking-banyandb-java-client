@@ -139,12 +139,19 @@ public abstract class Value<T> {
 
         @Override
         public BanyandbModel.TagValue serialize() {
-            Timestamp timestamp = Timestamp.newBuilder()
-                    .setSeconds(value / 1000)
-                    .setNanos((int) ((value % 1000) * 1000000))
-                    .build();
+            Timestamp timestamp = toProtobufTimestamp(value);
             return BanyandbModel.TagValue.newBuilder().setTimestamp(timestamp).build();
         }
+    }
+
+    /**
+     * Utility method to convert milliseconds to protobuf Timestamp.
+     */
+    private static Timestamp toProtobufTimestamp(long millis) {
+        return Timestamp.newBuilder()
+                .setSeconds(millis / 1000)
+                .setNanos((int) ((millis % 1000) * 1000000))
+                .build();
     }
 
     /**
