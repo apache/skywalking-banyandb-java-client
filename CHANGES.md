@@ -18,6 +18,7 @@ Release Notes.
 * Bump up parent Apache pom to v35.
 * Bump up maven to 3.6.3.
 * Add IDEA setup doc to support super large generated file(by protoc).
+* Add Trace model.
 
 0.8.0
 ------------------

@@ -25,6 +25,7 @@ import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException
 import org.apache.skywalking.banyandb.v1.client.util.CopyOnWriteMap;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Trace;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,6 +72,22 @@ public class MetadataCache {
         return this.cache.remove(formatKey(measure.getMetadata().getGroup(), measure.getMetadata().getName()));
     }
 
+    public EntityMetadata register(Trace trace) {
+        if (trace == null) {
+            return null;
+        }
+        EntityMetadata metadata = parse(trace);
+        this.cache.put(formatKey(trace.getMetadata().getGroup(), trace.getMetadata().getName()), metadata);
+        return metadata;
+    }
+
+    public EntityMetadata unregister(Trace trace) {
+        if (trace == null) {
+            return null;
+        }
+        return this.cache.remove(formatKey(trace.getMetadata().getGroup(), trace.getMetadata().getName()));
+    }
+
     public EntityMetadata unregister(String group, String name) {
         return this.cache.remove(formatKey(group, name));
     }
@@ -91,12 +108,24 @@ public class MetadataCache {
         return this.register(this.client.findMeasure(group, name));
     }
 
+    public EntityMetadata findTraceMetadata(String group, String name) throws BanyanDBException {
+        MetadataCache.EntityMetadata metadata = this.cache.get(formatKey(group, name));
+        if (metadata != null) {
+            return metadata;
+        }
+        return this.register(this.client.findTrace(group, name));
+    }
+
     public EntityMetadata updateStreamFromSever(String group, String name) throws BanyanDBException {
         return register(client.findStream(group, name));
     }
 
     public EntityMetadata updateMeasureFromSever(String group, String name) throws BanyanDBException {
         return register(client.findMeasure(group, name));
+    }
+
+    public EntityMetadata updateTraceFromServer(String group, String name) throws BanyanDBException {
+        return register(client.findTrace(group, name));
     }
 
     static String formatKey(String group, String name) {
@@ -140,6 +169,18 @@ public class MetadataCache {
         }
         return new EntityMetadata(m.getMetadata().getGroup(), m.getMetadata().getName(), m.getMetadata().getModRevision(), totalTags, m.getFieldsList().size(), tagFamilyCapacity,
                 Collections.unmodifiableMap(tagOffset), Collections.unmodifiableMap(fieldOffset));
+    }
+
+    static EntityMetadata parse(Trace t) {
+        int totalTags = t.getTagsList().size();
+        // For trace, we treat all tags as one family (different from stream structure)
+        final int[] tagFamilyCapacity = new int[]{totalTags};
+        final Map<String, TagInfo> tagOffset = new HashMap<>();
+        for (int i = 0; i < t.getTagsList().size(); i++) {
+            tagOffset.put(t.getTagsList().get(i).getName(), new TagInfo("trace_tags", i));
+        }
+        return new EntityMetadata(t.getMetadata().getGroup(), t.getMetadata().getName(), t.getMetadata().getModRevision(), totalTags, 0, tagFamilyCapacity,
+                Collections.unmodifiableMap(tagOffset), Collections.emptyMap());
     }
 
     @Getter

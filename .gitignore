@@ -21,3 +21,4 @@ packages/
 /test/jacoco/classes
 /test/jacoco/*.exec
 test/jacoco
+CLAUDE.md

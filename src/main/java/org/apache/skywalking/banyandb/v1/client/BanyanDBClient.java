@@ -43,6 +43,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Subject;
+import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Trace;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.Property;
@@ -53,6 +54,8 @@ import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.stream.v1.StreamServiceGrpc;
+import org.apache.skywalking.banyandb.trace.v1.BanyandbTrace;
+import org.apache.skywalking.banyandb.trace.v1.TraceServiceGrpc;
 import org.apache.skywalking.banyandb.v1.client.auth.AuthInterceptor;
 import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
@@ -69,6 +72,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.PropertyMetadataRegistr
 import org.apache.skywalking.banyandb.v1.client.metadata.ResourceExist;
 import org.apache.skywalking.banyandb.v1.client.metadata.StreamMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.TopNAggregationMetadataRegistry;
+import org.apache.skywalking.banyandb.v1.client.metadata.TraceMetadataRegistry;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -125,6 +129,11 @@ public class BanyanDBClient implements Closeable {
     @Getter(value = AccessLevel.PACKAGE)
     private MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
     /**
+     * gRPC client stub
+     */
+    @Getter(value = AccessLevel.PACKAGE)
+    private TraceServiceGrpc.TraceServiceStub traceServiceStub;
+    /**
      * gRPC future stub.
      */
     @Getter(value = AccessLevel.PACKAGE)
@@ -134,6 +143,11 @@ public class BanyanDBClient implements Closeable {
      */
     @Getter(value = AccessLevel.PACKAGE)
     private MeasureServiceGrpc.MeasureServiceBlockingStub measureServiceBlockingStub;
+    /**
+     * gRPC future stub.
+     */
+    @Getter(value = AccessLevel.PACKAGE)
+    private TraceServiceGrpc.TraceServiceBlockingStub traceServiceBlockingStub;
     /**
      * The connection status.
      */
@@ -211,8 +225,10 @@ public class BanyanDBClient implements Closeable {
                 this.channel = interceptedChannel;
                 streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
                 measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
+                traceServiceBlockingStub = TraceServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);
                 measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
+                traceServiceStub = TraceServiceGrpc.newStub(this.channel);
                 isConnected = true;
             }
         } finally {
@@ -228,8 +244,10 @@ public class BanyanDBClient implements Closeable {
                 this.channel = channel;
                 streamServiceBlockingStub = StreamServiceGrpc.newBlockingStub(this.channel);
                 measureServiceBlockingStub = MeasureServiceGrpc.newBlockingStub(this.channel);
+                traceServiceBlockingStub = TraceServiceGrpc.newBlockingStub(this.channel);
                 streamServiceStub = StreamServiceGrpc.newStub(this.channel);
                 measureServiceStub = MeasureServiceGrpc.newStub(this.channel);
+                traceServiceStub = TraceServiceGrpc.newStub(this.channel);
                 isConnected = true;
             }
         } finally {
@@ -397,6 +415,49 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Build a trace bulk write processor.
+     *
+     * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
+     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
+     *                      automatically. Unit is second.
+     * @param concurrency   the number of concurrency would run for the flush max.
+     * @param timeout       network timeout threshold in seconds.
+     * @return trace bulk write processor
+     */
+    public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
+        checkState(this.traceServiceStub != null, "trace service is null");
+
+        return new TraceBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
+    }
+
+    /**
+     * Build a TraceWrite request.
+     *
+     * @param group     the group of the trace
+     * @param name      the name of the trace
+     * @param timestamp the timestamp of the trace
+     * @return the request to be built
+     */
+    public TraceWrite createTraceWrite(String group, String name, long timestamp) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return new TraceWrite(this.metadataCache.findTraceMetadata(group, name), timestamp);
+    }
+
+    /**
+     * Build a TraceWrite request without initial timestamp.
+     *
+     * @param group the group of the trace
+     * @param name  the name of the trace
+     * @return the request to be built
+     */
+    public TraceWrite createTraceWrite(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return new TraceWrite(this.metadataCache.findTraceMetadata(group, name));
+    }
+
+    /**
      * Query streams according to given conditions
      *
      * @param streamQuery condition for query
@@ -455,6 +516,29 @@ public class BanyanDBClient implements Closeable {
         }
             throw new RuntimeException("No metadata found for the query");
    }
+
+    /**
+     * Query traces according to given conditions
+     *
+     * @param traceQuery condition for query
+     * @return trace query response.
+     */
+    public TraceQueryResponse query(TraceQuery traceQuery) throws BanyanDBException {
+        checkState(this.traceServiceStub != null, "trace service is null");
+
+        for (String group : traceQuery.groups) {
+            MetadataCache.EntityMetadata em = this.metadataCache.findTraceMetadata(group, traceQuery.name);
+            if (em != null) {
+                final BanyandbTrace.QueryResponse response = HandleExceptionsWith.callAndTranslateApiException(() ->
+                        this.traceServiceBlockingStub
+                                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
+                                .query(traceQuery.build(em)));
+                return new TraceQueryResponse(response);
+            }
+
+        }
+        throw new RuntimeException("No metadata found for the query");
+    }
 
     /**
      * Define a new group and attach to the current client.
@@ -969,6 +1053,69 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Define a new trace
+     *
+     * @param trace the trace to be stored in the BanyanDB
+     * @throws BanyanDBException if the trace is invalid
+     */
+    public void define(Trace trace) throws BanyanDBException {
+        TraceMetadataRegistry registry = new TraceMetadataRegistry(checkNotNull(this.channel));
+        registry.create(trace);
+    }
+
+    /**
+     * Update the trace.
+     *
+     * @param trace the trace to be stored in the BanyanDB
+     * @throws BanyanDBException if the trace is invalid
+     */
+    public void update(Trace trace) throws BanyanDBException {
+        TraceMetadataRegistry registry = new TraceMetadataRegistry(checkNotNull(this.channel));
+        registry.update(trace);
+    }
+
+    /**
+     * Find the trace with given group and name
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @return the trace found in BanyanDB. Otherwise, null is returned.
+     */
+    public Trace findTrace(String group, String name) throws BanyanDBException {
+        try {
+            return new TraceMetadataRegistry(checkNotNull(this.channel)).get(group, name);
+        } catch (BanyanDBException ex) {
+            if (ex.getStatus().equals(Status.Code.NOT_FOUND)) {
+                return null;
+            }
+            throw ex;
+        }
+    }
+
+    /**
+     * Find the traces with given group
+     *
+     * @param group group of the metadata
+     * @return the traces found in BanyanDB
+     */
+    public List<Trace> findTraces(String group) throws BanyanDBException {
+        TraceMetadataRegistry registry = new TraceMetadataRegistry(checkNotNull(this.channel));
+        return registry.list(group);
+    }
+
+    /**
+     * Delete the trace
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @return if this trace has been deleted
+     */
+    public boolean deleteTrace(String group, String name) throws BanyanDBException {
+        TraceMetadataRegistry registry = new TraceMetadataRegistry(checkNotNull(this.channel));
+        return registry.delete(group, name);
+    }
+
+    /**
      * Try to find the group defined
      *
      * @param name name of the group
@@ -1170,6 +1317,20 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Check whether the trace definition is existed in the server
+     *
+     * @param group group of the metadata
+     * @param name  name of the metadata
+     * @return ResourceExist which indicates whether group and trace exist
+     */
+    public ResourceExist existTrace(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+
+        return new TraceMetadataRegistry(checkNotNull(this.channel)).exist(group, name);
+    }
+
+    /**
      * Update the stream metadata cache from the server
      * @param group the group of the stream
      * @param name the name of the stream
@@ -1191,6 +1352,18 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
         return this.metadataCache.updateMeasureFromSever(group, name);
+    }
+
+    /**
+     * Update the trace metadata cache from the server
+     * @param group the group of the trace
+     * @param name the name of the trace
+     * @return the updated trace metadata, or null if the trace does not exist
+     */
+    public MetadataCache.EntityMetadata updateTraceMetadataCacheFromServer(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return this.metadataCache.updateTraceFromServer(group, name);
     }
 
     /**
