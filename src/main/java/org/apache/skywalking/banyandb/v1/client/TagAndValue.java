@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.NullValue;
+import com.google.protobuf.Timestamp;
 import lombok.EqualsAndHashCode;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 
@@ -77,6 +78,8 @@ public abstract class TagAndValue<T> extends Value<T> {
                 return new StringArrayTagPair(tag.getKey(), tag.getValue().getStrArray().getValueList());
             case BINARY_DATA:
                 return new BinaryTagPair(tag.getKey(), tag.getValue().getBinaryData());
+            case TIMESTAMP:
+                return new TimestampTagPair(tag.getKey(), tag.getValue().getTimestamp());
             case NULL:
                 return new NullTagPair(tag.getKey());
             default:
@@ -180,6 +183,32 @@ public abstract class TagAndValue<T> extends Value<T> {
 
     public static TagAndValue<ByteString> newBinaryTag(final String tagName, final byte[] bytes) {
         return new BinaryTagPair(tagName, ByteString.copyFrom(bytes));
+    }
+
+    @EqualsAndHashCode(callSuper = true)
+    public static class TimestampTagPair extends TagAndValue<Long> {
+        TimestampTagPair(final String tagName, final long epochMilli) {
+            super(tagName, epochMilli);
+        }
+
+        TimestampTagPair(final String tagName, final Timestamp value) {
+            super(tagName, value.getSeconds() * 1000 + value.getNanos() / 1000000);
+        }
+
+        @Override
+        protected BanyandbModel.TagValue buildTypedTagValue() {
+            Timestamp timestamp = Timestamp.newBuilder()
+                    .setSeconds(value / 1000)
+                    .setNanos((int) ((value % 1000) * 1000000))
+                    .build();
+            return BanyandbModel.TagValue.newBuilder()
+                    .setTimestamp(timestamp)
+                    .build();
+        }
+    }
+
+    public static TagAndValue<Long> newTimestampTag(final String tagName, final long epochMilli) {
+        return new TimestampTagPair(tagName, epochMilli);
     }
 
     @EqualsAndHashCode(callSuper = true)

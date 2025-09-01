@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Timestamp;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -129,6 +130,24 @@ public abstract class Value<T> {
     }
 
     /**
+     * The value of a timestamp type tag.
+     */
+    public static class TimestampTagValue extends Value<Long> implements Serializable<BanyandbModel.TagValue> {
+        private TimestampTagValue(Long value) {
+            super(value);
+        }
+
+        @Override
+        public BanyandbModel.TagValue serialize() {
+            Timestamp timestamp = Timestamp.newBuilder()
+                    .setSeconds(value / 1000)
+                    .setNanos((int) ((value % 1000) * 1000000))
+                    .build();
+            return BanyandbModel.TagValue.newBuilder().setTimestamp(timestamp).build();
+        }
+    }
+
+    /**
      * Construct a string tag
      *
      * @param val payload
@@ -191,6 +210,16 @@ public abstract class Value<T> {
             return nullTagValue();
         }
         return new LongArrayTagValue(val);
+    }
+
+    /**
+     * Construct a timestamp tag
+     *
+     * @param epochMilli payload in milliseconds
+     * @return Anonymous tag with timestamp payload
+     */
+    public static Serializable<BanyandbModel.TagValue> timestampTagValue(long epochMilli) {
+        return new TimestampTagValue(epochMilli);
     }
 
     public static Serializable<BanyandbModel.TagValue> nullTagValue() {

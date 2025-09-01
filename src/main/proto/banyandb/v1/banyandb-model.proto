@@ -52,6 +52,7 @@ message TagValue {
     Int int = 4;
     IntArray int_array = 5;
     bytes binary_data = 6;
+    google.protobuf.Timestamp timestamp = 7;
   }
 }
 

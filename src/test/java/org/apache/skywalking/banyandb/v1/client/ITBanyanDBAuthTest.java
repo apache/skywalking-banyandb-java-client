@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThrows;
 public class ITBanyanDBAuthTest {
     private static final String REGISTRY = "ghcr.io";
     private static final String IMAGE_NAME = "apache/skywalking-banyandb";
-    private static final String TAG = "42ec9df7457868926eb80157b36355d94fcd6bba";
+    private static final String TAG = "65504b5d925a15cc0ab1004f6e7cbceb65b20f83";
 
     private static final String IMAGE = REGISTRY + "/" + IMAGE_NAME + ":" + TAG;
 
