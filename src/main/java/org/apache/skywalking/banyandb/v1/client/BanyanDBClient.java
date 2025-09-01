@@ -429,6 +429,49 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
+     * Build a trace bulk write processor.
+     *
+     * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
+     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
+     *                      automatically. Unit is second.
+     * @param concurrency   the number of concurrency would run for the flush max.
+     * @param timeout       network timeout threshold in seconds.
+     * @return trace bulk write processor
+     */
+    public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
+        checkState(this.traceServiceStub != null, "trace service is null");
+
+        return new TraceBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
+    }
+
+    /**
+     * Build a TraceWrite request.
+     *
+     * @param group     the group of the trace
+     * @param name      the name of the trace
+     * @param timestamp the timestamp of the trace
+     * @return the request to be built
+     */
+    public TraceWrite createTraceWrite(String group, String name, long timestamp) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return new TraceWrite(this.metadataCache.findTraceMetadata(group, name), timestamp);
+    }
+
+    /**
+     * Build a TraceWrite request without initial timestamp.
+     *
+     * @param group the group of the trace
+     * @param name  the name of the trace
+     * @return the request to be built
+     */
+    public TraceWrite createTraceWrite(String group, String name) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return new TraceWrite(this.metadataCache.findTraceMetadata(group, name));
+    }
+
+    /**
      * Query streams according to given conditions
      *
      * @param streamQuery condition for query
