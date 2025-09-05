@@ -66,8 +66,10 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
      */
     @Override
     protected BanyandbStream.WriteRequest build(BanyandbCommon.Metadata metadata) {
+        if (!timestamp.isPresent() || timestamp.get() <= 0) {
             throw new IllegalArgumentException("Timestamp is required and must be greater than 0 for stream writes.");
         }
+
         Timestamp ts = Timestamp.newBuilder()
                 .setSeconds(timestamp.get() / 1000)
                 .setNanos((int) (timestamp.get() % 1000 * 1_000_000)).build();

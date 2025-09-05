@@ -59,7 +59,8 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
      */
     @Override
     protected BanyandbMeasure.WriteRequest build(BanyandbCommon.Metadata metadata) {
-            throw new IllegalArgumentException("Timestamp is required and must be greater than 0 for measure writes.");
+        if (!timestamp.isPresent() || timestamp.get() <= 0) {
+            throw new IllegalArgumentException("Timestamp is required and must be greater than 0 for stream writes.");
         }
         Timestamp ts = Timestamp.newBuilder()
                 .setSeconds(timestamp.get() / 1000)
