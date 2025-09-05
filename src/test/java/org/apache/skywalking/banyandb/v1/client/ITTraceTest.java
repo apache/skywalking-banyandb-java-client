@@ -129,7 +129,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
         byte[] spanData = "query-test-span-data".getBytes();
         
         // Create and write trace data
-        TraceWrite traceWrite = client.createTraceWrite(groupName, traceName, now.toEpochMilli())
+        TraceWrite traceWrite = client.createTraceWrite(groupName, traceName)
             .tag("trace_id", Value.stringTagValue(traceId))
             .tag("span_id", Value.stringTagValue(spanId))
             .tag("service_name", Value.stringTagValue(serviceName))
@@ -183,7 +183,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
         Instant baseTime = Instant.now().minusSeconds(60); // Start 1 minute ago
         
         // Create 3 traces with different timestamps (1 minute apart)
-        TraceWrite trace1 = client.createTraceWrite(groupName, traceName, baseTime.toEpochMilli())
+        TraceWrite trace1 = client.createTraceWrite(groupName, traceName)
             .tag("trace_id", Value.stringTagValue(traceId + "1"))
             .tag("span_id", Value.stringTagValue("span-1"))
             .tag("service_name", Value.stringTagValue(serviceName))
@@ -191,7 +191,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             .span("span-data-1".getBytes())
             .version(1L);
             
-        TraceWrite trace2 = client.createTraceWrite(groupName, traceName, baseTime.plusSeconds(60).toEpochMilli())
+        TraceWrite trace2 = client.createTraceWrite(groupName, traceName)
             .tag("trace_id", Value.stringTagValue(traceId + "2"))
             .tag("span_id", Value.stringTagValue("span-2"))
             .tag("service_name", Value.stringTagValue(serviceName))
@@ -199,7 +199,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             .span("span-data-2".getBytes())
             .version(1L);
             
-        TraceWrite trace3 = client.createTraceWrite(groupName, traceName, baseTime.plusSeconds(120).toEpochMilli())
+        TraceWrite trace3 = client.createTraceWrite(groupName, traceName)
             .tag("trace_id", Value.stringTagValue(traceId + "3"))
             .tag("span_id", Value.stringTagValue("span-3"))
             .tag("service_name", Value.stringTagValue(serviceName))

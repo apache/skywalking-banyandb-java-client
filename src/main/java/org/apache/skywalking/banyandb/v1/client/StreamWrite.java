@@ -21,6 +21,8 @@ package org.apache.skywalking.banyandb.v1.client;
 import com.google.protobuf.Timestamp;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Optional;
+
 import lombok.Getter;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
@@ -40,11 +42,6 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
     @Getter
     private final String elementId;
 
-    StreamWrite(MetadataCache.EntityMetadata entityMetadata, final String elementId, long timestamp) {
-        super(entityMetadata, timestamp);
-        this.elementId = elementId;
-    }
-
     /**
      * Create a StreamWrite without initial timestamp.
      */
@@ -59,7 +56,7 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
     }
 
     public void setTimestamp(long timestamp) {
-        super.timestamp = timestamp;
+        super.timestamp = Optional.of(timestamp);
     }
 
     /**
@@ -68,7 +65,15 @@ public class StreamWrite extends AbstractWrite<BanyandbStream.WriteRequest> {
      * @return {@link BanyandbStream.WriteRequest} for the bulk process.
      */
     @Override
-    protected BanyandbStream.WriteRequest build(BanyandbCommon.Metadata metadata, Timestamp ts) {
+    protected BanyandbStream.WriteRequest build(BanyandbCommon.Metadata metadata) {
+        if (!timestamp.isPresent() || timestamp.get() <= 0) {
+            throw new IllegalArgumentException("Timestamp is required and must be greater than 0 for stream writes.");
+        }
+
+        Timestamp ts = Timestamp.newBuilder()
+                .setSeconds(timestamp.get() / 1000)
+                .setNanos((int) (timestamp.get() % 1000 * 1_000_000)).build();
+
         final BanyandbStream.WriteRequest.Builder builder = BanyandbStream.WriteRequest.newBuilder();
         builder.setMetadata(metadata);
         final BanyandbStream.ElementValue.Builder elemValBuilder = BanyandbStream.ElementValue.newBuilder();

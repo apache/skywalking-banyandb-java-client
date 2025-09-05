@@ -58,7 +58,14 @@ public class MeasureWrite extends AbstractWrite<BanyandbMeasure.WriteRequest> {
      * @return {@link BanyandbMeasure.WriteRequest} for the bulk process.
      */
     @Override
-    protected BanyandbMeasure.WriteRequest build(BanyandbCommon.Metadata metadata, Timestamp ts) {
+    protected BanyandbMeasure.WriteRequest build(BanyandbCommon.Metadata metadata) {
+        if (!timestamp.isPresent() || timestamp.get() <= 0) {
+            throw new IllegalArgumentException("Timestamp is required and must be greater than 0 for stream writes.");
+        }
+        Timestamp ts = Timestamp.newBuilder()
+                .setSeconds(timestamp.get() / 1000)
+                .setNanos((int) (timestamp.get() % 1000 * 1_000_000)).build();
+
         final BanyandbMeasure.WriteRequest.Builder builder = BanyandbMeasure.WriteRequest.newBuilder();
         builder.setMetadata(metadata);
         final BanyandbMeasure.DataPointValue.Builder datapointValueBuilder = BanyandbMeasure.DataPointValue.newBuilder();

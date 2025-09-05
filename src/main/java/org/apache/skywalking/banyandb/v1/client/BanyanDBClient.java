@@ -400,21 +400,6 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Build a StreamWrite request.
-     *
-     * @param group     the group of the stream
-     * @param name      the name of the stream
-     * @param elementId the primary key of the stream
-     * @param timestamp the timestamp of the stream
-     * @return the request to be built
-     */
-    public StreamWrite createStreamWrite(String group, String name, final String elementId, long timestamp) throws BanyanDBException {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        return new StreamWrite(this.metadataCache.findStreamMetadata(group, name), elementId, timestamp);
-    }
-
-    /**
      * Build a trace bulk write processor.
      *
      * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
@@ -428,20 +413,6 @@ public class BanyanDBClient implements Closeable {
         checkState(this.traceServiceStub != null, "trace service is null");
 
         return new TraceBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
-    }
-
-    /**
-     * Build a TraceWrite request.
-     *
-     * @param group     the group of the trace
-     * @param name      the name of the trace
-     * @param timestamp the timestamp of the trace
-     * @return the request to be built
-     */
-    public TraceWrite createTraceWrite(String group, String name, long timestamp) throws BanyanDBException {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        return new TraceWrite(this.metadataCache.findTraceMetadata(group, name), timestamp);
     }
 
     /**
