@@ -31,11 +31,13 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessageV3> {
     /**
-     * Timestamp represents the time of current stream
-     * in the timeunit of milliseconds.
-     *
-     * Measure and stream require timestamp.
-     * Trace doesn't require extra timestamp.
+     * Timestamp represents the time of the current data point, in milliseconds.
+     * <p>
+     * <b>When to set:</b>
+     * <ul>
+     *   <li><b>Stream and Measure writes:</b> This field <i>must</i> be set to indicate the event time.</li>
+     *   <li><b>Trace writes:</b> This field is <i>not needed</i> and should be left unset; trace data does not require an explicit timestamp here.</li>
+     * </ul>
      */
     @Getter
     protected Optional<Long> timestamp;
