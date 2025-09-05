@@ -18,8 +18,6 @@
 
 package org.apache.skywalking.banyandb.v1.client;
 
-import com.google.protobuf.Timestamp;
-
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,28 +33,31 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     /**
      * Timestamp represents the time of current stream
      * in the timeunit of milliseconds.
+     *
+     * Measure and stream require timestamp.
+     * Trace doesn't require extra timestamp.
      */
     @Getter
-    protected long timestamp;
+    protected Optional<Long> timestamp;
 
     protected final Object[] tags;
 
     protected final MetadataCache.EntityMetadata entityMetadata;
 
     public AbstractWrite(MetadataCache.EntityMetadata entityMetadata, long timestamp) {
-        if (entityMetadata == null) {
-            throw new IllegalArgumentException("metadata not found");
-        }
-        this.entityMetadata = entityMetadata;
-        this.timestamp = timestamp;
-        this.tags = new Object[this.entityMetadata.getTotalTags()];
+        this(entityMetadata);
+        this.timestamp = Optional.of(timestamp);
     }
 
     /**
      * Build a write request without initial timestamp.
      */
     AbstractWrite(MetadataCache.EntityMetadata entityMetadata) {
-        this(entityMetadata, 0);
+        if (entityMetadata == null) {
+            throw new IllegalArgumentException("metadata not found");
+        }
+        this.entityMetadata = entityMetadata;
+        this.tags = new Object[this.entityMetadata.getTotalTags()];
     }
 
     public AbstractWrite<P> tag(String tagName, Serializable<BanyandbModel.TagValue> tagValue) throws BanyanDBException {
@@ -69,19 +70,13 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
     }
 
     P build() {
-        if (timestamp <= 0) {
-            throw new IllegalArgumentException("timestamp is invalid.");
-        }
-
         BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
                 .setGroup(entityMetadata.getGroup()).setName(entityMetadata.getName()).setModRevision(entityMetadata.getModRevision()).build();
-        Timestamp ts = Timestamp.newBuilder()
-                .setSeconds(timestamp / 1000)
-                .setNanos((int) (timestamp % 1000 * 1_000_000)).build();
-        return build(metadata, ts);
+
+        return build(metadata);
     }
 
-    protected abstract P build(BanyandbCommon.Metadata metadata, Timestamp ts);
+    protected abstract P build(BanyandbCommon.Metadata metadata);
 
     @Override
     public String toString() {

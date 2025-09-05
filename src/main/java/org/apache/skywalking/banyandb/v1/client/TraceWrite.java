@@ -19,7 +19,6 @@
 package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Timestamp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +33,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 /**
  * TraceWrite represents a write operation, including necessary fields, for {@link
- * BanyanDBClient#buildTraceBulkWriteProcessor}.
+ * BanyanDBClient#buildTraceWriteProcessor(int, int, int, int)}.
  */
 public class TraceWrite extends AbstractWrite<BanyandbTrace.WriteRequest> {
     /**
@@ -48,12 +47,6 @@ public class TraceWrite extends AbstractWrite<BanyandbTrace.WriteRequest> {
      */
     @Getter
     private long version;
-
-    TraceWrite(MetadataCache.EntityMetadata entityMetadata, long timestamp) {
-        super(entityMetadata, timestamp);
-        this.span = ByteString.EMPTY;
-        this.version = 1L;
-    }
 
     /**
      * Create a TraceWrite without initial timestamp.
@@ -99,17 +92,13 @@ public class TraceWrite extends AbstractWrite<BanyandbTrace.WriteRequest> {
         return this;
     }
 
-    public void setTimestamp(long timestamp) {
-        super.timestamp = timestamp;
-    }
-
     /**
      * Build a write request
      *
      * @return {@link BanyandbTrace.WriteRequest} for the bulk process.
      */
     @Override
-    protected BanyandbTrace.WriteRequest build(BanyandbCommon.Metadata metadata, Timestamp ts) {
+    protected BanyandbTrace.WriteRequest build(BanyandbCommon.Metadata metadata) {
         final BanyandbTrace.WriteRequest.Builder builder = BanyandbTrace.WriteRequest.newBuilder();
         builder.setMetadata(metadata);
         
