@@ -400,15 +400,30 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Build a trace bulk write processor.
+     * Build a StreamWrite request.
      *
-     * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
-     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                      automatically. Unit is second.
-     * @param concurrency   the number of concurrency would run for the flush max.
-     * @param timeout       network timeout threshold in seconds.
-     * @return trace bulk write processor
+     * @param group     the group of the stream
+     * @param name      the name of the stream
+     * @param elementId the primary key of the stream
+     * @param timestamp the timestamp of the stream
+     * @return the request to be built
      */
+    public StreamWrite createStreamWrite(String group, String name, final String elementId, long timestamp) throws BanyanDBException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        return new StreamWrite(this.metadataCache.findStreamMetadata(group, name), elementId, timestamp);
+    }
+
+        /**
+         * Build a trace bulk write processor.
+         *
+         * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
+         * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
+         *                      automatically. Unit is second.
+         * @param concurrency   the number of concurrency would run for the flush max.
+         * @param timeout       network timeout threshold in seconds.
+         * @return trace bulk write processor
+         */
     public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
         checkState(this.traceServiceStub != null, "trace service is null");
 

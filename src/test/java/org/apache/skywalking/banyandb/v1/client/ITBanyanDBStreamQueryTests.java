@@ -94,7 +94,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         String dbType = "SQL";
         String dbInstance = "127.0.0.1:3306";
 
-        StreamWrite streamWrite = client.createStreamWrite("sw_record", "trace", segmentId)
+        StreamWrite streamWrite = client.createStreamWrite("sw_record", "trace", segmentId, now.toEpochMilli())
                 .tag("data_binary", Value.binaryTagValue(byteData))
                 .tag("trace_id", Value.stringTagValue(traceId)) // 0
                 .tag("state", Value.longTagValue(state)) // 1
@@ -109,7 +109,6 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                 .tag("mq.broker", Value.stringTagValue(broker)) // 10
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
-        streamWrite.setTimestamp(now.toEpochMilli());
 
         CompletableFuture<Void> f = processor.add(streamWrite);
         f.exceptionally(exp -> {
