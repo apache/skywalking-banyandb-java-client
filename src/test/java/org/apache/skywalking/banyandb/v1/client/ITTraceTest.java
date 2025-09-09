@@ -158,14 +158,19 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             TraceQueryResponse response = client.query(query);
             Assert.assertNotNull("Query response should not be null", response);
             Assert.assertFalse("Should have at least one result", response.isEmpty());
-            Assert.assertEquals("Should have exactly one span", 1, response.size());
+            Assert.assertEquals("Should have exactly one trace", 1, response.size());
             
-            // Verify we can access span data
-            Assert.assertNotNull("Spans list should not be null", response.getSpans());
-            Assert.assertEquals("Should have one span in list", 1, response.getSpans().size());
+            // Verify we can access trace data
+            Assert.assertNotNull("Traces list should not be null", response.getTraces());
+            Assert.assertEquals("Should have one trace in list", 1, response.getTraces().size());
             
-            // Get the first span and verify its contents
-            org.apache.skywalking.banyandb.trace.v1.BanyandbTrace.Span span = response.getSpans().get(0);
+            // Get the first trace and verify its contents
+            org.apache.skywalking.banyandb.trace.v1.BanyandbTrace.Trace trace = response.getTraces().get(0);
+            Assert.assertNotNull("Trace should not be null", trace);
+            Assert.assertEquals("Trace should have exactly one span", 1, trace.getSpansCount());
+            
+            // Get the span from the trace and verify its contents
+            org.apache.skywalking.banyandb.trace.v1.BanyandbTrace.Span span = trace.getSpans(0);
             Assert.assertNotNull("Span should not be null", span);
             
             // Verify span data (binary content) - this is the main content returned
@@ -228,15 +233,21 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             TraceQueryResponse response = client.query(query);
             Assert.assertNotNull("Query response should not be null", response);
             Assert.assertFalse("Should have at least one result", response.isEmpty());
-            Assert.assertTrue("Should have exactly 2 spans", response.size() == 2);
+            Assert.assertTrue("Should have exactly 2 traces", response.size() == 2);
             
-            // Verify we can access span data
-            Assert.assertNotNull("Spans list should not be null", response.getSpans());
-            Assert.assertTrue("Should have exactly 2 spans in list", response.getSpans().size() == 2);
+            // Verify we can access trace data
+            Assert.assertNotNull("Traces list should not be null", response.getTraces());
+            Assert.assertTrue("Should have exactly 2 traces in list", response.getTraces().size() == 2);
             
-            // Verify that span content matches expected data
-            String firstSpanContent = new String(response.getSpans().get(0).getSpan().toByteArray());
-            String secondSpanContent = new String(response.getSpans().get(1).getSpan().toByteArray());
+            // Get spans from each trace and verify that span content matches expected data
+            org.apache.skywalking.banyandb.trace.v1.BanyandbTrace.Trace firstTrace = response.getTraces().get(0);
+            org.apache.skywalking.banyandb.trace.v1.BanyandbTrace.Trace secondTrace = response.getTraces().get(1);
+            
+            Assert.assertEquals("First trace should have exactly one span", 1, firstTrace.getSpansCount());
+            Assert.assertEquals("Second trace should have exactly one span", 1, secondTrace.getSpansCount());
+            
+            String firstSpanContent = new String(firstTrace.getSpans(0).getSpan().toByteArray());
+            String secondSpanContent = new String(secondTrace.getSpans(0).getSpan().toByteArray());
             
             // Since we're ordering by start_time DESC, span-data-2 should come before span-data-1
             // (baseTime+60 > baseTime)

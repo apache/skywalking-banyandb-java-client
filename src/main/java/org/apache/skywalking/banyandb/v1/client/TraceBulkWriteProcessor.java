@@ -25,9 +25,11 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.trace.v1.TraceServiceGrpc;
 import org.apache.skywalking.banyandb.trace.v1.BanyandbTrace;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
+import org.apache.skywalking.banyandb.v1.client.util.StatusUtil;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -78,23 +80,25 @@ public class TraceBulkWriteProcessor extends AbstractBulkWriteProcessor<Banyandb
 
                     @Override
                     public void onNext(BanyandbTrace.WriteResponse writeResponse) {
-                        String status = writeResponse.getStatus();
-                        if ("succeed".equals(status)) {
-                            // Success case - do nothing
-                        } else if ("expired_schema".equals(status)) {
-                            BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
-                            String schemaKey = metadata.getGroup() + "." + metadata.getName();
-                            if (!schemaExpired.contains(schemaKey)) {
-                                log.warn("The trace schema {} is expired, trying update the schema...", schemaKey);
-                                try {
-                                    client.updateTraceMetadataCacheFromServer(metadata.getGroup(), metadata.getName());
-                                    schemaExpired.add(schemaKey);
-                                } catch (BanyanDBException e) {
-                                    log.error(e.getMessage(), e);
+                        BanyandbModel.Status status = StatusUtil.convertStringToStatus(writeResponse.getStatus());
+                        switch (status) {
+                            case STATUS_SUCCEED:
+                                break;
+                            case STATUS_EXPIRED_SCHEMA:
+                                BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
+                                String schemaKey = metadata.getGroup() + "." + metadata.getName();
+                                if (!schemaExpired.contains(schemaKey)) {
+                                    log.warn("The trace schema {} is expired, trying update the schema...", schemaKey);
+                                    try {
+                                        client.updateTraceMetadataCacheFromServer(metadata.getGroup(), metadata.getName());
+                                        schemaExpired.add(schemaKey);
+                                    } catch (BanyanDBException e) {
+                                        log.error(e.getMessage(), e);
+                                    }
                                 }
-                            }
-                        } else {
-                            log.warn("Write trace failed with status: {}", status);
+                                break;
+                            default:
+                                log.warn("Write trace failed with status: {}", status);
                         }
                     }
 

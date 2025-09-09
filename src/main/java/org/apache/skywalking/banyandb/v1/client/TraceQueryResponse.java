@@ -33,12 +33,12 @@ public class TraceQueryResponse {
     }
 
     /**
-     * Get the list of spans returned by the query.
+     * Get the list of traces returned by the query.
      *
-     * @return list of spans
+     * @return list of traces, each containing spans grouped by trace ID
      */
-    public List<BanyandbTrace.Span> getSpans() {
-        return response.getSpansList();
+    public List<BanyandbTrace.Trace> getTraces() {
+        return response.getTracesList();
     }
 
     /**
@@ -54,18 +54,18 @@ public class TraceQueryResponse {
     }
 
     /**
-     * Get the total number of spans returned.
+     * Get the total number of traces returned.
      *
-     * @return span count
+     * @return trace count
      */
     public int size() {
-        return response.getSpansCount();
+        return response.getTracesCount();
     }
 
     /**
      * Check if the response is empty.
      *
-     * @return true if no spans were returned
+     * @return true if no traces were returned
      */
     public boolean isEmpty() {
         return size() == 0;
