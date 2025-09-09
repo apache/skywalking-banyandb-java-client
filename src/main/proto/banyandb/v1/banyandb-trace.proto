@@ -21,7 +21,6 @@ package banyandb.trace.v1;
 
 import "banyandb/v1/banyandb-common.proto";
 import "banyandb/v1/banyandb-model.proto";
-import "google/api/annotations.proto";
 
 option go_package = "github.com/apache/skywalking-banyandb/api/proto/banyandb/trace/v1";
 option java_package = "org.apache.skywalking.banyandb.trace.v1";
@@ -51,8 +50,12 @@ message Span {
   bytes span = 2;
 }
 
-message QueryResponse {
+message Trace {
   repeated Span spans = 1;
+}
+
+message QueryResponse {
+  repeated Trace traces = 1;
   common.v1.Trace trace_query_result = 2;
 }
 
@@ -71,12 +74,7 @@ message QueryRequest {
 
 // RPC service
 service TraceService {
-  rpc Query(QueryRequest) returns (QueryResponse) {
-    option (google.api.http) = {
-      post: "/v1/trace/data"
-      body: "*"
-    };
-  }
+  rpc Query(QueryRequest) returns (QueryResponse);
 
   rpc Write(stream WriteRequest) returns (stream WriteResponse);
 }
