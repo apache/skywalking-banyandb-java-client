@@ -51,6 +51,7 @@ options are listed below,
 ### Stream and index rules
 
 #### Define a Group
+
 ```java
 // build a group sw_record for Stream with 2 shards and ttl equals to 3 days
 Group g = Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_record"))
@@ -299,6 +300,91 @@ Measure m = Measure.newBuilder()
 client.define(m);
 ```
 
+### Trace and index rules
+
+`Trace` is a first-class model for storing tracing data (binary span payloads plus searchable tags). You can define it directly via `BanyanDBClient`.
+
+#### Define a Group
+```java
+// build a group sw_trace for Trace with 2 shards and ttl equals to 7 days
+Group g = Group.newBuilder().setMetadata(Metadata.newBuilder().setName("sw_trace"))
+        .setCatalog(Catalog.CATALOG_TRACE)
+        .setResourceOpts(ResourceOpts.newBuilder()
+                     .setShardNum(2)
+                     .setSegmentInterval(
+                         IntervalRule.newBuilder()
+                             .setUnit(
+                                 IntervalRule.Unit.UNIT_DAY)
+                             .setNum(
+                                 1))
+                     .setTtl(
+                         IntervalRule.newBuilder()
+                             .setUnit(
+                                 IntervalRule.Unit.UNIT_DAY)
+                             .setNum(
+                                 7)))
+        .build();
+client.define(g);
+```
+
+#### Define a Trace schema
+
+```java
+// Create a Trace schema with tag definitions and required identifiers
+BanyandbDatabase.Trace trace = BanyandbDatabase.Trace.newBuilder()
+    .setMetadata(Metadata.newBuilder()
+        .setGroup("sw_trace")
+        .setName("trace_data"))
+    // Define searchable tags (order matters when writing)
+    .addTags(BanyandbDatabase.TraceTagSpec.newBuilder()
+        .setName("trace_id")
+        .setType(TagType.TAG_TYPE_STRING))
+    .addTags(BanyandbDatabase.TraceTagSpec.newBuilder()
+        .setName("span_id")
+        .setType(TagType.TAG_TYPE_STRING))
+    .addTags(BanyandbDatabase.TraceTagSpec.newBuilder()
+        .setName("service_name")
+        .setType(TagType.TAG_TYPE_STRING))
+    .addTags(BanyandbDatabase.TraceTagSpec.newBuilder()
+        .setName("start_time")
+        .setType(TagType.TAG_TYPE_TIMESTAMP))
+    // Mandatory identifiers
+    .setTraceIdTagName("trace_id")
+    .setTimestampTagName("start_time")
+    .build();
+client.define(trace);
+```
+
+#### Define IndexRule and IndexRuleBinding
+
+```java
+// Index start_time for range queries and ordering
+IndexRule ir = IndexRule.newBuilder()
+    .setMetadata(Metadata.newBuilder()
+        .setGroup("sw_trace")
+        .setName("start_time"))
+    .addTags("start_time")
+    .setType(IndexRule.Type.TYPE_TREE)
+    .build();
+client.define(ir);
+
+// Bind the index rule to the Trace schema
+IndexRuleBinding irb = IndexRuleBinding.newBuilder()
+    .setMetadata(Metadata.newBuilder()
+        .setGroup("sw_trace")
+        .setName("trace_binding"))
+    .setSubject(BanyandbDatabase.Subject.newBuilder()
+        .setCatalog(Catalog.CATALOG_TRACE)
+        .setName("trace_data"))
+    .addAllRules(Arrays.asList("start_time"))
+    .setBeginAt(TimeUtils.buildTimestamp(ZonedDateTime.of(2024, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)))
+    .setExpireAt(TimeUtils.buildTimestamp(DEFAULT_EXPIRE_AT))
+    .build();
+client.define(irb);
+```
+
+Note: Group lifecycle stages (hot/warm/cold) also apply to the Trace catalog.
+
 ### Define a Property
 
 ```java
@@ -444,6 +530,49 @@ MeasureQueryResponse resp = client.query(query);
 Trace trace = resp.getTrace();
 ```
 
+### Trace
+
+Construct a `TraceQuery` to search traces by tags and/or time range. The query returns a list of traces, each containing spans with binary content.
+
+```java
+// Optional time range
+Instant end = Instant.now();
+Instant begin = end.minus(15, ChronoUnit.MINUTES);
+
+// Create a query for trace schema: group=sw_trace, name=trace_data
+TraceQuery query = new TraceQuery(Lists.newArrayList("sw_trace"), "trace_data",
+    // with or without time range
+    new TimestampRange(begin.toEpochMilli(), end.toEpochMilli()),
+    // project on tags you want to sort/filter by
+    ImmutableSet.of("start_time", "service_name"));
+
+// Filter by trace_id
+query.and(PairQueryCondition.StringQueryCondition.eq("trace_id", "trace-query-test-12345"));
+
+// Order and paginate
+query.setOrderBy(new AbstractQuery.OrderBy("start_time", AbstractQuery.Sort.DESC));
+query.setLimit(10);
+query.setOffset(0);
+
+// Optionally restrict to lifecycle stages
+query.stages(ImmutableSet.of("warm", "cold"));
+
+// Enable query execution tracing (diagnostics)
+query.enableTrace();
+
+// Execute
+TraceQueryResponse resp = client.query(query);
+// Traces (data) with spans (binary payload)
+resp.getTraces().forEach(t -> {
+    // t.getSpansList() -> spans; t.getTraceId() if defined in server response
+});
+
+// Execution trace (diagnostics), if enabled
+String executionTrace = resp.getTraceResult();
+```
+
+Tip: `StreamQueryResponse.getTrace()` and `MeasureQueryResponse.getTrace()` return the execution trace of the query, not the Trace data model. Use `TraceQuery`/`TraceQueryResponse` to fetch tracing data.
+
 ### Property
 
 Query properties:
@@ -580,6 +709,30 @@ CompletableFuture<Void> f = measureBulkWriteProcessor.add(measureWrite);
 f.get(10, TimeUnit.SECONDS);
 ```
 
+### Trace
+
+`Trace` writes use gRPC bidirectional streaming as well. Build a `TraceBulkWriteProcessor`, then create `TraceWrite` objects carrying tags and a binary span payload.
+
+```java
+// build a TraceBulkWriteProcessor from client
+TraceBulkWriteProcessor traceBulkWriteProcessor = client.buildTraceWriteProcessor(maxBulkSize, flushInterval, concurrency, timeout);
+
+// Create and send a trace write
+TraceWrite traceWrite = client.createTraceWrite("sw_trace", "trace_data")
+    // tag order must follow schema definition
+    .tag("trace_id", Value.stringTagValue("trace-query-test-12345"))
+    .tag("span_id", Value.stringTagValue("span-1"))
+    .tag("service_name", Value.stringTagValue("order-test-service"))
+    .tag("start_time", Value.timestampTagValue(Instant.now().toEpochMilli()))
+    // binary span payload (your tracing format bytes)
+    .span("span-bytes".getBytes())
+    // optional write version
+    .version(1L);
+
+CompletableFuture<Void> f = traceBulkWriteProcessor.add(traceWrite);
+f.get(10, TimeUnit.SECONDS);
+```
+
 ### Property
 
 Unlike `Stream` and `Measure`, `Property` is a single write operation. The `Property` object is created and sent to the server.
@@ -608,9 +761,9 @@ ApplyResponse response = client.apply(property, Strategy.STRATEGY_MERGE);
 
 ## Delete
 
-### Stream and Measure
+### Stream / Measure / Trace
 
-The `Stream` and `Measure` are deleted by the TTL mechanism. You can set the TTL when defining the group schema.
+`Stream`, `Measure`, and `Trace` are deleted by the TTL mechanism. Set TTL when defining the group schema.
 
 ### Property
 
