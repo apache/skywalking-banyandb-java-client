@@ -27,9 +27,11 @@ import java.util.List;
  */
 public class TraceQueryResponse {
     private final BanyandbTrace.QueryResponse response;
+    private final Trace trace;
 
     TraceQueryResponse(BanyandbTrace.QueryResponse response) {
         this.response = response;
+        this.trace = Trace.convertFromProto(response.getTraceQueryResult());
     }
 
     /**
@@ -43,14 +45,9 @@ public class TraceQueryResponse {
 
     /**
      * Get the trace query execution trace if enabled.
-     *
-     * @return trace query execution trace or null if not enabled
      */
-    public String getTraceResult() {
-        if (response.hasTraceQueryResult()) {
-            return response.getTraceQueryResult().toString();
-        }
-        return null;
+    public Trace getTraceResult() {
+        return this.trace;
     }
 
     /**
