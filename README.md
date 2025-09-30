@@ -351,6 +351,7 @@ BanyandbDatabase.Trace trace = BanyandbDatabase.Trace.newBuilder()
     // Mandatory identifiers
     .setTraceIdTagName("trace_id")
     .setTimestampTagName("start_time")
+    .setSpanIdTagName("span_id")
     .build();
 client.define(trace);
 ```
