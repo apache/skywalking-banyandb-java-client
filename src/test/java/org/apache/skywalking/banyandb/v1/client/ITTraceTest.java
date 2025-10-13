@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.trace.v1.BanyandbTrace;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
@@ -30,7 +31,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -136,7 +136,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             = client.getTraceServiceStub().write(new StreamObserver<BanyandbTrace.WriteResponse>() {
             @Override
             public void onNext(BanyandbTrace.WriteResponse writeResponse) {
-                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+                Assert.assertEquals(BanyandbModel.Status.STATUS_SUCCEED.name(), writeResponse.getStatus());
             }
 
             @Override
@@ -154,13 +154,6 @@ public class ITTraceTest extends BanyanDBClientTestCI {
         } finally {
             writeObserver.onCompleted();
         }
-        // Write the trace via bulk processor
-//        CompletableFuture<Void> writeFuture = processor.add(traceWrite);
-//        writeFuture.exceptionally(exp -> {
-//            Assert.fail("Write failed: " + exp.getMessage());
-//            return null;
-//        });
-//        writeFuture.get(10, TimeUnit.SECONDS);
         
         // Create trace query with trace_id condition
         TraceQuery query = new TraceQuery(
@@ -232,7 +225,7 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             = client.getTraceServiceStub().write(new StreamObserver<BanyandbTrace.WriteResponse>() {
             @Override
             public void onNext(BanyandbTrace.WriteResponse writeResponse) {
-                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+                Assert.assertEquals(BanyandbModel.Status.STATUS_SUCCEED.name(), writeResponse.getStatus());
             }
 
             @Override

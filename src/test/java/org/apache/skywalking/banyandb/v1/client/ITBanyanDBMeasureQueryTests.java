@@ -36,6 +36,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagFamilySpec
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagSpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.junit.After;
@@ -81,7 +82,7 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
             = client.getMeasureServiceStub().write(new StreamObserver<BanyandbMeasure.WriteResponse>() {
             @Override
             public void onNext(BanyandbMeasure.WriteResponse writeResponse) {
-                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+                Assert.assertEquals(BanyandbModel.Status.STATUS_SUCCEED.name(), writeResponse.getStatus());
             }
 
             @Override

@@ -38,6 +38,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
+import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
@@ -45,7 +46,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -110,7 +110,7 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
             = client.getStreamServiceStub().write(new StreamObserver<BanyandbStream.WriteResponse>() {
             @Override
             public void onNext(BanyandbStream.WriteResponse writeResponse) {
-                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+                Assert.assertEquals(BanyandbModel.Status.STATUS_SUCCEED.name(), writeResponse.getStatus());
             }
 
             @Override
