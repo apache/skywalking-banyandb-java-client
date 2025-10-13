@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Group;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.Catalog;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon.IntervalRule;
@@ -34,6 +35,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Measure;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagFamilySpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagSpec;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
+import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.metadata.Duration;
 import org.junit.After;
@@ -44,7 +46,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -52,7 +53,6 @@ import java.util.concurrent.TimeoutException;
 import static org.awaitility.Awaitility.await;
 
 public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
-    private MeasureBulkWriteProcessor processor;
 
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
@@ -62,14 +62,10 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
         Assert.assertNotNull(expectedGroup);
         Measure expectedMeasure = buildMeasure();
         client.define(expectedMeasure);
-        processor = client.buildMeasureWriteProcessor(1000, 1, 1, 10);
     }
 
     @After
     public void tearDown() throws IOException {
-        if (this.processor != null) {
-            this.processor.close();
-        }
         this.closeClient();
     }
 
@@ -81,13 +77,29 @@ public class ITBanyanDBMeasureQueryTests extends BanyanDBClientTestCI {
 
         MeasureWrite measureWrite = client.createMeasureWrite("sw_metric", "service_cpm_minute", now.toEpochMilli());
         measureWrite.tag("entity_id", TagAndValue.stringTagValue("entity_1")).field("total", TagAndValue.longFieldValue(100)).field("value", TagAndValue.longFieldValue(1));
+        StreamObserver<BanyandbMeasure.WriteRequest> writeObserver
+            = client.getMeasureServiceStub().write(new StreamObserver<BanyandbMeasure.WriteResponse>() {
+            @Override
+            public void onNext(BanyandbMeasure.WriteResponse writeResponse) {
+                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+            }
 
-        CompletableFuture<Void> f = processor.add(measureWrite);
-        f.exceptionally(exp -> {
-            Assert.fail(exp.getMessage());
-            return null;
+            @Override
+            public void onError(Throwable throwable) {
+                Assert.fail("write failed: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
         });
-        f.get(10, TimeUnit.SECONDS);
+        try {
+            writeObserver.onNext(measureWrite.build());
+
+        } finally {
+            writeObserver.onCompleted();
+        }
 
         MeasureQuery query = new MeasureQuery(Lists.newArrayList("sw_metric"), "service_cpm_minute", new TimestampRange(begin.toEpochMilli(), now.plus(1, ChronoUnit.MINUTES).toEpochMilli()), ImmutableSet.of("entity_id"), // tags
                 ImmutableSet.of("total")); // fields

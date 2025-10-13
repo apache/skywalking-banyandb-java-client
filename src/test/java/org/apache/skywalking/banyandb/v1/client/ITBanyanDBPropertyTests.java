@@ -83,7 +83,8 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = buildProperty("default", "sw", "ui_template").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("hello")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        PropertyStore store = new PropertyStore(client.getChannel());
+        Assert.assertTrue(store.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
@@ -103,7 +104,8 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = buildProperty("default", "sw", "ui_template").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("hello")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        PropertyStore store = new PropertyStore(client.getChannel());
+        Assert.assertTrue(store.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
@@ -116,8 +118,8 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
             Assert.assertNotNull(gotProperty);
             Assert.assertEquals(property.getTagsList(), gotProperty.getTagsList());
         });
-
-        Assert.assertTrue(this.client.deleteProperty("default", "sw", "ui_template").getDeleted());
+        BanyandbProperty.DeleteResponse result = store.delete("default", "sw", "ui_template");
+        Assert.assertTrue(result.getDeleted());
         BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
                 .addGroups("default")
                 .setName("sw")
@@ -131,12 +133,13 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property1 = buildProperty("default", "sw", "ui_template").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("hello")))).build();
-        Assert.assertTrue(this.client.apply(property1).getCreated());
+        PropertyStore store = new PropertyStore(client.getChannel());
+        Assert.assertTrue(store.apply(property1).getCreated());
 
         Property property2 = buildProperty("default", "sw", "ui_template").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("word")))).build();
-        Assert.assertFalse(this.client.apply(property2).getCreated());
+        Assert.assertFalse(store.apply(property2).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(BanyandbProperty.QueryRequest.newBuilder()
@@ -156,11 +159,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = buildProperty("default", "sw", "id1").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("bar")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        PropertyStore store = new PropertyStore(client.getChannel());
+        Assert.assertTrue(store.apply(property).getCreated());
         property = buildProperty("default", "sw", "id2").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("foo")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        Assert.assertTrue(store.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             client.query(new PropertyQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("name")).build(null));
@@ -194,11 +198,12 @@ public class ITBanyanDBPropertyTests extends BanyanDBClientTestCI {
         Property property = buildProperty("default", "sw", "id1").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("bar")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        PropertyStore store = new PropertyStore(client.getChannel());
+        Assert.assertTrue(store.apply(property).getCreated());
         property = buildProperty("default", "sw", "id2").toBuilder().addTags(
             Tag.newBuilder().setKey("name").setValue(
                 TagValue.newBuilder().setStr(Str.newBuilder().setValue("foo")))).build();
-        Assert.assertTrue(this.client.apply(property).getCreated());
+        Assert.assertTrue(store.apply(property).getCreated());
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             BanyandbProperty.QueryResponse resp = client.query(new PropertyQuery(Lists.newArrayList("default"), "sw", ImmutableSet.of("name")).build());

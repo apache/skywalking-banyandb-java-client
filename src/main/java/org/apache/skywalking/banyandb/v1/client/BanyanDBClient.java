@@ -26,11 +26,8 @@ import io.grpc.Channel;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
-import io.prometheus.client.Histogram;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
@@ -44,12 +41,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Subject;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Trace;
-import org.apache.skywalking.banyandb.model.v1.BanyandbModel;
 import org.apache.skywalking.banyandb.property.v1.BanyandbProperty;
-import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.Property;
-import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyRequest.Strategy;
-import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.ApplyResponse;
-import org.apache.skywalking.banyandb.property.v1.BanyandbProperty.DeleteResponse;
 import org.apache.skywalking.banyandb.measure.v1.BanyandbMeasure;
 import org.apache.skywalking.banyandb.measure.v1.MeasureServiceGrpc;
 import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
@@ -61,8 +53,6 @@ import org.apache.skywalking.banyandb.v1.client.grpc.HandleExceptionsWith;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.ChannelManager;
 import org.apache.skywalking.banyandb.v1.client.grpc.channel.DefaultChannelFactory;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.InternalException;
-import org.apache.skywalking.banyandb.v1.client.grpc.exception.InvalidArgumentException;
 import org.apache.skywalking.banyandb.v1.client.metadata.GroupMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleBindingMetadataRegistry;
 import org.apache.skywalking.banyandb.v1.client.metadata.IndexRuleMetadataRegistry;
@@ -81,12 +71,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import org.apache.skywalking.banyandb.v1.client.util.StatusUtil;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -106,47 +94,46 @@ import static com.google.common.base.Preconditions.checkState;
 @Slf4j
 public class BanyanDBClient implements Closeable {
     public static final ZonedDateTime DEFAULT_EXPIRE_AT = ZonedDateTime.of(2099, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-    private static Histogram WRITE_HISTOGRAM;
     private final String[] targets;
     /**
      * Options for server connection.
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private final Options options;
     /**
      * gRPC connection.
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private volatile Channel channel;
     /**
      * gRPC client stub
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private StreamServiceGrpc.StreamServiceStub streamServiceStub;
     /**
      * gRPC client stub
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private MeasureServiceGrpc.MeasureServiceStub measureServiceStub;
     /**
      * gRPC client stub
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private TraceServiceGrpc.TraceServiceStub traceServiceStub;
     /**
      * gRPC future stub.
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private StreamServiceGrpc.StreamServiceBlockingStub streamServiceBlockingStub;
     /**
      * gRPC future stub.
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private MeasureServiceGrpc.MeasureServiceBlockingStub measureServiceBlockingStub;
     /**
      * gRPC future stub.
      */
-    @Getter(value = AccessLevel.PACKAGE)
+    @Getter
     private TraceServiceGrpc.TraceServiceBlockingStub traceServiceBlockingStub;
     /**
      * The connection status.
@@ -161,16 +148,6 @@ public class BanyanDBClient implements Closeable {
      * Client local metadata cache.
      */
     private final MetadataCache metadataCache;
-
-    static {
-        // init prometheus metric
-        WRITE_HISTOGRAM = Histogram.build()
-                                   .name("banyandb_write_latency_seconds")
-                                   .help("BanyanDB Bulk Write latency in seconds")
-                                   .buckets(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
-                                   .labelNames("catalog", "operation", "instanceID")
-                                   .register();
-    }
 
     /**
      * Create a BanyanDB client instance with a default options.
@@ -256,122 +233,6 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Perform a single write with given entity.
-     *
-     * @param streamWrite the entity to be written
-     * @return a future of write result
-     */
-    public CompletableFuture<Void> write(StreamWrite streamWrite) {
-        checkState(this.streamServiceStub != null, "stream service is null");
-
-        Histogram.Timer timer
-            = WRITE_HISTOGRAM.labels(
-                                "stream",
-                                "single_write", // single write for non-bulk operation.
-                                options.getPrometheusMetricsOpts().getClientID()
-                            )
-                             .startTimer();
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        final StreamObserver<BanyandbStream.WriteRequest> writeRequestStreamObserver
-                = this.streamServiceStub
-                .withDeadlineAfter(this.getOptions().getDeadline(), TimeUnit.SECONDS)
-                .write(
-                        new StreamObserver<BanyandbStream.WriteResponse>() {
-                            private BanyanDBException responseException;
-
-                            @Override
-                            public void onNext(BanyandbStream.WriteResponse writeResponse) {
-                                BanyandbModel.Status status = StatusUtil.convertStringToStatus(writeResponse.getStatus());
-                                switch (status) {
-                                    case STATUS_SUCCEED:
-                                        break;
-                                    case STATUS_INVALID_TIMESTAMP:
-                                        responseException = new InvalidArgumentException(
-                                                "Invalid timestamp: " + streamWrite.getTimestamp(), null, Status.Code.INVALID_ARGUMENT, false);
-                                        break;
-                                    case STATUS_NOT_FOUND:
-                                        responseException = new InvalidArgumentException(
-                                                "Invalid metadata: " + streamWrite.entityMetadata, null, Status.Code.INVALID_ARGUMENT, false);
-                                        break;
-                                    case STATUS_EXPIRED_SCHEMA:
-                                        BanyandbCommon.Metadata metadata = writeResponse.getMetadata();
-                                        log.warn("The schema {}.{} is expired, trying update the schema...",
-                                                metadata.getGroup(), metadata.getName());
-                                        try {
-                                            BanyanDBClient.this.updateStreamMetadataCacheFromSever(metadata.getGroup(), metadata.getName());
-                                        } catch (BanyanDBException e) {
-                                            String warnMessage = String.format("Failed to refresh the stream schema %s.%s",
-                                                    metadata.getGroup(), metadata.getName());
-                                            log.warn(warnMessage, e);
-                                        }
-                                        responseException = new InvalidArgumentException(
-                                                "Expired revision: " + metadata.getModRevision(), null, Status.Code.INVALID_ARGUMENT, true);
-                                        break;
-                                    default:
-                                        responseException = new InternalException(
-                                              String.format("Internal error (%s) occurs in server", writeResponse.getStatus()), null, Status.Code.INTERNAL, true);
-                                        break;
-                                }
-                            }
-
-                            @Override
-                            public void onError(Throwable throwable) {
-                                timer.observeDuration();
-                                log.error("Error occurs in flushing streams.", throwable);
-                                future.completeExceptionally(throwable);
-                            }
-
-                            @Override
-                            public void onCompleted() {
-                                timer.observeDuration();
-                                if (responseException == null) {
-                                    future.complete(null);
-                                } else {
-                                    future.completeExceptionally(responseException);
-                                }
-                            }
-                        });
-        try {
-            writeRequestStreamObserver.onNext(streamWrite.build());
-        } finally {
-            writeRequestStreamObserver.onCompleted();
-        }
-        return future;
-    }
-
-    /**
-     * Create a build process for stream write.
-     *
-     * @param maxBulkSize   the max bulk size for the flush operation
-     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                      automatically. Unit is second
-     * @param concurrency   the number of concurrency would run for the flush max
-     * @param timeout       network timeout threshold in seconds.
-     * @return stream bulk write processor
-     */
-    public StreamBulkWriteProcessor buildStreamWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
-        checkState(this.streamServiceStub != null, "stream service is null");
-
-        return new StreamBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
-    }
-
-    /**
-     * Create a build process for measure write.
-     *
-     * @param maxBulkSize   the max bulk size for the flush operation
-     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                      automatically. Unit is second
-     * @param concurrency   the number of concurrency would run for the flush max
-     * @param timeout       network timeout threshold in seconds.
-     * @return stream bulk write processor
-     */
-    public MeasureBulkWriteProcessor buildMeasureWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
-        checkState(this.measureServiceStub != null, "measure service is null");
-
-        return new MeasureBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
-    }
-
-    /**
      * Build a MeasureWrite request.
      *
      * @param group     the group of the measure
@@ -397,22 +258,6 @@ public class BanyanDBClient implements Closeable {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(group));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
         return new StreamWrite(this.metadataCache.findStreamMetadata(group, name), elementId);
-    }
-
-    /**
-     * Build a trace bulk write processor.
-     *
-     * @param maxBulkSize   the max size of each flush. The actual size is determined by the length of byte array.
-     * @param flushInterval if given maxBulkSize is not reached in this period, the flush would be trigger
-     *                      automatically. Unit is second.
-     * @param concurrency   the number of concurrency would run for the flush max.
-     * @param timeout       network timeout threshold in seconds.
-     * @return trace bulk write processor
-     */
-    public TraceBulkWriteProcessor buildTraceWriteProcessor(int maxBulkSize, int flushInterval, int concurrency, int timeout) {
-        checkState(this.traceServiceStub != null, "trace service is null");
-
-        return new TraceBulkWriteProcessor(this, maxBulkSize, flushInterval, concurrency, timeout, WRITE_HISTOGRAM, options);
     }
 
     /**
@@ -959,40 +804,6 @@ public class BanyanDBClient implements Closeable {
     }
 
     /**
-     * Apply(Create or update) the property with {@link BanyandbProperty.ApplyRequest.Strategy#STRATEGY_MERGE}
-     *
-     * @param property the property to be stored in the BanyanBD
-     */
-    public ApplyResponse apply(Property property) throws BanyanDBException {
-        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
-            "property",
-            "single_write",
-            options.getPrometheusMetricsOpts().getClientID()
-        ).startTimer()) {
-            return store.apply(property);
-        }
-    }
-
-    /**
-     * Apply(Create or update) the property
-     *
-     * @param property the property to be stored in the BanyanBD
-     * @param strategy dedicates how to apply the property
-     */
-    public ApplyResponse apply(Property property, Strategy strategy) throws
-            BanyanDBException {
-        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
-            "property",
-            "single_write",
-            options.getPrometheusMetricsOpts().getClientID()
-        ).startTimer()) {
-            return store.apply(property, strategy);
-        }
-    }
-
-    /**
      * Query properties
      *
      * @param request query request
@@ -1001,26 +812,6 @@ public class BanyanDBClient implements Closeable {
     public BanyandbProperty.QueryResponse query(BanyandbProperty.QueryRequest request) throws BanyanDBException {
         PropertyStore store = new PropertyStore(checkNotNull(this.channel));
         return store.query(request);
-    }
-
-    /**
-     * Delete property
-     *
-     * @param group group of the metadata
-     * @param name  name of the metadata
-     * @param id    identity of the property
-     * @return if this property has been deleted
-     */
-    public DeleteResponse deleteProperty(String group, String name, String id) throws
-            BanyanDBException {
-        PropertyStore store = new PropertyStore(checkNotNull(this.channel));
-        try (Histogram.Timer timer = WRITE_HISTOGRAM.labels(
-            "property",
-            "delete",
-            options.getPrometheusMetricsOpts().getClientID()
-        ).startTimer()) {
-            return store.delete(group, name, id);
-        }
     }
 
     /**

@@ -20,8 +20,10 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import io.grpc.stub.StreamObserver;
 import org.apache.skywalking.banyandb.common.v1.BanyandbCommon;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase;
+import org.apache.skywalking.banyandb.trace.v1.BanyandbTrace;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.After;
@@ -35,7 +37,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -50,7 +51,6 @@ import static org.awaitility.Awaitility.await;
 public class ITTraceTest extends BanyanDBClientTestCI {
     private final String groupName = "sw_trace";
     private final String traceName = "trace_data";
-    private TraceBulkWriteProcessor processor;
 
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
@@ -95,15 +95,10 @@ public class ITTraceTest extends BanyanDBClientTestCI {
         this.client.define(trace);
         this.client.define(buildIndexRule());
         this.client.define(buildIndexRuleBinding());
-        
-        processor = client.buildTraceWriteProcessor(1000, 1, 1, 10);
     }
 
     @After
     public void tearDown() throws IOException {
-        if (processor != null) {
-            processor.close();
-        }
         this.closeClient();
     }
 
@@ -136,14 +131,36 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             .tag("start_time", Value.timestampTagValue(now.toEpochMilli()))
             .span(spanData)
             .version(1L);
-            
-        // Write the trace via bulk processor
-        CompletableFuture<Void> writeFuture = processor.add(traceWrite);
-        writeFuture.exceptionally(exp -> {
-            Assert.fail("Write failed: " + exp.getMessage());
-            return null;
+
+        StreamObserver<BanyandbTrace.WriteRequest> writeObserver
+            = client.getTraceServiceStub().write(new StreamObserver<BanyandbTrace.WriteResponse>() {
+            @Override
+            public void onNext(BanyandbTrace.WriteResponse writeResponse) {
+                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                Assert.fail("write failed: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
         });
-        writeFuture.get(10, TimeUnit.SECONDS);
+        try {
+            writeObserver.onNext(traceWrite.build());
+        } finally {
+            writeObserver.onCompleted();
+        }
+        // Write the trace via bulk processor
+//        CompletableFuture<Void> writeFuture = processor.add(traceWrite);
+//        writeFuture.exceptionally(exp -> {
+//            Assert.fail("Write failed: " + exp.getMessage());
+//            return null;
+//        });
+//        writeFuture.get(10, TimeUnit.SECONDS);
         
         // Create trace query with trace_id condition
         TraceQuery query = new TraceQuery(
@@ -211,13 +228,30 @@ public class ITTraceTest extends BanyanDBClientTestCI {
             .tag("start_time", Value.timestampTagValue(baseTime.plusSeconds(120).toEpochMilli()))
             .span("span-data-3".getBytes())
             .version(1L);
-        
-        // Write the traces via bulk processor
-        CompletableFuture<Void> future1 = processor.add(trace1);
-        CompletableFuture<Void> future2 = processor.add(trace2);
-        CompletableFuture<Void> future3 = processor.add(trace3);
-        
-        CompletableFuture.allOf(future1, future2, future3).get(10, TimeUnit.SECONDS);
+        StreamObserver<BanyandbTrace.WriteRequest> writeObserver
+            = client.getTraceServiceStub().write(new StreamObserver<BanyandbTrace.WriteResponse>() {
+            @Override
+            public void onNext(BanyandbTrace.WriteResponse writeResponse) {
+                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                Assert.fail("write failed: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        });
+        try {
+            writeObserver.onNext(trace1.build());
+            writeObserver.onNext(trace2.build());
+            writeObserver.onNext(trace3.build());
+        } finally {
+            writeObserver.onCompleted();
+        }
         
         // Create trace query with order by start_time (no trace_id condition as it interferes with ordering)
         TraceQuery query = new TraceQuery(

@@ -20,6 +20,7 @@ package org.apache.skywalking.banyandb.v1.client;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import io.grpc.stub.StreamObserver;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.TagType;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.Stream;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRule;
 import org.apache.skywalking.banyandb.database.v1.BanyandbDatabase.IndexRuleBinding;
+import org.apache.skywalking.banyandb.stream.v1.BanyandbStream;
 import org.apache.skywalking.banyandb.v1.client.grpc.exception.BanyanDBException;
 import org.apache.skywalking.banyandb.v1.client.util.TimeUtils;
 import org.junit.After;
@@ -46,7 +48,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -55,7 +56,6 @@ import static org.apache.skywalking.banyandb.v1.client.BanyanDBClient.DEFAULT_EX
 import static org.awaitility.Awaitility.await;
 
 public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
-    private StreamBulkWriteProcessor processor;
 
     @Before
     public void setUp() throws IOException, BanyanDBException, InterruptedException {
@@ -64,14 +64,10 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
         this.client.define(buildStream());
         this.client.define(buildIndexRule());
         this.client.define(buildIndexRuleBinding());
-        processor = client.buildStreamWriteProcessor(1000, 1, 1, 10);
     }
 
     @After
     public void tearDown() throws IOException {
-        if (processor != null) {
-            this.processor.close();
-        }
         this.closeClient();
     }
 
@@ -110,13 +106,28 @@ public class ITBanyanDBStreamQueryTests extends BanyanDBClientTestCI {
                 .tag("mq.topic", Value.stringTagValue(topic)) // 11
                 .tag("mq.queue", Value.stringTagValue(queue)); // 12
         streamWrite.setTimestamp(now.toEpochMilli());
+        StreamObserver<BanyandbStream.WriteRequest> writeObserver
+            = client.getStreamServiceStub().write(new StreamObserver<BanyandbStream.WriteResponse>() {
+            @Override
+            public void onNext(BanyandbStream.WriteResponse writeResponse) {
+                Assert.assertEquals("STATUS_SUCCEED", writeResponse.getStatus());
+            }
 
-        CompletableFuture<Void> f = processor.add(streamWrite);
-        f.exceptionally(exp -> {
-            Assert.fail(exp.getMessage());
-            return null;
+            @Override
+            public void onError(Throwable throwable) {
+                Assert.fail("write failed: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+            }
         });
-        f.get(10, TimeUnit.SECONDS);
+        try {
+            writeObserver.onNext(streamWrite.build());
+
+        } finally {
+            writeObserver.onCompleted();
+        }
 
         StreamQuery query = new StreamQuery(
             Lists.newArrayList("sw_record"), "trace", ImmutableSet.of("state", "duration", "trace_id", "data_binary"));

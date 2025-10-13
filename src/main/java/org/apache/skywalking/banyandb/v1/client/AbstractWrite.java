@@ -44,6 +44,7 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
 
     protected final Object[] tags;
 
+    @Getter
     protected final MetadataCache.EntityMetadata entityMetadata;
 
     public AbstractWrite(MetadataCache.EntityMetadata entityMetadata, long timestamp) {
@@ -71,7 +72,7 @@ public abstract class AbstractWrite<P extends com.google.protobuf.GeneratedMessa
         return this;
     }
 
-    P build() {
+    public P build() {
         BanyandbCommon.Metadata metadata = BanyandbCommon.Metadata.newBuilder()
                 .setGroup(entityMetadata.getGroup()).setName(entityMetadata.getName()).setModRevision(entityMetadata.getModRevision()).build();
 
