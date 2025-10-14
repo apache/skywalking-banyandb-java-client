@@ -32,8 +32,7 @@ import org.apache.skywalking.banyandb.v1.client.metadata.MetadataCache;
 import org.apache.skywalking.banyandb.v1.client.metadata.Serializable;
 
 /**
- * TraceWrite represents a write operation, including necessary fields, for {@link
- * BanyanDBClient#buildTraceWriteProcessor(int, int, int, int)}.
+ * TraceWrite represents a write operation, including necessary fields.
  */
 public class TraceWrite extends AbstractWrite<BanyandbTrace.WriteRequest> {
     /**
