@@ -2,6 +2,22 @@ Changes by Version
 ==================
 Release Notes.
 
+0.9.2
+------------------
+
+### Features
+
+* NOTICE, The official team is considering providing support for the new lightweight protocol in the future, which would allow the removal of the client-side cache and eliminate the need for the Java client, switching instead to directly using the gRPC protocol.
+* Remove the asynchronous mechanism from the client lib. This mechanism should be implemented on the user end.
+
+0.9.1
+------------------
+
+### Features
+
+* Make TraceQueryResponse internal trace return object.
+* Add the span_id_tag_name field to the trace schema.
+
 0.9.0
 ------------------
 
