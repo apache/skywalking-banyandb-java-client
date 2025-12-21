@@ -1,5 +1,12 @@
-BanyanDB Java Client
+~~BanyanDB Java Client~~
 ==========
+
+# Deprecated
+**Don't plan to update Java Client SDK since BanyanDB 0.9.0.**
+Since version 0.10.0, BanyanDB has introduced schema-based validation for all write operations.
+We recommend users switch to local implementation according to the [gRPC/HTTP protobuf definitions](https://github.com/apache/skywalking-banyandb-client-proto).
+
+----
 
 <img src="http://skywalking.apache.org/assets/logo.svg" alt="Sky Walking logo" height="90px" align="right" />
 
@@ -7,8 +14,6 @@ The client implement for SkyWalking BanyanDB in Java.
 
 [![GitHub stars](https://img.shields.io/github/stars/apache/skywalking.svg?style=for-the-badge&label=Stars&logo=github)](https://github.com/apache/skywalking)
 [![Twitter Follow](https://img.shields.io/twitter/follow/asfskywalking.svg?style=for-the-badge&label=Follow&logo=twitter)](https://twitter.com/AsfSkyWalking)
-
-[![CI/IT Tests](https://github.com/apache/skywalking-banyandb-java-client/workflows/CI%20AND%20IT/badge.svg?branch=main)](https://github.com/apache/skywalking-banyandb-java-client/actions?query=workflow%3ACI%2BAND%2BIT+event%3Aschedule+branch%main)
 
 # Usage
 
